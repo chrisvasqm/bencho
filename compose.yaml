@@ -1,0 +1,7 @@
+# Local target API: QuickPizza, Grafana's demo app built for k6 tests.
+services:
+  quickpizza:
+    image: ghcr.io/grafana/quickpizza-local:0.15.31
+    ports:
+      - '${QUICKPIZZA_PORT:-3333}:3333'
+    restart: unless-stopped
