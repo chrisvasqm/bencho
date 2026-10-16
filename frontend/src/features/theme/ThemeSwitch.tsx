@@ -8,6 +8,7 @@ export function ThemeSwitch() {
   return (
     <SegmentedControl
       label="Theme"
+      testId="theme"
       value={theme}
       onChange={setTheme}
       options={THEMES.map((value) => ({ value, label: LABELS[value] }))}

@@ -11,6 +11,8 @@ export interface SegmentedControlProps<Value extends string> {
   onChange: (value: Value) => void;
   label: string;
   size?: 'sm' | 'md';
+  /** Prefix for test ids: each option gets `${testId}-${value}`. */
+  testId?: string;
 }
 
 /** A small set of exclusive choices shown side by side, like a theme or view switch. */
@@ -20,6 +22,7 @@ export function SegmentedControl<Value extends string>({
   onChange,
   label,
   size = 'sm',
+  testId,
 }: SegmentedControlProps<Value>) {
   return (
     <div
@@ -35,6 +38,7 @@ export function SegmentedControl<Value extends string>({
             type="button"
             role="radio"
             aria-checked={selected}
+            data-testid={testId && `${testId}-${option.value}`}
             onClick={() => onChange(option.value)}
             className={cn(
               'rounded-[5px] font-medium transition-colors',

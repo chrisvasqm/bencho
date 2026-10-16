@@ -19,7 +19,7 @@ export function Field({ label, htmlFor, hint, error, children, className }: Fiel
       </label>
       {children}
       {error ? (
-        <p role="alert" className="text-xs text-danger">
+        <p role="alert" data-testid={`${htmlFor}-error`} className="text-xs text-danger">
           {error}
         </p>
       ) : (

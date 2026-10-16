@@ -29,6 +29,7 @@ export function StagesEditor({ stages, onChange }: StagesEditorProps) {
           <Input
             id={`stage-${index}-duration`}
             aria-label={`Stage ${index + 1} duration`}
+            data-testid={`stage-${index}-duration`}
             mono
             value={stage.duration}
             onChange={(event) => update(index, { duration: event.target.value })}
@@ -37,6 +38,7 @@ export function StagesEditor({ stages, onChange }: StagesEditorProps) {
           <Input
             id={`stage-${index}-target`}
             aria-label={`Stage ${index + 1} virtual users`}
+            data-testid={`stage-${index}-target`}
             mono
             type="number"
             min={0}
@@ -48,6 +50,7 @@ export function StagesEditor({ stages, onChange }: StagesEditorProps) {
             variant="ghost"
             size="sm"
             aria-label={`Remove stage ${index + 1}`}
+            data-testid={`stage-${index}-remove`}
             disabled={stages.length === 1}
             onClick={() => remove(index)}
             className="w-8 px-0"
@@ -56,7 +59,13 @@ export function StagesEditor({ stages, onChange }: StagesEditorProps) {
           </Button>
         </div>
       ))}
-      <Button variant="secondary" size="sm" onClick={add} className="self-start">
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={add}
+        className="self-start"
+        data-testid="add-stage"
+      >
         Add stage
       </Button>
     </div>

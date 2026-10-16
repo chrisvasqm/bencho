@@ -176,13 +176,20 @@ function RunPanelForm({
       headerExtra={
         <Tabs
           label="Run settings"
+          testId="panel-tab"
           value={tab}
           onChange={setTab}
           items={PANEL_TABS.map((item) => ({ ...item, alert: tabsWithErrors.has(item.value) }))}
         />
       }
       footer={
-        <Button type="submit" form={FORM_ID} loading={submitting} size="block">
+        <Button
+          type="submit"
+          form={FORM_ID}
+          loading={submitting}
+          size="block"
+          data-testid="start-run"
+        >
           {submitting ? 'Starting…' : `Start ${RUN_TYPE_LABELS[type].toLowerCase()} test`}
         </Button>
       }
@@ -203,6 +210,7 @@ function RunPanelForm({
                   <Field label="Test type" htmlFor="run-type">
                     <Select
                       id="run-type"
+                      data-testid="run-type"
                       value={type}
                       onChange={onTypeChange}
                       options={RUN_TYPES.map((value) => ({
@@ -219,6 +227,7 @@ function RunPanelForm({
                   >
                     <Input
                       id="base-url"
+                      data-testid="base-url"
                       mono
                       value={baseUrl}
                       onChange={(event) => setBaseUrl(event.target.value)}
@@ -290,6 +299,7 @@ function RunPanelForm({
                     >
                       <Input
                         id="think-time"
+                        data-testid="think-time"
                         mono
                         type="number"
                         min={0}
@@ -306,6 +316,7 @@ function RunPanelForm({
                     >
                       <Input
                         id="max-error-rate"
+                        data-testid="max-error-rate"
                         mono
                         type="number"
                         min={0}
@@ -328,6 +339,7 @@ function RunPanelForm({
                           </label>
                           <Input
                             id={`limit-${key}`}
+                            data-testid={`limit-${key}`}
                             mono
                             type="number"
                             min={1}
@@ -341,7 +353,7 @@ function RunPanelForm({
                       ))}
                     </div>
                     {errors.latency && (
-                      <p role="alert" className="text-xs text-danger">
+                      <p role="alert" data-testid="latency-error" className="text-xs text-danger">
                         {errors.latency}
                       </p>
                     )}

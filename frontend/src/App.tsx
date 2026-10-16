@@ -9,6 +9,7 @@ import {
   type CreateRunInput,
   type Run,
   type RunType,
+  type RunsPage,
 } from './api/runs.ts';
 import { Badge, Card, Pagination, Skeleton, Tabs } from './components/ui/index.ts';
 import { RUN_TYPE_LABELS, isActive } from './features/runs/format.ts';
@@ -45,6 +46,7 @@ export function App() {
     if (defaults.isError) {
       toast.error('Bencho cannot reach the backend', {
         id: 'backend-down',
+        testId: 'toast-backend-down',
         description: 'Start the stack with docker compose up, then reload.',
       });
     }
@@ -97,12 +99,30 @@ export function App() {
       void queryClient.invalidateQueries({ queryKey: ['runs', 'active'] });
       toast.info(`${RUN_TYPE_LABELS[run.type]} test started`, {
         description: 'You will get a message when it finishes.',
+        testId: 'toast-run-started',
       });
     },
     onError: (error) => {
-      toast.error('The run did not start', { description: describeError(error) });
+      toast.error('The run did not start', {
+        description: describeError(error),
+        testId: 'toast-run-start-error',
+      });
     },
   });
+
+  // Drop deleted runs from every cached list first: otherwise the next render still picks a
+  // deleted run (the newest on the page) and fetches it again, which answers 404.
+  const forgetRuns = (ids: ReadonlySet<string>) => {
+    queryClient.setQueriesData<RunsPage>({ queryKey: ['runs'] }, (old) => {
+      if (!old) return old;
+      const runs = old.runs.filter((item) => !ids.has(item.id));
+      return { ...old, runs, total: old.total - (old.runs.length - runs.length) };
+    });
+    for (const id of ids) {
+      queryClient.removeQueries({ queryKey: ['run', id] });
+      queryClient.removeQueries({ queryKey: ['points', id] });
+    }
+  };
 
   const remove = useMutation({
     mutationFn: (run: Run) => runsApi.remove(run.id),
@@ -113,11 +133,10 @@ export function App() {
         next.delete(run.id);
         return next;
       });
-      queryClient.removeQueries({ queryKey: ['run', run.id] });
-      queryClient.removeQueries({ queryKey: ['points', run.id] });
+      forgetRuns(new Set([run.id]));
       void queryClient.invalidateQueries({ queryKey: ['runs', run.type] });
       void queryClient.invalidateQueries({ queryKey: ['trend', run.type] });
-      toast.success('Run deleted');
+      toast.success('Run deleted', { testId: 'toast-run-deleted' });
     },
     onError: (error) => {
       toast.error('The run was not deleted', { description: describeError(error) });
@@ -143,17 +162,15 @@ export function App() {
       const gone = new Set(deleted);
       if (selectedId && gone.has(selectedId)) setSelectedId(undefined);
       setCheckedIds(new Set());
-      for (const id of deleted) {
-        queryClient.removeQueries({ queryKey: ['run', id] });
-        queryClient.removeQueries({ queryKey: ['points', id] });
-      }
+      forgetRuns(gone);
       void queryClient.invalidateQueries({ queryKey: ['runs', type] });
       void queryClient.invalidateQueries({ queryKey: ['trend', type] });
       const label = `${deleted.length} ${deleted.length === 1 ? 'run' : 'runs'} deleted`;
-      if (skipped.length === 0) toast.success(label);
+      if (skipped.length === 0) toast.success(label, { testId: 'toast-runs-deleted' });
       else {
         toast.warning(label, {
           description: `${skipped.length} could not be deleted: still running or already gone.`,
+          testId: 'toast-runs-partly-deleted',
         });
       }
     },
@@ -215,6 +232,7 @@ export function App() {
             headerExtra={
               <Tabs
                 label="Test type"
+                testId="type-tab"
                 value={type}
                 onChange={selectType}
                 items={RUN_TYPES.map((value) => ({ value, label: RUN_TYPE_LABELS[value] }))}
@@ -234,7 +252,7 @@ export function App() {
             }
           >
             {runs.isError ? (
-              <p role="alert" className="text-sm text-danger">
+              <p role="alert" data-testid="runs-error" className="text-sm text-danger">
                 Could not load runs. Bencho tries again on the next update.
               </p>
             ) : (

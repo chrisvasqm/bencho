@@ -16,7 +16,8 @@
     "format": "prettier --write .",
     "check": "tsc --noEmit && eslint . && prettier --check . && pnpm build",
     "test": "vitest run",
-    "test:db": "docker compose -p perf-test --profile test up -d --wait postgres-test"
+    "test:db": "docker compose -p perf-test --profile test up -d --wait postgres-test",
+    "e2e:server": "pnpm build:k6 && tsx scripts/e2e-server.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
