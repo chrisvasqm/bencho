@@ -21,6 +21,11 @@ export interface RunsTableProps {
   listKey: string;
 }
 
+// Fixed geometry: the table area is always `pageSize` rows tall, so switching type or page
+// never resizes the card. More runs than fit go to the next page.
+const ROW_HEIGHT_PX = 44;
+const HEAD_HEIGHT_PX = 36;
+
 const HEADERS = [
   { label: 'Status' },
   { label: 'Target', wide: true },
@@ -38,23 +43,28 @@ export function RunsTable({
   pageSize,
   listKey,
 }: RunsTableProps) {
-  if (!loading && runs.length === 0) {
-    return (
-      <p className="py-8 text-center text-sm text-fg-muted">
-        No runs of this type yet. Start one from the panel.
-      </p>
-    );
-  }
+  const empty = !loading && runs.length === 0;
   return (
-    <div className="overflow-x-auto">
+    <div
+      className="relative overflow-x-auto overflow-y-hidden"
+      style={{ height: HEAD_HEIGHT_PX + pageSize * ROW_HEIGHT_PX }}
+    >
+      {empty && (
+        <p className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-sm text-fg-muted">
+          No runs of this type yet. Start one from the panel.
+        </p>
+      )}
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-line text-left text-xs text-fg-muted">
+          <tr
+            style={{ height: HEAD_HEIGHT_PX }}
+            className="border-b border-line text-left text-xs text-fg-muted"
+          >
             {HEADERS.map((header) => (
               <th
                 key={header.label}
                 scope="col"
-                className={`px-3 py-2 font-medium whitespace-nowrap ${header.right ? 'text-right' : ''} ${header.wide ? 'hidden sm:table-cell' : ''}`}
+                className={`px-3 py-0 font-medium whitespace-nowrap ${header.right ? 'text-right' : ''} ${header.wide ? 'hidden sm:table-cell' : ''}`}
               >
                 {header.label}
               </th>
@@ -68,12 +78,16 @@ export function RunsTable({
           transition={{ duration: 0.18 }}
         >
           {loading
-            ? Array.from({ length: Math.min(pageSize, 5) }, (_unused, index) => (
-                <tr key={index} className="border-b border-line last:border-b-0">
+            ? Array.from({ length: pageSize }, (_unused, index) => (
+                <tr
+                  key={index}
+                  style={{ height: ROW_HEIGHT_PX }}
+                  className="border-b border-line last:border-b-0"
+                >
                   {HEADERS.map((header) => (
                     <td
                       key={header.label}
-                      className={`px-3 py-3 ${header.wide ? 'hidden sm:table-cell' : ''}`}
+                      className={`px-3 py-0 ${header.wide ? 'hidden sm:table-cell' : ''}`}
                     >
                       <Skeleton className="h-4 w-full" />
                     </td>
@@ -94,9 +108,10 @@ export function RunsTable({
                     transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
                     onClick={() => onSelect(run)}
                     aria-selected={selected}
+                    style={{ height: ROW_HEIGHT_PX }}
                     className={`cursor-pointer border-b border-line last:border-b-0 hover:bg-surface-sunken ${selected ? 'bg-accent-soft' : ''}`}
                   >
-                    <td className="px-3 py-2.5">
+                    <td className="px-3 py-0">
                       <button
                         type="button"
                         onClick={(event) => {
@@ -111,17 +126,17 @@ export function RunsTable({
                         </Badge>
                       </button>
                     </td>
-                    <td className="hidden max-w-56 truncate px-3 py-2.5 sm:table-cell text-xs">
+                    <td className="hidden max-w-56 truncate px-3 py-0 sm:table-cell text-xs">
                       {run.baseUrl}
                     </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums">{peakUsers(run.stages)}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums whitespace-nowrap">
+                    <td className="px-3 py-0 text-right tabular-nums">{peakUsers(run.stages)}</td>
+                    <td className="px-3 py-0 text-right tabular-nums whitespace-nowrap">
                       {formatMs(run.summary?.metrics.http_req_duration?.['p(95)'])}
                     </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums">
+                    <td className="px-3 py-0 text-right tabular-nums">
                       {formatPercent(run.summary?.metrics.http_req_failed?.value)}
                     </td>
-                    <td className="hidden px-3 py-2.5 whitespace-nowrap text-fg-muted sm:table-cell">
+                    <td className="hidden px-3 py-0 whitespace-nowrap text-fg-muted sm:table-cell">
                       {formatTime(run.createdAt)}
                     </td>
                   </motion.tr>

@@ -77,6 +77,12 @@ export function App() {
   });
   const selectedRun: Run | undefined = selected.data?.run;
 
+  // While the next type's runs load, keep showing the last run instead of blinking empty.
+  const [lastShown, setLastShown] = useState<Run>();
+  if (selectedRun && selectedRun !== lastShown) setLastShown(selectedRun);
+  const loadingNext = runs.isPending || (Boolean(effectiveId) && selected.isPending);
+  const shownRun = selectedRun ?? (loadingNext ? lastShown : undefined);
+
   const create = useMutation({
     mutationFn: (input: CreateRunInput) => runsApi.create(input),
     onSuccess: ({ run }) => {
@@ -156,18 +162,16 @@ export function App() {
               />
             }
             footer={
-              total > PAGE_SIZE || page > 1 ? (
-                <Pagination
-                  page={page}
-                  pageSize={PAGE_SIZE}
-                  total={total}
-                  onPageChange={(next) => {
-                    setPage(next);
-                    setSelectedId(undefined);
-                  }}
-                  loading={runs.isFetching}
-                />
-              ) : undefined
+              <Pagination
+                page={page}
+                pageSize={PAGE_SIZE}
+                total={total}
+                onPageChange={(next) => {
+                  setPage(next);
+                  setSelectedId(undefined);
+                }}
+                loading={runs.isFetching}
+              />
             }
           >
             {runs.isError ? (
@@ -187,15 +191,15 @@ export function App() {
           </Card>
 
           {/* Swap in place: no exit phase, so the trend card below never jumps up and back. */}
-          {selectedRun ? (
+          {shownRun ? (
             <motion.div
-              key={selectedRun.id}
+              key={shownRun.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
             >
               <RunDetailCard
-                run={selectedRun}
+                run={shownRun}
                 deleting={remove.isPending}
                 onDelete={(run) => remove.mutate(run)}
               />
