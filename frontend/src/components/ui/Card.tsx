@@ -57,7 +57,7 @@ export function Card({
         <footer
           className={cn(
             'shrink-0 rounded-b-lg bg-surface-sunken',
-            flushFooter ? 'flex overflow-hidden' : 'px-5 py-3',
+            flushFooter ? 'flex' : 'px-5 py-3',
           )}
         >
           {footer}

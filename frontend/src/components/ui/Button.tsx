@@ -19,10 +19,10 @@ const variantClasses: Record<ButtonVariant, string> = {
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-8 rounded-md px-3 text-sm',
-  md: 'h-10 rounded-md px-4 text-sm',
-  // Fills its container edge to edge, e.g. a flush card footer.
-  block: 'h-full min-h-14 w-full rounded-none px-5 text-base',
+  sm: 'h-8 rounded-md px-3 text-sm active:scale-[0.98]',
+  md: 'h-10 rounded-md px-4 text-sm active:scale-[0.98]',
+  // Fills a flush card footer edge to edge; rounded like the card's bottom corners.
+  block: 'min-h-14 w-full rounded-b-lg px-5 text-base',
 };
 
 export function Button({
@@ -41,7 +41,7 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex items-center justify-center gap-2 font-medium whitespace-nowrap transition-[background-color,color,transform] duration-150 active:scale-[0.98]',
+        'inline-flex items-center justify-center gap-2 font-medium whitespace-nowrap transition-[background-color,color,transform] duration-150',
         'disabled:cursor-not-allowed disabled:opacity-50',
         variantClasses[variant],
         sizeClasses[size],
