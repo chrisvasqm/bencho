@@ -13,7 +13,7 @@ import { RunsService, type K6Settings } from '../../src/modules/runs/service.ts'
 import { DEFAULT_LIMITS, DEFAULT_STAGES } from '../../k6/lib/defaults.ts';
 import { DEFAULT_FLOW } from '../../k6/lib/flow.ts';
 import { AppError } from '../../src/core/errors.ts';
-import { testDatabaseUrl } from './test-config.ts';
+import { testDatabaseUrl } from '../../scripts/test-database.ts';
 
 export interface TestApp {
   request: () => supertest.Agent;

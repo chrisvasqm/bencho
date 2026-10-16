@@ -34,7 +34,7 @@ test.describe('first load', () => {
 });
 
 test.describe('backend not reachable', () => {
-  test.use({ allowedConsoleErrors: [/Failed to load resource/] });
+  test.use({ allowedConsoleErrors: [/ERR_CONNECTION_REFUSED.*\/api\/v1\//] });
 
   test('tells the user to start the stack', async ({ page }) => {
     await page.route('**/api/v1/**', (route) => route.abort('connectionrefused'));

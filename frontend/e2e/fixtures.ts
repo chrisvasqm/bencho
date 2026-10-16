@@ -21,6 +21,8 @@ const ACTIVE = new Set(['queued', 'running']);
 
 /** Talks to the backend through the frontend's /api proxy, like the app does. */
 export class RunsApi {
+  private baseUrl?: string;
+
   constructor(private readonly request: APIRequestContext) {}
 
   async defaults(): Promise<{ baseUrl: string; stages: Record<RunType, unknown[]> }> {
@@ -44,12 +46,17 @@ export class RunsApi {
       this.request.post('/api/v1/runs', {
         data: {
           type,
-          baseUrl: (await this.defaults()).baseUrl,
+          baseUrl: await this.targetUrl(),
           stages: [{ duration: '1m', target: 1 }],
         },
       }),
     );
     return created.run;
+  }
+
+  private async targetUrl(): Promise<string> {
+    this.baseUrl ??= (await this.defaults()).baseUrl;
+    return this.baseUrl;
   }
 
   async stop(id: string): Promise<void> {

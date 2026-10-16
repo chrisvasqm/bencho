@@ -34,7 +34,7 @@ test.describe('run form validation', () => {
     await page.getByTestId('start-run').click();
 
     await expect(page.getByTestId('panel-tab-shape')).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByTestId('stage-0-duration-error')).toBeVisible();
+    await expect(page.getByTestId('stages-error')).toContainText('k6 units');
     await expect(page.getByTestId('panel-tab-shape-alert')).toBeVisible();
   });
 
@@ -44,7 +44,7 @@ test.describe('run form validation', () => {
 
     await page.getByTestId('start-run').click();
 
-    await expect(page.getByTestId('stage-0-duration-error')).toBeVisible();
+    await expect(page.getByTestId('stages-error')).toContainText('1000 virtual users');
   });
 
   test('rejects stages longer than 60 minutes in total', async ({ page }) => {
@@ -52,7 +52,7 @@ test.describe('run form validation', () => {
 
     await page.getByTestId('start-run').click();
 
-    await expect(page.getByTestId('stage-0-duration-error')).toBeVisible();
+    await expect(page.getByTestId('stages-error')).toContainText('60 minutes');
   });
 
   test('opens the Limits tab for a latency limit of 0', async ({ page }) => {

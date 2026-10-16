@@ -112,11 +112,12 @@ export function App() {
 
   // Drop deleted runs from every cached list first: otherwise the next render still picks a
   // deleted run (the newest on the page) and fetches it again, which answers 404.
-  const forgetRuns = (ids: ReadonlySet<string>) => {
-    queryClient.setQueriesData<RunsPage>({ queryKey: ['runs'] }, (old) => {
+  // Every cached page of that type gets the new total, so page counts agree until the refetch.
+  const forgetRuns = (ids: ReadonlySet<string>, runType: RunType) => {
+    queryClient.setQueriesData<RunsPage>({ queryKey: ['runs', runType] }, (old) => {
       if (!old) return old;
       const runs = old.runs.filter((item) => !ids.has(item.id));
-      return { ...old, runs, total: old.total - (old.runs.length - runs.length) };
+      return { ...old, runs, total: Math.max(0, old.total - ids.size) };
     });
     for (const id of ids) {
       queryClient.removeQueries({ queryKey: ['run', id] });
@@ -133,7 +134,7 @@ export function App() {
         next.delete(run.id);
         return next;
       });
-      forgetRuns(new Set([run.id]));
+      forgetRuns(new Set([run.id]), run.type);
       void queryClient.invalidateQueries({ queryKey: ['runs', run.type] });
       void queryClient.invalidateQueries({ queryKey: ['trend', run.type] });
       toast.success('Run deleted', { testId: 'toast-run-deleted' });
@@ -162,7 +163,7 @@ export function App() {
       const gone = new Set(deleted);
       if (selectedId && gone.has(selectedId)) setSelectedId(undefined);
       setCheckedIds(new Set());
-      forgetRuns(gone);
+      forgetRuns(gone, type);
       void queryClient.invalidateQueries({ queryKey: ['runs', type] });
       void queryClient.invalidateQueries({ queryKey: ['trend', type] });
       const label = `${deleted.length} ${deleted.length === 1 ? 'run' : 'runs'} deleted`;

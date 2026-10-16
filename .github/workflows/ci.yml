@@ -97,7 +97,8 @@ jobs:
 
   ci:
     name: ci
-    if: always()
+    # Not for runs cancelled by a newer push; their result does not matter.
+    if: ${{ !cancelled() }}
     needs: [backend, e2e]
     runs-on: ubuntu-latest
     steps:

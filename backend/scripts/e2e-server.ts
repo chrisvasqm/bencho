@@ -2,7 +2,7 @@
 // Recreated at every start, so each e2e run begins empty and never touches dev data.
 import pg from 'pg';
 import { loadConfig } from '../src/core/config.ts';
-import { testDatabaseUrl } from '../test/helpers/test-config.ts';
+import { testDatabaseUrl } from './test-database.ts';
 
 const name = `perf_e2e_${loadConfig().PORT}`;
 const server = testDatabaseUrl();

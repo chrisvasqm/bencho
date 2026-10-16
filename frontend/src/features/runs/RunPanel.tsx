@@ -269,7 +269,12 @@ function RunPanelForm({
                   <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
                     <LoadShapeChart stages={stages} />
                   </Suspense>
-                  <Field label="Stages" htmlFor="stage-0-duration" error={errors.stages}>
+                  <Field
+                    label="Stages"
+                    htmlFor="stage-0-duration"
+                    error={errors.stages}
+                    errorTestId="stages-error"
+                  >
                     <StagesEditor stages={stages} onChange={setStages} />
                   </Field>
                   <Note title="How the load shape works">

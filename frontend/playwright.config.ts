@@ -1,8 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Own ports, never the dev stack's: the tests delete every run between tests.
-const backendPort = Number(process.env.E2E_BACKEND_PORT ?? 10103);
-const frontendPort = Number(process.env.E2E_FRONTEND_PORT ?? 10104);
+// Own ports (slots 13 and 14 of the default range), never a stack's: the tests delete every
+// run between tests.
+const backendPort = Number(process.env.E2E_BACKEND_PORT ?? 10013);
+const frontendPort = Number(process.env.E2E_FRONTEND_PORT ?? 10014);
 const baseURL = `http://localhost:${frontendPort}`;
 
 export default defineConfig({
@@ -34,7 +35,8 @@ export default defineConfig({
       stdout: 'pipe',
     },
     {
-      command: 'pnpm exec vite',
+      // Fail on a taken port instead of moving to another one Playwright does not watch.
+      command: 'pnpm exec vite --strictPort',
       env: { FRONTEND_PORT: String(frontendPort), BACKEND_PORT: String(backendPort) },
       url: baseURL,
       reuseExistingServer: false,
