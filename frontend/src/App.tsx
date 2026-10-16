@@ -176,7 +176,7 @@ export function App() {
           <div className="flex items-center gap-3">
             <Logo />
             <h1 className="flex items-center gap-2 text-lg leading-tight font-semibold tracking-tight text-fg">
-              Bencho
+              Bencho{' '}
               <Badge tone="highlight" className="tracking-wide uppercase">
                 Beta
               </Badge>
