@@ -19,7 +19,7 @@ const CHART_TABS: ReadonlyArray<{ value: ChartTab; label: string }> = [
 
 const CHART_NOTES: Record<ChartTab, string> = {
   latency:
-    'Each point is one second of the run. A line shows the pXX of the requests that ended in that second: p95 is the time 95 of every 100 of them stayed under. Lines that climb as users are added mean the API is slowing down.',
+    'Each point is one second of the run. Each line shows one percentile (p50, p90, p95, p99) of the requests that ended in that second: p95 is the time 95 of every 100 of them stayed under. Lines that climb as users are added mean the API is slowing down.',
   load: 'Virtual users is how many simulated users were running. Requests per second is how many requests they sent. When users keep rising but requests per second stops rising, the API has reached its limit.',
   errors:
     'The share of requests in each second that did not get the status their step expects. Errors that start when the load peaks mean the API cannot handle that load.',
@@ -88,9 +88,11 @@ export function RunCharts({ run }: { run: Run }) {
           formatY={(value) => `${(value * 100).toFixed(1)}%`}
         />
       )}
-      <Note>
-        <p className="m-0">{CHART_NOTES[tab]}</p>
-      </Note>
+      {data.length > 0 && (
+        <Note>
+          <p className="m-0">{CHART_NOTES[tab]}</p>
+        </Note>
+      )}
     </div>
   );
 }

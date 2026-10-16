@@ -10,6 +10,7 @@ import {
   type StatTone,
 } from '../../components/ui/index.ts';
 import {
+  EXPLAIN,
   RUN_TYPE_LABELS,
   STATUS_LABELS,
   STATUS_TONES,
@@ -132,14 +133,13 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
             />
             <Note title="How to read these numbers" className="col-span-full">
               <p className="m-0">
-                Green means under its limit, red means the limit was crossed. A pXX value means XX%
-                of requests were this fast or faster: p95 = 300 ms means 95 of every 100 requests
-                took 300 ms or less.
+                Green means below its limit, red means it reached the limit. p50, p90, p95 and p99:{' '}
+                {EXPLAIN.percentile}
               </p>
               <p className="m-0">
-                Error rate is the share of requests that did not get the status their step expects.
-                Requests is the total sent, with the average per second.
+                {EXPLAIN.errorRate} Requests is the total sent, with the average per second.
               </p>
+              <p className="m-0">{EXPLAIN.failRule}</p>
             </Note>
           </div>
         ) : (

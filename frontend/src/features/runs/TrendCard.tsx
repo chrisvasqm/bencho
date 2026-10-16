@@ -43,12 +43,14 @@ export function TrendCard({ type }: { type: RunType }) {
         loading={trend.isPending}
         empty="Finish a run of this type to start the trend."
       />
-      <Note className="mt-4">
-        <p className="m-0">
-          Each point is one finished run. Lines that go up from left to right mean the API got
-          slower between runs, for example after a code change.
-        </p>
-      </Note>
+      {data.length > 0 && (
+        <Note className="mt-4">
+          <p className="m-0">
+            Each point is one finished run. Lines that go up from left to right mean the API got
+            slower between runs, for example after a code change.
+          </p>
+        </Note>
+      )}
     </Card>
   );
 }

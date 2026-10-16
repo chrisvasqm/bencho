@@ -19,7 +19,7 @@ import {
   Skeleton,
   Tabs,
 } from '../../components/ui/index.ts';
-import { RUN_TYPE_DESCRIPTIONS, RUN_TYPE_LABELS, durationToSeconds } from './format.ts';
+import { EXPLAIN, RUN_TYPE_DESCRIPTIONS, RUN_TYPE_LABELS, durationToSeconds } from './format.ts';
 import { StagesEditor } from './StagesEditor.tsx';
 import { FlowEditor } from './FlowEditor.tsx';
 import { draftProblem, flowProblem, fromDraft, toDraft, type StepDraft } from './flow.ts';
@@ -271,7 +271,9 @@ function RunPanelForm({
                   <Note title="How the load shape works">
                     <p className="m-0">
                       A virtual user (VU) is one simulated user. It runs the steps in the Flow tab
-                      again and again until the run ends.
+                      in order, waits the think time after each step, then starts again until the
+                      run ends. When a step fails, the VU skips the remaining steps and starts
+                      again.
                     </p>
                     <p className="m-0">
                       Stages run in order. During each stage, the number of VUs changes steadily to
@@ -350,21 +352,15 @@ function RunPanelForm({
                     )}
                   </fieldset>
                   <Note title="What do p50, p90, p95 and p99 mean?">
-                    <p className="m-0">
-                      They are percentiles of the response time. A p95 of 300 ms means 95 of every
-                      100 requests took 300 ms or less, and the slowest 5 took longer.
-                    </p>
+                    <p className="m-0">{EXPLAIN.percentile}</p>
                     <p className="m-0">
                       p50 is the typical request. p99 shows the slowest 1%. An average hides these
                       slow requests, so the limits use percentiles.
                     </p>
                   </Note>
                   <Note title="When does a run fail?">
-                    <p className="m-0">
-                      When any latency limit is crossed, when the error rate is at or above the
-                      maximum, or when fewer than 99% of checks pass. A request fails when its
-                      status is not the status its step expects.
-                    </p>
+                    <p className="m-0">{EXPLAIN.failRule}</p>
+                    <p className="m-0">{EXPLAIN.errorRate}</p>
                   </Note>
                 </>
               )}
