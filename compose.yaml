@@ -1,7 +1,50 @@
-# Local target API: QuickPizza, Grafana's demo app built for k6 tests.
+# Local stack: target API (QuickPizza), Postgres, backend (runs k6), frontend.
+# Every host port is an env var so parallel stacks can pick other ports.
 services:
   quickpizza:
     image: ghcr.io/grafana/quickpizza-local:0.15.31
     ports:
-      - '${QUICKPIZZA_PORT:-3333}:3333'
+      - "${QUICKPIZZA_PORT:-10001}:3333"
     restart: unless-stopped
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: perf
+      POSTGRES_PASSWORD: perf
+      POSTGRES_DB: perf
+    ports:
+      - "${POSTGRES_PORT:-10002}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U perf -d perf"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgres://perf:perf@postgres:5432/perf
+      DEFAULT_BASE_URL: http://quickpizza:3333
+    ports:
+      - "${BACKEND_PORT:-10003}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      quickpizza:
+        condition: service_started
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-10004}:8080"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
