@@ -1,6 +1,6 @@
-# API performance testing
+# Bencho
 
-Load, stress and spike tests with [k6](https://k6.io), run from a web UI and stored per test type.
+Load, stress and spike tests with [k6](https://k6.io), run from a web UI and stored per test type. Each run keeps its k6 totals and a per-second time series (latency percentiles, virtual users, requests/s, errors).
 
 ```
 backend/    Express 5 API: starts k6 runs, stores them in Postgres. Owns the k6 scripts (backend/k6).
@@ -16,12 +16,12 @@ Requires Docker.
 docker compose up -d --build
 ```
 
-| Service    | URL                     | Port var          |
-| ---------- | ----------------------- | ----------------- |
-| Frontend   | http://localhost:10004  | `FRONTEND_PORT`   |
-| Backend    | http://localhost:10003  | `BACKEND_PORT`    |
-| Postgres   | localhost:10002         | `POSTGRES_PORT`   |
-| QuickPizza | http://localhost:10001  | `QUICKPIZZA_PORT` |
+| Service    | URL                    | Port var          |
+| ---------- | ---------------------- | ----------------- |
+| Frontend   | http://localhost:10004 | `FRONTEND_PORT`   |
+| Backend    | http://localhost:10003 | `BACKEND_PORT`    |
+| Postgres   | localhost:10002        | `POSTGRES_PORT`   |
+| QuickPizza | http://localhost:10001 | `QUICKPIZZA_PORT` |
 
 Inside the stack the demo target is `http://quickpizza:3333`; the form starts with it. Any other URL works too.
 
@@ -42,13 +42,15 @@ Each project has `pnpm check` (typecheck, lint, format, build). CLI runs without
 
 ## API
 
-| Method | Path                | Purpose                                                                     |
-| ------ | ------------------- | --------------------------------------------------------------------------- |
-| GET    | `/api/v1/defaults`  | Default target, stages per type, limits                                     |
-| POST   | `/api/v1/runs`      | Start a run: `type`, `baseUrl`, optional `stages`, `thinkTimeSeconds`, `maxErrorRate`, `latencyLimitsMs` |
-| GET    | `/api/v1/runs?type=` | Runs of one type, newest first                                             |
-| GET    | `/api/v1/runs/:id`  | One run with status (`queued`, `running`, `passed`, `failed`, `error`) and k6 summary |
+| Method | Path                                 | Purpose                                                                                                  |
+| ------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/defaults`                   | Default target, stages per type, limits                                                                  |
+| POST   | `/api/v1/runs`                       | Start a run: `type`, `baseUrl`, optional `stages`, `thinkTimeSeconds`, `maxErrorRate`, `latencyLimitsMs` |
+| GET    | `/api/v1/runs?type=&page=&pageSize=` | One page of runs of a type, newest first, with `total`                                                   |
+| GET    | `/api/v1/runs/:id`                   | One run with status (`queued`, `running`, `passed`, `failed`, `error`) and k6 summary                    |
+| GET    | `/api/v1/runs/:id/points`            | Per-second points; filled live while the run is going                                                    |
+| DELETE | `/api/v1/runs/:id`                   | Delete a finished run and its points                                                                     |
 
-A run passes when every limit holds: error rate, p50/p90/p95/p99 latency, and check pass rate above 99%.
+Limits: at most 1000 VUs, 20 stages, 60 minutes per run, 3 runs at a time. A run passes when every limit holds: error rate, p50/p90/p95/p99 latency, and check pass rate above 99%.
 
 Prototype: no tests yet.
