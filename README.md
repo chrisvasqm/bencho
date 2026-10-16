@@ -1,16 +1,10 @@
 # Bencho
 
-Load, stress and spike tests with [k6](https://k6.io), run from a web UI and stored per test type. Each run keeps its k6 totals and a per-second time series (latency percentiles, virtual users, requests/s, errors).
-
-```
-backend/    Express 5 API: starts k6 runs, stores them in Postgres. Owns the k6 scripts (backend/k6).
-frontend/   React 19 + Vite UI: pick a target URL, shape the load, set limits, watch results. Storybook for the UI kit.
-compose.yaml  QuickPizza (demo target), Postgres, backend, frontend.
-```
+Run [k6](https://k6.io) load, stress and spike tests from a web UI. Each run keeps its totals and a per-second time series (latency percentiles, VUs, requests/s, errors).
 
 ## Getting started
 
-You need Docker only. No `.env` or secrets.
+You need Docker only.
 
 ```sh
 git clone https://github.com/chrisvasqm/bencho.git
@@ -18,19 +12,9 @@ cd bencho
 docker compose up -d --build
 ```
 
-1. Open http://localhost:10004.
-2. Pick a test type (load, stress or spike). Keep the default target `http://quickpizza:3333`, the demo app in the stack.
-3. Click **Start load test** (or stress/spike) and watch the charts fill while the run is going.
+Open http://localhost:10004, pick a test type and click **Start load test** (or stress/spike). The default target `http://quickpizza:3333` is a demo app in the stack; any URL works.
 
-The first build takes a few minutes. Later starts are fast. Stop with `docker compose down`. Add `-v` to also delete stored runs.
-
-## Run the stack
-
-Requires Docker.
-
-```sh
-docker compose up -d --build
-```
+Stop with `docker compose down` (add `-v` to delete stored runs).
 
 | Service    | URL                    | Port var          |
 | ---------- | ---------------------- | ----------------- |
@@ -39,58 +23,44 @@ docker compose up -d --build
 | Postgres   | localhost:10002        | `POSTGRES_PORT`   |
 | QuickPizza | http://localhost:10001 | `QUICKPIZZA_PORT` |
 
-Inside the stack the demo target is `http://quickpizza:3333`; the form starts with it. Any other URL works too.
-
-Ports follow `10SPP` (`S` = stack number, `PP` = service slot). Override with env vars or a root `.env`.
+Limits: 1000 VUs, 20 stages, 60 minutes per run, 3 runs at a time. A run passes when error rate, p50/p90/p95/p99 latency and check pass rate (above 99%) all hold.
 
 ## Develop
 
-Requires Node 24, pnpm, k6 (`brew install k6`).
+Requires Node 24, pnpm and k6 (`brew install k6`).
 
 ```sh
 docker compose up -d postgres quickpizza
-cd backend && pnpm install && pnpm dev        # API on :10003, migrations run at start
-cd frontend && pnpm install && pnpm dev       # UI on :10004, proxies /api to :10003
-cd frontend && pnpm storybook                 # UI kit on :10006
+cd backend && pnpm install && pnpm dev     # API on :10003
+cd frontend && pnpm install && pnpm dev    # UI on :10004
+cd frontend && pnpm storybook              # UI kit on :10006
 ```
 
-Each project has `pnpm check` (typecheck, lint, format, build). CLI runs without the API: `cd backend && pnpm load|stress|spike` (see `backend/example.env`).
-
-## API
-
-| Method | Path                                 | Purpose                                                                                                     |
-| ------ | ------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/v1/defaults`                   | Default target, stages per type, limits                                                                     |
-| POST   | `/api/v1/runs`                       | Start a run: `type`, `baseUrl`, optional `stages`, `thinkTimeSeconds`, `maxErrorRate`, `latencyLimitsMs`    |
-| GET    | `/api/v1/runs?type=&page=&pageSize=` | One page of runs of a type, newest first, with `total`; `active=true` lists queued/running runs of any type |
-| GET    | `/api/v1/runs/:id`                   | One run with status (`queued`, `running`, `passed`, `failed`, `stopped`, `error`) and k6 summary            |
-| GET    | `/api/v1/runs/:id/points`            | Per-second points; filled live while the run is going                                                       |
-| POST   | `/api/v1/runs/:id/stop`              | Stop a queued or running run; partial totals and points are kept                                            |
-| DELETE | `/api/v1/runs/:id`                   | Delete a finished run and its points                                                                        |
-| POST   | `/api/v1/runs/delete`                | Delete up to 50 runs by `ids`; runs in progress are skipped                                                 |
-
-Limits: at most 1000 VUs, 20 stages, 60 minutes per run, 3 runs at a time. A run passes when every limit holds: error rate, p50/p90/p95/p99 latency, and check pass rate above 99%.
+`pnpm check` runs typecheck, lint, format and build in each project.
 
 ## Tests
 
-Backend integration tests (Vitest + Supertest) call every endpoint on the app in-process, against a real Postgres. Each test file makes its own throwaway database and drops it after. Run lifecycle tests start real k6 runs against QuickPizza, so keep the stack up.
+Keep QuickPizza running; tests start real k6 runs. Tests use throwaway databases on `postgres-test` (:10005), so dev data is never touched.
 
 ```sh
-cd backend
-pnpm test:db   # starts postgres-test on :10005 (in-memory, compose profile "test")
-pnpm test
+cd backend && pnpm test:db && pnpm test     # integration (Vitest)
+cd frontend && pnpm exec playwright install chromium   # once
+cd frontend && pnpm test:e2e                 # e2e (Playwright)
 ```
 
-Set `POSTGRES_TEST_PORT` (used by compose and tests) or `TEST_DATABASE_URL` to use another Postgres server. One `postgres-test` per machine: worktrees share it, each test file gets its own database.
+CI runs checks and both suites on every PR.
 
-Frontend e2e tests (Playwright, Chromium) drive the real UI against a real backend and k6. Playwright starts its own backend (port 10013, own `perf_e2e_<id>` database on postgres-test, dropped on exit) and Vite (port 10014), so the dev stack and its data are never touched. Tests select elements by `data-testid` only, and any console error fails a test. Needs postgres-test and QuickPizza running.
+## API
 
-```sh
-cd frontend
-pnpm exec playwright install chromium   # once
-pnpm test:e2e
-```
+All routes are under `/api/v1`.
 
-### CI
-
-`.github/workflows/ci.yml` runs on every pull request and on `main`: `pnpm check` and the integration tests for the backend, `pnpm check` and the e2e tests for the frontend. The `ci` job passes only when both pass; mark it as required in branch protection. A failed e2e run uploads the Playwright report as an artifact.
+| Method | Path               | Purpose                                      |
+| ------ | ------------------ | -------------------------------------------- |
+| GET    | `/defaults`        | Default target, stages and limits            |
+| POST   | `/runs`            | Start a run                                  |
+| GET    | `/runs?type=`      | List runs (paged); `active=true` for running |
+| GET    | `/runs/:id`        | One run with status and summary              |
+| GET    | `/runs/:id/points` | Per-second points, live while running        |
+| POST   | `/runs/:id/stop`   | Stop a run, keep partial results             |
+| DELETE | `/runs/:id`        | Delete a finished run                        |
+| POST   | `/runs/delete`     | Delete up to 50 runs by `ids`                |
