@@ -53,6 +53,12 @@ export function App() {
   const list = runs.data?.runs ?? [];
   const total = runs.data?.total ?? 0;
 
+  // A page past the end (runs deleted elsewhere): step back to the last page that has runs.
+  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  useEffect(() => {
+    if (runs.data && page > lastPage) setPage(lastPage);
+  }, [runs.data, page, lastPage]);
+
   // Fall back to the newest run on the page when nothing is picked (or the pick was deleted).
   const effectiveId = selectedId ?? list[0]?.id;
   const selected = useQuery({
@@ -92,7 +98,6 @@ export function App() {
       queryClient.removeQueries({ queryKey: ['points', run.id] });
       void queryClient.invalidateQueries({ queryKey: ['runs', run.type] });
       void queryClient.invalidateQueries({ queryKey: ['trend', run.type] });
-      if (list.length === 1 && page > 1) setPage(page - 1);
       toast.success('Run deleted');
     },
     onError: (error) => {
@@ -148,7 +153,7 @@ export function App() {
               />
             }
             footer={
-              total > PAGE_SIZE ? (
+              total > PAGE_SIZE || page > 1 ? (
                 <Pagination
                   page={page}
                   pageSize={PAGE_SIZE}

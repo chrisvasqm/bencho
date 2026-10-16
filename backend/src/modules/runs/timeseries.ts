@@ -20,9 +20,12 @@ interface Bucket {
   failed: number;
   failedSamples: number;
   virtualUsers: number;
+  sawVirtualUsers: boolean;
 }
 
-const SETTLE_SECONDS = 3;
+// k6 flushes CSV rows in batches about a second apart; wait this long before closing a second.
+// Samples that still arrive later for a closed second are dropped (never counted twice).
+const SETTLE_SECONDS = 5;
 
 function percentile(sorted: number[], fraction: number): number | null {
   if (sorted.length === 0) return null;
@@ -33,9 +36,12 @@ function percentile(sorted: number[], fraction: number): number | null {
 export class TimeseriesAggregator {
   private readonly buckets = new Map<number, Bucket>();
   private remainder = '';
-  private startSecond: number | undefined;
   private latestSecond = 0;
   private lastVirtualUsers = 0;
+  private closedUpTo = Number.NEGATIVE_INFINITY;
+
+  /** `startSecond`: unix second the run started; points count seconds from there. */
+  constructor(private readonly startSecond: number) {}
 
   /** Adds raw CSV text. Lines may be split across chunks. */
   consume(chunk: string): void {
@@ -54,14 +60,17 @@ export class TimeseriesAggregator {
     const ready = [...this.buckets.keys()]
       .filter((second) => second <= cutoff)
       .sort((a, b) => a - b);
+    const last = ready.at(-1);
+    if (last !== undefined) this.closedUpTo = Math.max(this.closedUpTo, last);
     return ready.map((second) => {
       const bucket = this.buckets.get(second)!;
       this.buckets.delete(second);
-      if (bucket.virtualUsers > 0) this.lastVirtualUsers = bucket.virtualUsers;
+      // A second with no vus sample keeps the last known count; a real 0 stays 0.
+      if (bucket.sawVirtualUsers) this.lastVirtualUsers = bucket.virtualUsers;
       const sorted = bucket.durations.sort((a, b) => a - b);
       return {
-        second: second - (this.startSecond ?? second),
-        virtualUsers: bucket.virtualUsers || this.lastVirtualUsers,
+        second: Math.max(0, second - this.startSecond),
+        virtualUsers: this.lastVirtualUsers,
         requestsPerSecond: bucket.requests,
         errorRate: bucket.failedSamples ? bucket.failed / bucket.failedSamples : 0,
         p50: percentile(sorted, 0.5),
@@ -77,13 +86,15 @@ export class TimeseriesAggregator {
     const second = Number(timestamp);
     const value = Number(rawValue);
     if (!metric || !Number.isFinite(second) || !Number.isFinite(value)) return; // header or junk
-    this.startSecond ??= second;
+    if (second <= this.closedUpTo) return; // too late: that second is already stored
     this.latestSecond = Math.max(this.latestSecond, second);
     const bucket = this.bucketFor(second);
     if (metric === 'http_req_duration') bucket.durations.push(value);
     else if (metric === 'http_reqs') bucket.requests += value;
-    else if (metric === 'vus') bucket.virtualUsers = Math.max(bucket.virtualUsers, value);
-    else if (metric === 'http_req_failed') {
+    else if (metric === 'vus') {
+      bucket.virtualUsers = bucket.sawVirtualUsers ? Math.max(bucket.virtualUsers, value) : value;
+      bucket.sawVirtualUsers = true;
+    } else if (metric === 'http_req_failed') {
       bucket.failed += value;
       bucket.failedSamples += 1;
     }
@@ -92,7 +103,14 @@ export class TimeseriesAggregator {
   private bucketFor(second: number): Bucket {
     let bucket = this.buckets.get(second);
     if (!bucket) {
-      bucket = { durations: [], requests: 0, failed: 0, failedSamples: 0, virtualUsers: 0 };
+      bucket = {
+        durations: [],
+        requests: 0,
+        failed: 0,
+        failedSamples: 0,
+        virtualUsers: 0,
+        sawVirtualUsers: false,
+      };
       this.buckets.set(second, bucket);
     }
     return bucket;

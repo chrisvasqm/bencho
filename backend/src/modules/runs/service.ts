@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { AppError } from '../../core/errors.ts';
 import { DEFAULT_LIMITS, DEFAULT_STAGES, stagesToEnv } from '../../../k6/lib/defaults.ts';
 import type { RunsRepository } from './repository.ts';
-import { FileTail, TimeseriesAggregator } from './timeseries.ts';
+import { FileTail, TimeseriesAggregator, type RunPointValues } from './timeseries.ts';
 import type { CreateRunInput, ListRunsQuery, Run, RunPoint, RunStatus } from './schema.ts';
 
 const K6_THRESHOLD_FAILED_EXIT_CODE = 99;
@@ -20,6 +20,8 @@ export interface K6Settings {
 
 export class RunsService {
   private readonly inFlight = new Set<Promise<void>>();
+  /** Slots taken by start() calls still inserting their row; counted with inFlight for the cap. */
+  private starting = 0;
 
   constructor(
     private readonly repository: RunsRepository,
@@ -32,23 +34,30 @@ export class RunsService {
 
   /** Stores the run as queued and starts k6 in the background. Poll getById for the outcome. */
   async start(input: CreateRunInput): Promise<Run> {
-    if (this.inFlight.size >= MAX_CONCURRENT_RUNS) {
+    // Reserve the slot before the first await, so parallel requests cannot all pass the check.
+    if (this.inFlight.size + this.starting >= MAX_CONCURRENT_RUNS) {
       throw new AppError(
         409,
         'TOO_MANY_RUNS',
         `At most ${MAX_CONCURRENT_RUNS} runs can be in progress. Wait for one to finish.`,
       );
     }
-    const run = await this.repository.create({
-      type: input.type,
-      baseUrl: input.baseUrl,
-      stages: input.stages ?? DEFAULT_STAGES[input.type],
-      limits: {
-        thinkTimeSeconds: input.thinkTimeSeconds ?? DEFAULT_LIMITS.thinkTimeSeconds,
-        maxErrorRate: input.maxErrorRate ?? DEFAULT_LIMITS.maxErrorRate,
-        latencyLimitsMs: input.latencyLimitsMs ?? DEFAULT_LIMITS.latencyLimitsMs,
-      },
-    });
+    this.starting += 1;
+    let run: Run;
+    try {
+      run = await this.repository.create({
+        type: input.type,
+        baseUrl: input.baseUrl,
+        stages: input.stages ?? DEFAULT_STAGES[input.type],
+        limits: {
+          thinkTimeSeconds: input.thinkTimeSeconds ?? DEFAULT_LIMITS.thinkTimeSeconds,
+          maxErrorRate: input.maxErrorRate ?? DEFAULT_LIMITS.maxErrorRate,
+          latencyLimitsMs: input.latencyLimitsMs ?? DEFAULT_LIMITS.latencyLimitsMs,
+        },
+      });
+    } finally {
+      this.starting -= 1;
+    }
     const execution = this.execute(run).finally(() => this.inFlight.delete(execution));
     this.inFlight.add(execution);
     return run;
@@ -128,13 +137,21 @@ export class RunsService {
     work: () => Promise<Result>,
   ): Promise<Result> {
     const tail = new FileTail(pointsPath);
-    const aggregator = new TimeseriesAggregator();
+    // k6 stamps samples with wall-clock seconds; second 0 is when k6 was started.
+    const aggregator = new TimeseriesAggregator(Math.floor(Date.now() / 1000));
+    // Points that failed to insert stay here and go out with the next flush.
+    let pending: RunPointValues[] = [];
     let flushing = Promise.resolve();
     const flush = (all: boolean) => {
-      flushing = flushing.then(async () => {
-        aggregator.consume(await tail.read());
-        await this.repository.addPoints(runId, aggregator.drain(all));
-      });
+      // Recover first: one failed flush must not reject every later one.
+      flushing = flushing
+        .catch(() => undefined)
+        .then(async () => {
+          aggregator.consume(await tail.read());
+          pending = [...pending, ...aggregator.drain(all)];
+          await this.repository.addPoints(runId, pending);
+          pending = [];
+        });
       return flushing;
     };
     const timer = setInterval(() => {

@@ -23,6 +23,16 @@ export const errorHandler: ErrorRequestHandler = (error, _request, response, _ne
     return;
   }
   const status = statusOf(error);
+  if (status === 413) {
+    response.status(413).json({
+      error: {
+        code: 'PAYLOAD_TOO_LARGE',
+        message: 'The request body is too large.',
+        details: null,
+      },
+    });
+    return;
+  }
   if (status >= 400 && status < 500) {
     response.status(status).json({
       error: { code: 'BAD_REQUEST', message: 'The request could not be read.', details: null },
