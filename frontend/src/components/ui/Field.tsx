@@ -8,10 +8,20 @@ export interface FieldProps {
   error?: string;
   children: ReactNode;
   className?: string;
+  /** Test id of the error message; defaults to `${htmlFor}-error`. */
+  errorTestId?: string;
 }
 
 /** Label, control, hint and error in one stack. Controls get their id from htmlFor. */
-export function Field({ label, htmlFor, hint, error, children, className }: FieldProps) {
+export function Field({
+  label,
+  htmlFor,
+  hint,
+  error,
+  children,
+  className,
+  errorTestId = `${htmlFor}-error`,
+}: FieldProps) {
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
       <label htmlFor={htmlFor} className="text-sm font-medium text-fg">
@@ -19,7 +29,7 @@ export function Field({ label, htmlFor, hint, error, children, className }: Fiel
       </label>
       {children}
       {error ? (
-        <p role="alert" className="text-xs text-danger">
+        <p role="alert" data-testid={errorTestId} className="text-xs text-danger">
           {error}
         </p>
       ) : (

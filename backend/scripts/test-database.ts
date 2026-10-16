@@ -1,4 +1,5 @@
-// Settings only the tests read. Kept out of the app config so production never carries them.
+// Test database server for the backend integration tests and the e2e server. Kept out of the
+// app config so production never carries it.
 import { z } from 'zod';
 
 const schema = z.object({

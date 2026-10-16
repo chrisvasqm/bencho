@@ -13,5 +13,5 @@
     "verbatimModuleSyntax": true,
     "types": ["vite/client"]
   },
-  "include": ["src", ".storybook", "vite.config.ts", "eslint.config.js"]
+  "include": ["src", ".storybook", "eslint.config.js"]
 }

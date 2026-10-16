@@ -13,16 +13,22 @@ function announce(run: Run): void {
   const label = `${RUN_TYPE_LABELS[run.type]} test`;
   const p95 = run.summary?.metrics.http_req_duration?.['p(95)'];
   const detail = p95 === undefined ? undefined : `p95 ${formatMs(p95)}`;
-  if (run.status === 'passed') toast.success(`${label} passed`, { description: detail });
+  if (run.status === 'passed')
+    toast.success(`${label} passed`, { description: detail, testId: 'toast-run-passed' });
   else if (run.status === 'failed') {
     toast.error(`${label} failed`, {
       description: 'A limit was crossed. See the run for details.',
+      testId: 'toast-run-failed',
     });
   } else if (run.status === 'stopped') {
-    toast(`${label} stopped`, { description: 'Partial results were kept.' });
+    toast(`${label} stopped`, {
+      description: 'Partial results were kept.',
+      testId: 'toast-run-stopped',
+    });
   } else {
     toast.warning(`${label} could not finish`, {
       description: run.errorMessage?.split('\n')[0] ?? undefined,
+      testId: 'toast-run-error',
     });
   }
 }

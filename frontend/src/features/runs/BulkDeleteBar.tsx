@@ -40,16 +40,35 @@ export function BulkDeleteBar({
           transition={{ duration: 0.15 }}
           className="flex items-center gap-2"
         >
-          <span className="text-sm text-fg-muted tabular-nums">{count} selected</span>
-          <Button variant="ghost" size="sm" onClick={onClear} disabled={deleting}>
+          <span data-testid="bulk-count" className="text-sm text-fg-muted tabular-nums">
+            {count} selected
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClear}
+            disabled={deleting}
+            data-testid="bulk-clear"
+          >
             Clear
           </Button>
           {confirming ? (
-            <Button variant="danger" size="sm" loading={deleting} onClick={onDelete}>
+            <Button
+              variant="danger"
+              size="sm"
+              loading={deleting}
+              onClick={onDelete}
+              data-testid="bulk-delete-confirm"
+            >
               Delete {count} {count === 1 ? 'run' : 'runs'}
             </Button>
           ) : (
-            <Button variant="danger" size="sm" onClick={() => setConfirmedSelection(selectionKey)}>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setConfirmedSelection(selectionKey)}
+              data-testid="bulk-delete"
+            >
               Delete
             </Button>
           )}

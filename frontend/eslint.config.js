@@ -3,7 +3,7 @@ import prettier from 'eslint-config-prettier';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['node_modules', 'dist', 'storybook-static'] },
+  { ignores: ['node_modules', 'dist', 'storybook-static', 'playwright-report', 'test-results'] },
   eslint.configs.recommended,
   tseslint.configs.recommended,
   prettier,

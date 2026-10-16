@@ -1,6 +1,6 @@
 // Runs once before all test files: checks the test database, then builds the k6 bundles.
 import pg from 'pg';
-import { testDatabaseUrl } from './helpers/test-config.ts';
+import { testDatabaseUrl } from '../scripts/test-database.ts';
 
 export default async function setup(): Promise<void> {
   const connectionString = testDatabaseUrl();

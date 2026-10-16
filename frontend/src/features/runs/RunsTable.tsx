@@ -73,7 +73,10 @@ export function RunsTable({
       style={{ height: HEAD_HEIGHT_PX + pageSize * ROW_HEIGHT_PX }}
     >
       {empty && (
-        <p className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-sm text-fg-muted">
+        <p
+          data-testid="runs-empty"
+          className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-sm text-fg-muted"
+        >
           No runs of this type yet. Start one from the panel.
         </p>
       )}
@@ -86,6 +89,7 @@ export function RunsTable({
             <th scope="col" className="w-10 px-3 py-0">
               <Checkbox
                 aria-label="Select all finished runs on this page"
+                data-testid="select-all-runs"
                 checked={allChecked}
                 indeterminate={checkedOnPage > 0 && !allChecked}
                 disabled={loading || checkable.length === 0}
@@ -141,12 +145,16 @@ export function RunsTable({
                     transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
                     onClick={() => onSelect(run)}
                     aria-selected={selected}
+                    data-testid="run-row"
+                    data-run-id={run.id}
+                    data-status={run.status}
                     style={{ height: ROW_HEIGHT_PX }}
                     className={`cursor-pointer border-b border-line last:border-b-0 hover:bg-surface-sunken ${selected ? 'bg-accent-soft' : checkedIds.has(run.id) ? 'bg-surface-sunken' : ''}`}
                   >
                     <td className="w-10 px-3 py-0" onClick={(event) => event.stopPropagation()}>
                       <Checkbox
                         aria-label={`Select run from ${formatTime(run.createdAt)}`}
+                        data-testid="run-row-checkbox"
                         checked={checkedIds.has(run.id)}
                         disabled={isActive(run.status)}
                         onChange={() => toggle(run)}

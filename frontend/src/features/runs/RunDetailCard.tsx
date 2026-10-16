@@ -74,15 +74,31 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
     : { label: 'Delete', confirm: 'Delete run', busy: deleting, run: () => onDelete(run) };
   const actionButtons = confirming ? (
     <div className="flex items-center gap-2">
-      <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setConfirming(false)}
+        data-testid="run-action-keep"
+      >
         Keep
       </Button>
-      <Button variant="danger" size="sm" loading={action.busy} onClick={action.run}>
+      <Button
+        variant="danger"
+        size="sm"
+        loading={action.busy}
+        onClick={action.run}
+        data-testid="run-action-confirm"
+      >
         {action.confirm}
       </Button>
     </div>
   ) : (
-    <Button variant={active ? 'danger' : 'ghost'} size="sm" onClick={() => setConfirming(true)}>
+    <Button
+      variant={active ? 'danger' : 'ghost'}
+      size="sm"
+      onClick={() => setConfirming(true)}
+      data-testid={active ? 'run-stop' : 'run-delete'}
+    >
       {action.label}
     </Button>
   );
@@ -92,6 +108,9 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
       title={`${RUN_TYPE_LABELS[run.type]} run · ${formatTime(run.createdAt)}`}
       description={<span className="text-xs">{run.baseUrl}</span>}
       actions={actionButtons}
+      data-testid="run-detail"
+      data-run-id={run.id}
+      data-status={run.status}
     >
       <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
@@ -110,7 +129,10 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
         </div>
 
         {run.summary ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 2xl:grid-cols-6">
+          <div
+            data-testid="run-summary"
+            className="grid grid-cols-2 gap-4 sm:grid-cols-3 2xl:grid-cols-6"
+          >
             {PERCENTILE_KEYS.map(([label, metricKey]) => (
               <Stat
                 key={label}
@@ -155,7 +177,10 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
         </Suspense>
 
         {run.errorMessage && (
-          <pre className="m-0 overflow-x-auto rounded-md bg-surface-sunken p-3 font-mono text-xs whitespace-pre-wrap text-danger">
+          <pre
+            data-testid="run-error-message"
+            className="m-0 overflow-x-auto rounded-md bg-surface-sunken p-3 font-mono text-xs whitespace-pre-wrap text-danger"
+          >
             {run.errorMessage}
           </pre>
         )}

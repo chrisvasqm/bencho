@@ -82,3 +82,15 @@ pnpm test
 ```
 
 Set `POSTGRES_TEST_PORT` (used by compose and tests) or `TEST_DATABASE_URL` to use another Postgres server. One `postgres-test` per machine: worktrees share it, each test file gets its own database.
+
+Frontend e2e tests (Playwright, Chromium) drive the real UI against a real backend and k6. Playwright starts its own backend (port 10013, own `perf_e2e_<id>` database on postgres-test, dropped on exit) and Vite (port 10014), so the dev stack and its data are never touched. Tests select elements by `data-testid` only, and any console error fails a test. Needs postgres-test and QuickPizza running.
+
+```sh
+cd frontend
+pnpm exec playwright install chromium   # once
+pnpm test:e2e
+```
+
+### CI
+
+`.github/workflows/ci.yml` runs on every pull request and on `main`: `pnpm check` and the integration tests for the backend, `pnpm check` and the e2e tests for the frontend. The `ci` job passes only when both pass; mark it as required in branch protection. A failed e2e run uploads the Playwright report as an artifact.
