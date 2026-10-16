@@ -85,14 +85,20 @@ export class RunsApi {
     return runs;
   }
 
-  /** Stops every active run and deletes all runs. */
+  /** Stops every active run and deletes all runs, 50 (the page and bulk limit) at a time. */
   async reset(): Promise<void> {
-    const active = await this.list({ active: 'true' });
-    for (const run of active) await this.stop(run.id);
-    for (const run of active) await this.waitUntilFinished(run.id);
-    const ids = (await this.list()).map((run) => run.id);
-    if (ids.length > 0) await this.ok(this.request.post('/api/v1/runs/delete', { data: { ids } }));
-    expect(await this.list()).toEqual([]);
+    for (let active = await this.list({ active: 'true' }); active.length > 0;) {
+      for (const run of active) await this.stop(run.id);
+      for (const run of active) await this.waitUntilFinished(run.id);
+      active = await this.list({ active: 'true' });
+    }
+    for (let ids = await this.ids(); ids.length > 0; ids = await this.ids()) {
+      await this.ok(this.request.post('/api/v1/runs/delete', { data: { ids } }));
+    }
+  }
+
+  private async ids(): Promise<string[]> {
+    return (await this.list()).map((run) => run.id);
   }
 
   private async json<Body>(pending: Promise<APIResponse>): Promise<Body> {

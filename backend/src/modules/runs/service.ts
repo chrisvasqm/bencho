@@ -12,6 +12,7 @@ import {
   ACTIVE_RUN_STATUSES,
   type CreateRunInput,
   type ListRunsQuery,
+  type NewRun,
   type Run,
   type RunPoint,
   type RunStatus,
@@ -135,12 +136,26 @@ export class RunsService {
     await Promise.allSettled([...this.inFlight]);
   }
 
-  /** Never rejects: a detached promise that rejects would crash the process. */
+  /**
+   * Never rejects: a detached promise that rejects would crash the process.
+   * The outcome is stored last, after cleanup: once a run reads as finished, its slot is free.
+   */
   private async execute(run: Run): Promise<void> {
-    let workDir: string | undefined;
     try {
       await this.repository.update(run.id, { status: 'running', startedAt: new Date() });
-      workDir = await mkdtemp(join(tmpdir(), 'k6-run-'));
+      await this.repository.update(run.id, await this.runInWorkDir(run));
+    } catch (error) {
+      await this.markError(run.id, error);
+    } finally {
+      this.stopRequested.delete(run.id);
+      this.executing.delete(run.id);
+    }
+  }
+
+  /** Runs k6 in a temporary directory, removed before this returns the outcome to store. */
+  private async runInWorkDir(run: Run): Promise<Partial<NewRun>> {
+    const workDir = await mkdtemp(join(tmpdir(), 'k6-run-'));
+    try {
       const summaryPath = join(workDir, 'summary.json');
       const pointsPath = join(workDir, 'points.csv');
       // A file, not an env var: large flows would pass the OS limit for one env string.
@@ -151,20 +166,16 @@ export class RunsService {
       );
       const summary = await readSummary(summaryPath);
       const stopped = this.stopRequested.has(run.id);
-      await this.repository.update(run.id, {
+      return {
         status: stopped ? 'stopped' : statusFromExitCode(exitCode),
         exitCode,
         summary,
         errorMessage:
           stopped || exitCode === 0 || exitCode === K6_THRESHOLD_FAILED_EXIT_CODE ? null : stderr,
         finishedAt: new Date(),
-      });
-    } catch (error) {
-      await this.markError(run.id, error);
+      };
     } finally {
-      this.stopRequested.delete(run.id);
-      this.executing.delete(run.id);
-      if (workDir) await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
+      await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
     }
   }
 

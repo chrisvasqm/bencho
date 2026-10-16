@@ -49,19 +49,20 @@ test.describe('backend not reachable', () => {
 test.describe('theme', () => {
   test('switches to dark and light and keeps the choice after a reload', async ({ page }) => {
     await openApp(page);
-    const html = page.locator('html');
+    // The theme lives on <html>, which has no test id: read it, do not select it.
+    const theme = () => page.evaluate(() => document.documentElement.dataset.theme ?? 'system');
 
     await page.getByTestId('theme-dark').click();
-    await expect(html).toHaveAttribute('data-theme', 'dark');
+    await expect.poll(theme).toBe('dark');
     await expect(page.getByTestId('theme-dark')).toHaveAttribute('aria-checked', 'true');
 
     await page.reload();
-    await expect(html).toHaveAttribute('data-theme', 'dark');
+    await expect.poll(theme).toBe('dark');
 
     await page.getByTestId('theme-light').click();
-    await expect(html).toHaveAttribute('data-theme', 'light');
+    await expect.poll(theme).toBe('light');
 
     await page.getByTestId('theme-system').click();
-    await expect(html).not.toHaveAttribute('data-theme', /.+/);
+    await expect.poll(theme).toBe('system');
   });
 });

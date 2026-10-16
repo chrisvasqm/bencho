@@ -112,12 +112,13 @@ export function App() {
 
   // Drop deleted runs from every cached list first: otherwise the next render still picks a
   // deleted run (the newest on the page) and fetches it again, which answers 404.
-  // Every cached page of that type gets the new total, so page counts agree until the refetch.
-  const forgetRuns = (ids: ReadonlySet<string>, runType: RunType) => {
-    queryClient.setQueriesData<RunsPage>({ queryKey: ['runs', runType] }, (old) => {
+  // Only pages that still hold a deleted run change: a page fetched after the delete is already
+  // right, and lowering its total again would count the run twice. The refetch fixes the rest.
+  const forgetRuns = (ids: ReadonlySet<string>) => {
+    queryClient.setQueriesData<RunsPage>({ queryKey: ['runs'] }, (old) => {
       if (!old) return old;
       const runs = old.runs.filter((item) => !ids.has(item.id));
-      return { ...old, runs, total: Math.max(0, old.total - ids.size) };
+      return { ...old, runs, total: old.total - (old.runs.length - runs.length) };
     });
     for (const id of ids) {
       queryClient.removeQueries({ queryKey: ['run', id] });
@@ -134,7 +135,7 @@ export function App() {
         next.delete(run.id);
         return next;
       });
-      forgetRuns(new Set([run.id]), run.type);
+      forgetRuns(new Set([run.id]));
       void queryClient.invalidateQueries({ queryKey: ['runs', run.type] });
       void queryClient.invalidateQueries({ queryKey: ['trend', run.type] });
       toast.success('Run deleted', { testId: 'toast-run-deleted' });
@@ -163,7 +164,7 @@ export function App() {
       const gone = new Set(deleted);
       if (selectedId && gone.has(selectedId)) setSelectedId(undefined);
       setCheckedIds(new Set());
-      forgetRuns(gone, type);
+      forgetRuns(gone);
       void queryClient.invalidateQueries({ queryKey: ['runs', type] });
       void queryClient.invalidateQueries({ queryKey: ['trend', type] });
       const label = `${deleted.length} ${deleted.length === 1 ? 'run' : 'runs'} deleted`;

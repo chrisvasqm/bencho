@@ -103,6 +103,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: All jobs passed
+        env:
+          BACKEND: ${{ needs.backend.result }}
+          E2E: ${{ needs.e2e.result }}
         run: |
-          echo '${{ toJSON(needs) }}'
-          [ "${{ needs.backend.result }}" = success ] && [ "${{ needs.e2e.result }}" = success ]
+          echo "backend: $BACKEND, e2e: $E2E"
+          [ "$BACKEND" = success ] && [ "$E2E" = success ]

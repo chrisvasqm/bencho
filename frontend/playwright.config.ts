@@ -33,6 +33,8 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
       stdout: 'pipe',
+      // SIGTERM, not the default SIGKILL, so the server drops its database on the way out.
+      gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },
     },
     {
       // Fail on a taken port instead of moving to another one Playwright does not watch.
