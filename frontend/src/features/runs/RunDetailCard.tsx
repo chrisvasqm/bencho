@@ -1,6 +1,14 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import type { Run } from '../../api/runs.ts';
-import { Badge, Button, Card, Skeleton, Stat, type StatTone } from '../../components/ui/index.ts';
+import {
+  Badge,
+  Button,
+  Card,
+  Note,
+  Skeleton,
+  Stat,
+  type StatTone,
+} from '../../components/ui/index.ts';
 import {
   RUN_TYPE_LABELS,
   STATUS_LABELS,
@@ -122,6 +130,17 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
               value={requests ? String(requests.count) : '–'}
               unit={requests ? `${requests.rate.toFixed(1)}/s` : undefined}
             />
+            <Note title="How to read these numbers" className="col-span-full">
+              <p className="m-0">
+                Green means under its limit, red means the limit was crossed. A pXX value means XX%
+                of requests were this fast or faster: p95 = 300 ms means 95 of every 100 requests
+                took 300 ms or less.
+              </p>
+              <p className="m-0">
+                Error rate is the share of requests that did not get the status their step expects.
+                Requests is the total sent, with the average per second.
+              </p>
+            </Note>
           </div>
         ) : (
           <p className="text-sm text-fg-muted">

@@ -1,7 +1,7 @@
 // Latency percentiles across the latest finished runs of one type, oldest on the left.
 import { useQuery } from '@tanstack/react-query';
 import { runsApi, type RunType } from '../../api/runs.ts';
-import { Card } from '../../components/ui/index.ts';
+import { Card, Note } from '../../components/ui/index.ts';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
 import { LATENCY_SERIES } from './series.ts';
@@ -43,6 +43,12 @@ export function TrendCard({ type }: { type: RunType }) {
         loading={trend.isPending}
         empty="Finish a run of this type to start the trend."
       />
+      <Note className="mt-4">
+        <p className="m-0">
+          Each point is one finished run. Lines that go up from left to right mean the API got
+          slower between runs, for example after a code change.
+        </p>
+      </Note>
     </Card>
   );
 }

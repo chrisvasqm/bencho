@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { runsApi, type Run } from '../../api/runs.ts';
-import { Tabs } from '../../components/ui/index.ts';
+import { Note, Tabs } from '../../components/ui/index.ts';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
 import { formatMs, formatSeconds, isActive } from './format.ts';
@@ -16,6 +16,14 @@ const CHART_TABS: ReadonlyArray<{ value: ChartTab; label: string }> = [
   { value: 'load', label: 'Load' },
   { value: 'errors', label: 'Errors' },
 ];
+
+const CHART_NOTES: Record<ChartTab, string> = {
+  latency:
+    'Each point is one second of the run. A line shows the pXX of the requests that ended in that second: p95 is the time 95 of every 100 of them stayed under. Lines that climb as users are added mean the API is slowing down.',
+  load: 'Virtual users is how many simulated users were running. Requests per second is how many requests they sent. When users keep rising but requests per second stops rising, the API has reached its limit.',
+  errors:
+    'The share of requests in each second that did not get the status their step expects. Errors that start when the load peaks mean the API cannot handle that load.',
+};
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -80,6 +88,9 @@ export function RunCharts({ run }: { run: Run }) {
           formatY={(value) => `${(value * 100).toFixed(1)}%`}
         />
       )}
+      <Note>
+        <p className="m-0">{CHART_NOTES[tab]}</p>
+      </Note>
     </div>
   );
 }
