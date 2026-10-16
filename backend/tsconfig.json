@@ -10,5 +10,5 @@
     "skipLibCheck": true,
     "types": ["node", "k6"]
   },
-  "include": ["k6", "src", "scripts", "*.ts", "eslint.config.js"]
+  "include": ["k6", "src", "scripts", "test", "*.ts", "eslint.config.js"]
 }

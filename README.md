@@ -71,4 +71,14 @@ Each project has `pnpm check` (typecheck, lint, format, build). CLI runs without
 
 Limits: at most 1000 VUs, 20 stages, 60 minutes per run, 3 runs at a time. A run passes when every limit holds: error rate, p50/p90/p95/p99 latency, and check pass rate above 99%.
 
-Prototype: no tests yet.
+## Tests
+
+Backend integration tests (Vitest + Supertest) call every endpoint on the app in-process, against a real Postgres. Each test file makes its own throwaway database and drops it after. Run lifecycle tests start real k6 runs against QuickPizza, so keep the stack up.
+
+```sh
+cd backend
+pnpm test:db   # starts postgres-test on :10005 (in-memory, compose profile "test")
+pnpm test
+```
+
+Set `POSTGRES_TEST_PORT` (used by compose and tests) or `TEST_DATABASE_URL` to use another Postgres server. One `postgres-test` per machine: worktrees share it, each test file gets its own database.
