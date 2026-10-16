@@ -8,6 +8,22 @@ frontend/   React 19 + Vite UI: pick a target URL, shape the load, set limits, w
 compose.yaml  QuickPizza (demo target), Postgres, backend, frontend.
 ```
 
+## Getting started
+
+You need Docker only. No `.env` or secrets.
+
+```sh
+git clone https://github.com/chrisvasqm/bencho.git
+cd bencho
+docker compose up -d --build
+```
+
+1. Open http://localhost:10004.
+2. Pick a test type (load, stress or spike). Keep the default target `http://quickpizza:3333`, the demo app in the stack.
+3. Click **Start load test** (or stress/spike) and watch the charts fill while the run is going.
+
+The first build takes a few minutes. Later starts are fast. Stop with `docker compose down`. Add `-v` to also delete stored runs.
+
 ## Run the stack
 
 Requires Docker.
