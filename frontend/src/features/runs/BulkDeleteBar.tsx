@@ -1,9 +1,11 @@
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/index.ts';
 
 export interface BulkDeleteBarProps {
   count: number;
+  /** Identifies the exact selection; a confirm applies only to the selection it was given for. */
+  selectionKey: string;
   deleting: boolean;
   onDelete: () => void;
   onClear: () => void;
@@ -12,21 +14,26 @@ export interface BulkDeleteBarProps {
 const CONFIRM_TIMEOUT_MS = 4000;
 
 /** Appears when runs are ticked. Deleting takes a second click to confirm. */
-export function BulkDeleteBar({ count, deleting, onDelete, onClear }: BulkDeleteBarProps) {
-  const [confirming, setConfirming] = useState(false);
+export function BulkDeleteBar({
+  count,
+  selectionKey,
+  deleting,
+  onDelete,
+  onClear,
+}: BulkDeleteBarProps) {
+  // The confirm is for the selection it was asked for; changing the selection cancels it.
+  const [confirmedSelection, setConfirmedSelection] = useState<string | undefined>();
+  const confirming = count > 0 && confirmedSelection === selectionKey;
   useEffect(() => {
     if (!confirming) return;
-    const timer = setTimeout(() => setConfirming(false), CONFIRM_TIMEOUT_MS);
+    const timer = setTimeout(() => setConfirmedSelection(undefined), CONFIRM_TIMEOUT_MS);
     return () => clearTimeout(timer);
   }, [confirming]);
-  useEffect(() => {
-    if (count === 0) setConfirming(false);
-  }, [count]);
 
   return (
     <AnimatePresence initial={false}>
       {count > 0 && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, x: 8 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 8 }}
@@ -42,11 +49,11 @@ export function BulkDeleteBar({ count, deleting, onDelete, onClear }: BulkDelete
               Delete {count} {count === 1 ? 'run' : 'runs'}
             </Button>
           ) : (
-            <Button variant="danger" size="sm" onClick={() => setConfirming(true)}>
+            <Button variant="danger" size="sm" onClick={() => setConfirmedSelection(selectionKey)}>
               Delete
             </Button>
           )}
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

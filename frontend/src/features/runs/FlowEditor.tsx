@@ -1,4 +1,5 @@
 // Ordered steps one virtual user runs per iteration. One step is open for editing at a time.
+import { useEffect, useRef } from 'react';
 import { HTTP_METHODS, type HttpMethod } from '../../api/runs.ts';
 import { Button, Field, Input, Select, Textarea, cn } from '../../components/ui/index.ts';
 import {
@@ -18,11 +19,26 @@ export interface FlowEditorProps {
   /** The step open for editing. */
   openId: string | undefined;
   onOpenChange: (id: string | undefined) => void;
+  /** The step with a problem to fix, and the problem, shown inside that step. */
+  errorStepId?: string;
+  error?: string;
+  /** True right after a submit found the problem: scroll it into view once. */
+  scrollToError?: boolean;
+  onErrorShown?: () => void;
 }
 
 const METHOD_OPTIONS = HTTP_METHODS.map((value) => ({ value, label: value }));
 
-export function FlowEditor({ steps, onChange, openId, onOpenChange: setOpenId }: FlowEditorProps) {
+export function FlowEditor({
+  steps,
+  onChange,
+  openId,
+  onOpenChange: setOpenId,
+  errorStepId,
+  error,
+  scrollToError,
+  onErrorShown,
+}: FlowEditorProps) {
   const update = (id: string, patch: Partial<StepDraft>) =>
     onChange(steps.map((step) => (step.id === id ? { ...step, ...patch } : step)));
   const move = (index: number, offset: number) => {
@@ -58,24 +74,37 @@ export function FlowEditor({ steps, onChange, openId, onOpenChange: setOpenId }:
       </p>
       <ol className="m-0 flex list-none flex-col gap-2 p-0">
         {steps.map((step, index) => (
-          <li key={step.id} className="rounded-md border border-line bg-surface">
+          <li
+            key={step.id}
+            className={cn(
+              'rounded-md border bg-surface',
+              step.id === errorStepId ? 'border-danger' : 'border-line',
+            )}
+          >
             <div className="flex items-center gap-2 px-2 py-1.5">
               <button
                 type="button"
                 aria-expanded={openId === step.id}
                 aria-controls={openId === step.id ? `${step.id}-body` : undefined}
                 onClick={() => setOpenId(openId === step.id ? undefined : step.id)}
-                className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left text-sm"
+                className="grid min-w-0 flex-1 grid-cols-[1.25rem_3.25rem_minmax(0,1fr)] items-baseline gap-x-2 py-1 text-left text-sm"
               >
-                <span className="w-5 shrink-0 text-xs tabular-nums text-fg-faint">{index + 1}</span>
-                <span className="w-14 shrink-0 font-mono text-xs font-semibold text-accent-strong">
+                <span className="text-xs tabular-nums text-fg-faint">{index + 1}</span>
+                <span className="font-mono text-xs font-semibold text-accent-strong">
                   {step.method}
                 </span>
-                <span className="max-w-[55%] shrink-0 truncate font-medium text-fg">
-                  {step.name || 'Untitled'}
+                <span className="flex min-w-0 items-center gap-1.5 font-medium text-fg">
+                  <span className="min-w-0 truncate">{step.name || 'Untitled'}</span>
+                  {step.id === errorStepId && (
+                    <span
+                      role="img"
+                      aria-label="has a problem"
+                      className="size-1.5 shrink-0 rounded-full bg-danger"
+                    />
+                  )}
                 </span>
-                <span className="min-w-0 truncate font-mono text-xs text-fg-muted">
-                  {step.path}
+                <span className="col-start-3 truncate font-mono text-xs text-fg-muted">
+                  {step.path || <span className="font-sans italic">base URL</span>}
                 </span>
               </button>
               <Button
@@ -112,6 +141,9 @@ export function FlowEditor({ steps, onChange, openId, onOpenChange: setOpenId }:
             {openId === step.id && (
               <StepFields
                 step={step}
+                error={step.id === errorStepId ? error : undefined}
+                scrollToError={scrollToError}
+                onErrorShown={onErrorShown}
                 onChange={(patch) => update(step.id, patch)}
                 className="border-t border-line"
               />
@@ -133,14 +165,40 @@ export function FlowEditor({ steps, onChange, openId, onOpenChange: setOpenId }:
 
 interface StepFieldsProps {
   step: StepDraft;
+  error?: string;
+  scrollToError?: boolean;
+  onErrorShown?: () => void;
   onChange: (patch: Partial<StepDraft>) => void;
   className?: string;
 }
 
-function StepFields({ step, onChange, className }: StepFieldsProps) {
+function StepFields({
+  step,
+  error,
+  scrollToError,
+  onErrorShown,
+  onChange,
+  className,
+}: StepFieldsProps) {
   const id = step.id;
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  // The panel scrolls; bring a new problem into view so the user sees what to fix.
+  useEffect(() => {
+    if (!error || !scrollToError) return;
+    errorRef.current?.scrollIntoView({ block: 'nearest' });
+    onErrorShown?.();
+  }, [error, scrollToError, onErrorShown]);
   return (
     <div id={`${id}-body`} className={cn('flex flex-col gap-4 p-3', className)}>
+      {error && (
+        <p
+          ref={errorRef}
+          role="alert"
+          className="m-0 rounded-md bg-danger-soft px-3 py-2 text-xs text-danger"
+        >
+          {error}
+        </p>
+      )}
       <div className="grid grid-cols-[1fr_6rem] gap-2">
         <Field label="Name" htmlFor={`${id}-name`}>
           <Input
@@ -165,7 +223,7 @@ function StepFields({ step, onChange, className }: StepFieldsProps) {
       <Field
         label="Request"
         htmlFor={`${id}-path`}
-        hint="A path such as /api/items is added to the base URL. Leave empty to use the base URL."
+        hint="A path such as /api/items/{{itemId}} is added to the base URL. Leave it empty to use the base URL."
       >
         <div className="grid grid-cols-[6.5rem_1fr] gap-2">
           <Select
@@ -178,7 +236,7 @@ function StepFields({ step, onChange, className }: StepFieldsProps) {
             id={`${id}-path`}
             mono
             value={step.path}
-            placeholder="/api/items/{{itemId}}"
+            placeholder="Empty: the base URL"
             onChange={(event) => onChange({ path: event.target.value })}
           />
         </div>

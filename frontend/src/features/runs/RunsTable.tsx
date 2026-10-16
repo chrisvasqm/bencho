@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import type { Run } from '../../api/runs.ts';
 import { Badge, Checkbox, Skeleton } from '../../components/ui/index.ts';
 import {
@@ -103,7 +103,7 @@ export function RunsTable({
             ))}
           </tr>
         </thead>
-        <motion.tbody
+        <m.tbody
           key={loading ? 'loading' : listKey}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -133,7 +133,7 @@ export function RunsTable({
               runs.map((run) => {
                 const selected = run.id === selectedId;
                 return (
-                  <motion.tr
+                  <m.tr
                     key={run.id}
                     initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -180,11 +180,11 @@ export function RunsTable({
                     <td className="hidden px-3 py-0 whitespace-nowrap text-fg-muted sm:table-cell">
                       {formatTime(run.createdAt)}
                     </td>
-                  </motion.tr>
+                  </m.tr>
                 );
               })}
           </AnimatePresence>
-        </motion.tbody>
+        </m.tbody>
       </table>
     </div>
   );

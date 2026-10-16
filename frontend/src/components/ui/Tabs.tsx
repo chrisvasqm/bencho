@@ -36,7 +36,11 @@ export function Tabs<Value extends string>({ items, value, onChange, label }: Ta
           >
             {item.label}
             {item.alert && (
-              <span aria-label="has errors" className="size-1.5 rounded-full bg-danger" />
+              <span
+                role="img"
+                aria-label="has errors"
+                className="size-1.5 rounded-full bg-danger"
+              />
             )}
             {item.count !== undefined && (
               <span className="rounded-full bg-surface-sunken px-1.5 text-xs tabular-nums text-fg-muted">

@@ -67,7 +67,7 @@ export function PairsEditor({
         </div>
       ))}
       <Button
-        variant="ghost"
+        variant="secondary"
         size="sm"
         onClick={() => onChange([...pairs, newPair()])}
         className="self-start"

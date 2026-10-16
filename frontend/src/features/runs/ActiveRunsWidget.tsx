@@ -1,6 +1,6 @@
 // Floating card that follows runs in progress once the Runs card is scrolled out of view.
 import { useQuery } from '@tanstack/react-query';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { useEffect, useState, type RefObject } from 'react';
 import { runsApi, type Run } from '../../api/runs.ts';
 import { Badge } from '../../components/ui/index.ts';
@@ -66,7 +66,7 @@ export function ActiveRunsWidget({ anchorRef, onOpen }: ActiveRunsWidgetProps) {
   return (
     <AnimatePresence>
       {visible && (
-        <motion.aside
+        <m.aside
           aria-label="Runs in progress"
           initial={{ opacity: 0, y: 16, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -122,7 +122,7 @@ export function ActiveRunsWidget({ anchorRef, onOpen }: ActiveRunsWidgetProps) {
               );
             })}
           </ul>
-        </motion.aside>
+        </m.aside>
       )}
     </AnimatePresence>
   );

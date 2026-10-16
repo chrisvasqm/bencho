@@ -13,6 +13,8 @@ export default function LoadShapeChart({ stages }: { stages: Stage[] }) {
       series={[{ key: 'virtualUsers', label: 'Virtual users', color: 'var(--series-1)' }]}
       formatX={formatSeconds}
       height={140}
+      integerY
+      integerX
       empty="Fix the stage durations to see the shape."
     />
   );

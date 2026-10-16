@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MotionConfig } from 'motion/react';
+import { LazyMotion, MotionConfig, domAnimation } from 'motion/react';
 import { StrictMode, type CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Toaster } from 'sonner';
@@ -33,16 +33,19 @@ function Root() {
   const [theme] = useTheme();
   return (
     <MotionConfig reducedMotion="user">
-      <QueryClientProvider client={queryClient}>
-        <App />
-        <Toaster
-          position="bottom-center"
-          theme={theme}
-          richColors
-          closeButton
-          style={toasterStyle}
-        />
-      </QueryClientProvider>
+      {/* Loads only the DOM animation features; components use the small `m` element. */}
+      <LazyMotion features={domAnimation} strict>
+        <QueryClientProvider client={queryClient}>
+          <App />
+          <Toaster
+            position="bottom-center"
+            theme={theme}
+            richColors
+            closeButton
+            style={toasterStyle}
+          />
+        </QueryClientProvider>
+      </LazyMotion>
     </MotionConfig>
   );
 }

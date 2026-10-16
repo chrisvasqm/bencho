@@ -35,6 +35,10 @@ export interface LineChartProps<Row> {
   formatX?: (value: number | string) => string;
   formatY?: (value: number) => string;
   height?: number;
+  /** Whole-number y values only (such as virtual users), so ticks never read 2.25 users. */
+  integerY?: boolean;
+  /** Whole-number x values only (such as seconds). */
+  integerX?: boolean;
   loading?: boolean;
   empty?: string;
 }
@@ -50,10 +54,16 @@ export function LineChart<Row extends object>({
   formatX = String,
   formatY = String,
   height = 220,
+  integerY = false,
+  integerX = false,
   loading,
   empty = 'No data yet.',
 }: LineChartProps<Row>) {
   const showLegend = series.length > 1;
+  const endLabels = showLegend ? endLabelTexts(data, series, height) : new Map<string, string>();
+  // Room on the right for the longest end label (about 7px per 11px mono character), and at
+  // least enough for the last x tick, which is centered on the plot's right edge.
+  const rightMargin = Math.max(48, ...[...endLabels.values()].map((text) => text.length * 7 + 10));
   return (
     <figure className="m-0 flex min-w-0 flex-col gap-2">
       <figcaption className="text-sm font-medium text-fg">{title}</figcaption>
@@ -71,7 +81,10 @@ export function LineChart<Row extends object>({
       ) : (
         <div style={{ height }} role="img" aria-label={title}>
           <ResponsiveContainer width="100%" height="100%">
-            <RechartsLineChart data={data} margin={{ top: 8, right: 44, bottom: 0, left: 0 }}>
+            <RechartsLineChart
+              data={data}
+              margin={{ top: 8, right: rightMargin, bottom: 0, left: 0 }}
+            >
               <CartesianGrid stroke="var(--line)" strokeDasharray="2 4" vertical={false} />
               <XAxis
                 dataKey={xKey as string}
@@ -82,6 +95,7 @@ export function LineChart<Row extends object>({
                 stroke="var(--line-strong)"
                 tickLine={false}
                 minTickGap={24}
+                allowDecimals={!integerX}
               />
               <YAxis
                 tick={tick}
@@ -89,7 +103,8 @@ export function LineChart<Row extends object>({
                 stroke="var(--line-strong)"
                 tickLine={false}
                 axisLine={false}
-                width={56}
+                allowDecimals={!integerY}
+                width={72}
               />
               <Tooltip
                 cursor={{ stroke: 'var(--line-strong)', strokeWidth: 1 }}
@@ -138,12 +153,12 @@ export function LineChart<Row extends object>({
                   connectNulls
                   isAnimationActive={false}
                   label={
-                    showLegend
+                    endLabels.has(line.key)
                       ? (props: LabelProps) => (
                           <EndLabel
                             {...props}
                             lastIndex={lastValueIndex(data, line.key)}
-                            text={line.label}
+                            text={endLabels.get(line.key) ?? line.label}
                           />
                         )
                       : undefined
@@ -156,6 +171,46 @@ export function LineChart<Row extends object>({
       )}
     </figure>
   );
+}
+
+/** Labels closer than this many pixels would overlap; they merge into one. */
+const END_LABEL_MIN_GAP_PX = 14;
+/** Chart height taken by the legend and the x axis, not by the plot. */
+const NON_PLOT_HEIGHT_PX = 52;
+
+/**
+ * Text of the label at each series' last point. Series that end close together share one label
+ * ("p95 p99") on the highest of them, so labels never print over each other.
+ */
+function endLabelTexts<Row>(data: Row[], series: ReadonlyArray<LineSeries<Row>>, height: number) {
+  const plotHeight = Math.max(1, height - NON_PLOT_HEIGHT_PX);
+  const numberAt = (row: Row | undefined, key: keyof Row): number | undefined => {
+    const value: unknown = row?.[key];
+    return typeof value === 'number' ? value : undefined;
+  };
+  const ends = series
+    .map((line) => ({ line, value: numberAt(data[lastValueIndex(data, line.key)], line.key) }))
+    .flatMap(({ line, value }) => (value === undefined ? [] : [{ line, value }]))
+    .sort((first, second) => second.value - first.value);
+  const values = series.flatMap((line) => data.flatMap((row) => numberAt(row, line.key) ?? []));
+  const max = Math.max(0, ...values);
+  const texts = new Map<string, string>();
+  let leader: { key: string; value: number; index: number; labels: string[] } | undefined;
+  for (const { line, value } of ends) {
+    const index = lastValueIndex(data, line.key);
+    const pixels = max > 0 ? ((leader?.value ?? 0) - value) * (plotHeight / max) : 0;
+    // Only labels drawn at the same x can collide; a series ending earlier keeps its own label.
+    if (leader && leader.index === index && pixels < END_LABEL_MIN_GAP_PX) {
+      leader.labels.push(line.label);
+      const order = series.map((item) => item.label);
+      leader.labels.sort((first, second) => order.indexOf(first) - order.indexOf(second));
+      texts.set(leader.key, leader.labels.join(' '));
+      continue;
+    }
+    leader = { key: line.key, value, index, labels: [line.label] };
+    texts.set(line.key, line.label);
+  }
+  return texts;
 }
 
 function valueCount<Row>(data: Row[], key: keyof Row): number {

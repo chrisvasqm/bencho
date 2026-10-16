@@ -1,5 +1,5 @@
 // Left-hand control panel: build a run across four tabs, start it from the pinned footer.
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { Suspense, lazy, useState, type FormEvent } from 'react';
 import {
   RUN_TYPES,
@@ -35,6 +35,8 @@ const PANEL_TABS: ReadonlyArray<{ value: PanelTab; label: string }> = [
 const ERROR_TAB: Record<string, PanelTab> = {
   baseUrl: 'target',
   flow: 'flow',
+  flowStep: 'flow',
+  flowStepLabel: 'flow',
   stages: 'shape',
   thinkTime: 'limits',
   maxErrorRate: 'limits',
@@ -59,7 +61,13 @@ function validate(input: CreateRunInput, steps: StepDraft[]): Record<string, str
     errors.baseUrl = 'Enter a full URL, including http:// or https://';
   }
   const problem = draftProblem(steps) ?? flowProblem(input.flow);
-  if (problem) errors.flow = problem;
+  if (problem) errors.flow = problem.message;
+  // The step's id, not its index, so the mark stays on it when steps are moved or removed.
+  const problemStepId = problem?.step === undefined ? undefined : steps[problem.step]?.id;
+  if (problemStepId && problem?.step !== undefined) {
+    errors.flowStep = problemStepId;
+    errors.flowStepLabel = `Step ${problem.step + 1} (${steps[problem.step]?.name.trim() || 'Untitled'})`;
+  }
   const seconds = input.stages.map((stage) => durationToSeconds(stage.duration));
   if (seconds.some((value) => !Number.isFinite(value))) {
     errors.stages = 'Durations use k6 units: 10s, 1m, 1h30m';
@@ -116,6 +124,9 @@ function RunPanelForm({
   const [flowSteps, setFlowSteps] = useState<StepDraft[]>(() => defaults.flow.map(toDraft));
   // Kept here, not in FlowEditor: switching tabs remounts the editor.
   const [openStepId, setOpenStepId] = useState<string | undefined>(flowSteps[0]?.id);
+  const [submitCount, setSubmitCount] = useState(0);
+  // The submit whose flow problem was already scrolled into view; remounts do not scroll again.
+  const [shownErrorRevision, setShownErrorRevision] = useState(0);
   const [thinkTime, setThinkTime] = useState(defaults.limits.thinkTimeSeconds);
   const [maxErrorPercent, setMaxErrorPercent] = useState(defaults.limits.maxErrorRate * 100);
   const [latency, setLatency] = useState(defaults.limits.latencyLimitsMs);
@@ -128,6 +139,8 @@ function RunPanelForm({
     setStages(defaults.stages[type]);
   }
 
+  // Edits clear flow errors, so the marked step always still exists.
+  const errorStepId = errors.flowStep;
   const tabsWithErrors = new Set(Object.keys(errors).map((key) => ERROR_TAB[key]));
 
   const handleSubmit = async (event: FormEvent) => {
@@ -144,6 +157,8 @@ function RunPanelForm({
     const nextErrors = validate(input, flowSteps);
     setErrors(nextErrors);
     const firstError = Object.keys(nextErrors)[0];
+    setSubmitCount((count) => count + 1);
+    if (nextErrors.flowStep) setOpenStepId(nextErrors.flowStep);
     if (firstError) {
       setTab(ERROR_TAB[firstError] ?? 'target');
       return;
@@ -174,7 +189,7 @@ function RunPanelForm({
       <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
         <fieldset disabled={submitting} className="m-0 min-w-0 border-0 p-0">
           <AnimatePresence mode="wait" initial={false}>
-            <motion.div
+            <m.div
               key={tab}
               initial={{ opacity: 0, x: 8 }}
               animate={{ opacity: 1, x: 0 }}
@@ -217,12 +232,27 @@ function RunPanelForm({
                 <>
                   <FlowEditor
                     steps={flowSteps}
-                    onChange={setFlowSteps}
+                    onChange={(steps) => {
+                      setFlowSteps(steps);
+                      // An edit may fix the problem; it is checked again on the next start.
+                      if (errors.flow) {
+                        setErrors(
+                          Object.fromEntries(
+                            Object.entries(errors).filter(([key]) => !key.startsWith('flow')),
+                          ),
+                        );
+                      }
+                    }}
                     openId={openStepId}
                     onOpenChange={setOpenStepId}
+                    errorStepId={errorStepId}
+                    error={errors.flow}
+                    scrollToError={submitCount !== shownErrorRevision}
+                    onErrorShown={() => setShownErrorRevision(submitCount)}
                   />
-                  {errors.flow && (
+                  {errors.flow && (!errorStepId || errorStepId !== openStepId) && (
                     <p role="alert" className="text-xs text-danger">
+                      {errors.flowStepLabel ? `${errors.flowStepLabel}: ` : ''}
                       {errors.flow}
                     </p>
                   )}
@@ -312,7 +342,7 @@ function RunPanelForm({
                   </p>
                 </>
               )}
-            </motion.div>
+            </m.div>
           </AnimatePresence>
         </fieldset>
       </form>

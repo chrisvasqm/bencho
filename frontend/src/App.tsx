@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -206,6 +206,7 @@ export function App() {
             actions={
               <BulkDeleteBar
                 count={checkedIds.size}
+                selectionKey={[...checkedIds].sort().join(',')}
                 deleting={removeMany.isPending}
                 onClear={() => setCheckedIds(new Set())}
                 onDelete={() => removeMany.mutate([...checkedIds])}
@@ -252,7 +253,7 @@ export function App() {
 
           {/* Swap in place: no exit phase, so the trend card below never jumps up and back. */}
           {shownRun ? (
-            <motion.div
+            <m.div
               key={shownRun.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -265,7 +266,7 @@ export function App() {
                 stopping={stop.isPending}
                 onStop={(run) => stop.mutate(run)}
               />
-            </motion.div>
+            </m.div>
           ) : runs.isPending || (effectiveId && selected.isPending) ? (
             <Card title={<Skeleton className="h-5 w-48" />}>
               <Skeleton className="h-64 w-full" />

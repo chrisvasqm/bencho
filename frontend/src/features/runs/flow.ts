@@ -55,11 +55,11 @@ export function toDraft(step: FlowStep): StepDraft {
 }
 
 /** Exact duplicate header rows would merge into one entry; report them on the draft. */
-export function draftProblem(steps: StepDraft[]): string | undefined {
+export function draftProblem(steps: StepDraft[]): FlowProblem | undefined {
   for (const [index, step] of steps.entries()) {
     const names = step.headers.map((pair) => pair.key.trim().toLowerCase()).filter(Boolean);
     if (new Set(names).size !== names.length) {
-      return `Step ${index + 1}: each header name can be used only once`;
+      return { message: 'Each header name can be used only once', step: index };
     }
   }
   return undefined;
@@ -237,16 +237,28 @@ function stepProblem(step: FlowStep, known: Set<string>): string | undefined {
   return undefined;
 }
 
-/** The first problem in the flow as "Step 2: …", or undefined when the backend will accept it. */
-export function flowProblem(steps: FlowStep[]): string | undefined {
-  if (steps.length === 0) return 'Add at least one step';
-  if (steps.length > MAX_STEPS) return `Use at most ${MAX_STEPS} steps`;
+export interface FlowProblem {
+  message: string;
+  /** Index of the step to fix, when the problem belongs to one step. */
+  step?: number;
+}
+
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+/** The first problem in the flow, or undefined when the backend will accept it. */
+export function flowProblem(steps: FlowStep[]): FlowProblem | undefined {
+  if (steps.length === 0) return { message: 'Add at least one step' };
+  if (steps.length > MAX_STEPS) return { message: `Use at most ${MAX_STEPS} steps` };
+  // Empty names are a per-step problem ("give the step a name"), not a duplicate.
   const names = steps.map((step) => step.name.toLowerCase());
-  if (new Set(names).size !== names.length) return 'Each step needs its own name';
+  const duplicate = names.findIndex((name, index) => name !== '' && names.indexOf(name) !== index);
+  if (duplicate !== -1) {
+    return { message: 'Another step has this name. Give each step its own name.', step: duplicate };
+  }
   const known = new Set<string>(BUILTIN_PLACEHOLDERS);
   for (const [index, step] of steps.entries()) {
     const problem = stepProblem(step, known);
-    if (problem) return `Step ${index + 1}: ${problem}`;
+    if (problem) return { message: capitalize(problem), step: index };
     for (const item of step.extract) known.add(item.name);
   }
   return undefined;

@@ -4,7 +4,7 @@ import { runsApi, type RunType } from '../../api/runs.ts';
 import { Card } from '../../components/ui/index.ts';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
-import { LATENCY_SERIES } from './RunCharts.tsx';
+import { LATENCY_SERIES } from './series.ts';
 import { RUN_TYPE_LABELS, formatMs, formatTime } from './format.ts';
 
 const TREND_RUNS = 20;

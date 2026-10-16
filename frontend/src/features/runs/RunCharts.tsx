@@ -7,6 +7,7 @@ import { Tabs } from '../../components/ui/index.ts';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
 import { formatMs, formatSeconds, isActive } from './format.ts';
+import { LATENCY_SERIES } from './series.ts';
 
 type ChartTab = 'latency' | 'load' | 'errors';
 
@@ -15,14 +16,6 @@ const CHART_TABS: ReadonlyArray<{ value: ChartTab; label: string }> = [
   { value: 'load', label: 'Load' },
   { value: 'errors', label: 'Errors' },
 ];
-
-export const LATENCY_SERIES = [
-  { key: 'p50', label: 'p50', color: 'var(--series-1)' },
-  { key: 'p90', label: 'p90', color: 'var(--series-2)' },
-  // Dashes keep p95 apart from p90 and p99 apart from p50 under color-vision deficiency.
-  { key: 'p95', label: 'p95', color: 'var(--series-3)', dash: '6 3' },
-  { key: 'p99', label: 'p99', color: 'var(--series-4)', dash: '2 3' },
-] as const;
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -53,6 +46,7 @@ export function RunCharts({ run }: { run: Run }) {
       <Tabs label="Run charts" value={tab} onChange={setTab} items={CHART_TABS} />
       {tab === 'latency' && (
         <LineChart
+          integerX
           {...shared}
           title="Response time per second"
           series={LATENCY_SERIES}
@@ -63,11 +57,14 @@ export function RunCharts({ run }: { run: Run }) {
       {tab === 'load' && (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <LineChart
+            integerX
             {...shared}
             title="Virtual users"
             series={[{ key: 'virtualUsers', label: 'Virtual users', color: 'var(--series-1)' }]}
+            integerY
           />
           <LineChart
+            integerX
             {...shared}
             title="Requests per second"
             series={[{ key: 'requestsPerSecond', label: 'Requests/s', color: 'var(--series-3)' }]}
@@ -76,6 +73,7 @@ export function RunCharts({ run }: { run: Run }) {
       )}
       {tab === 'errors' && (
         <LineChart
+          integerX
           {...shared}
           title="Failed requests per second"
           series={[{ key: 'errorRate', label: 'Error rate', color: 'var(--danger)' }]}
