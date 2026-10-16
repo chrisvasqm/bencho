@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray } from 'drizzle-orm';
+import { asc, count, desc, eq, inArray } from 'drizzle-orm';
 import type { Database } from '../../core/db.ts';
 import { runPoints, runs, type NewRun, type Run, type RunPoint } from './schema.ts';
 import type { RunPointValues } from './timeseries.ts';
@@ -17,12 +17,28 @@ export class RunsRepository {
     return this.db.query.runs.findFirst({ where: eq(runs.id, id) });
   }
 
-  list(type?: RunType): Promise<Run[]> {
-    return this.db.query.runs.findMany({
-      where: type ? eq(runs.type, type) : undefined,
-      orderBy: desc(runs.createdAt),
-      limit: 100,
-    });
+  async listPage(
+    type: RunType | undefined,
+    page: number,
+    pageSize: number,
+  ): Promise<{ runs: Run[]; total: number }> {
+    const where = type ? eq(runs.type, type) : undefined;
+    const [rows, [totals]] = await Promise.all([
+      this.db.query.runs.findMany({
+        where,
+        orderBy: desc(runs.createdAt),
+        limit: pageSize,
+        offset: (page - 1) * pageSize,
+      }),
+      this.db.select({ total: count() }).from(runs).where(where),
+    ]);
+    return { runs: rows, total: totals?.total ?? 0 };
+  }
+
+  /** Deletes the run and, by cascade, its points. Returns false when no row matched. */
+  async delete(id: string): Promise<boolean> {
+    const deleted = await this.db.delete(runs).where(eq(runs.id, id)).returning({ id: runs.id });
+    return deleted.length > 0;
   }
 
   async update(id: string, patch: Partial<NewRun>): Promise<void> {

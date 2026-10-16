@@ -92,5 +92,10 @@ export const createRunSchema = z.object({
 });
 export type CreateRunInput = z.infer<typeof createRunSchema>;
 
-export const listRunsQuerySchema = z.object({ type: z.enum(RUN_TYPES).optional() });
+export const listRunsQuerySchema = z.object({
+  type: z.enum(RUN_TYPES).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(10),
+});
+export type ListRunsQuery = z.infer<typeof listRunsQuerySchema>;
 export const runIdParamsSchema = z.object({ id: z.uuid() });

@@ -11,7 +11,7 @@ export function runsRoutes(service: RunsService): Router {
   });
 
   router.get('/runs', validate('query', listRunsQuerySchema), async (_request, response) => {
-    response.json({ runs: await service.list(response.locals.query.type) });
+    response.json(await service.list(response.locals.query));
   });
 
   router.post('/runs', validate('body', createRunSchema), async (_request, response) => {
@@ -30,6 +30,11 @@ export function runsRoutes(service: RunsService): Router {
       response.json({ points: await service.listPoints(response.locals.params.id) });
     },
   );
+
+  router.delete('/runs/:id', validate('params', runIdParamsSchema), async (_request, response) => {
+    await service.delete(response.locals.params.id);
+    response.status(204).end();
+  });
 
   return router;
 }

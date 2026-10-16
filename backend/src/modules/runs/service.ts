@@ -5,10 +5,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AppError } from '../../core/errors.ts';
 import { DEFAULT_LIMITS, DEFAULT_STAGES, stagesToEnv } from '../../../k6/lib/defaults.ts';
-import type { RunType } from '../../../k6/lib/defaults.ts';
 import type { RunsRepository } from './repository.ts';
 import { FileTail, TimeseriesAggregator } from './timeseries.ts';
-import type { CreateRunInput, Run, RunPoint, RunStatus } from './schema.ts';
+import type { CreateRunInput, ListRunsQuery, Run, RunPoint, RunStatus } from './schema.ts';
 
 const K6_THRESHOLD_FAILED_EXIT_CODE = 99;
 const MAX_CONCURRENT_RUNS = 3;
@@ -71,8 +70,24 @@ export class RunsService {
     return this.repository.failUnfinished('The backend restarted while this run was in progress.');
   }
 
-  list(type?: RunType): Promise<Run[]> {
-    return this.repository.list(type);
+  async list({ type, page, pageSize }: ListRunsQuery) {
+    const { runs, total } = await this.repository.listPage(type, page, pageSize);
+    return { runs, total, page, pageSize };
+  }
+
+  /** Deletes a finished run. Runs still in progress cannot be deleted. */
+  async delete(id: string): Promise<void> {
+    const run = await this.getById(id);
+    if (run.status === 'queued' || run.status === 'running') {
+      throw new AppError(
+        409,
+        'RUN_IN_PROGRESS',
+        'Wait for the run to finish before you delete it.',
+      );
+    }
+    if (!(await this.repository.delete(id))) {
+      throw new AppError(404, 'RUN_NOT_FOUND', 'Run not found');
+    }
   }
 
   /** Resolves once every started run has finished. Used by tests and graceful shutdown. */
