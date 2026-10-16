@@ -6,8 +6,9 @@
     "strict": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     "skipLibCheck": true,
     "types": ["node", "k6"]
   },
-  "include": ["lib", "tests", "scripts", "eslint.config.js"]
+  "include": ["k6", "src", "scripts", "*.ts", "eslint.config.js"]
 }

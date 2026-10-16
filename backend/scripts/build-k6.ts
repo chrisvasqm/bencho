@@ -2,8 +2,8 @@
 import { build } from 'esbuild';
 
 await build({
-  entryPoints: ['tests/*.ts'],
-  outdir: 'dist',
+  entryPoints: ['k6/*.ts'],
+  outdir: 'dist/k6',
   bundle: true,
   format: 'esm',
   platform: 'neutral',

@@ -14,7 +14,7 @@ if (!TEST_NAMES.includes(testName)) {
   process.exit(1);
 }
 
-const bundlePath = `dist/${testName}.js`;
+const bundlePath = `dist/k6/${testName}.js`;
 if (!existsSync(bundlePath)) {
   console.error(`${bundlePath} not found. Run pnpm build first.`);
   process.exit(1);

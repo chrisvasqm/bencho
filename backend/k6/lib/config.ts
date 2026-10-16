@@ -1,7 +1,6 @@
 // Run settings from env vars (k6 __ENV). Every value has a default, so tests run with no setup.
 import type { Stage } from 'k6/options';
-
-const DURATION_PATTERN = /^(\d+(ms|s|m|h))+$/;
+import { DEFAULT_LIMITS, DURATION_PATTERN } from './defaults.ts';
 
 function numberFromEnv(name: string, fallback: number): number {
   const raw = __ENV[name];
@@ -28,14 +27,16 @@ export function stagesFromEnv(defaultStages: Stage[]): Stage[] {
   return raw ? raw.split(',').map(parseStage) : defaultStages;
 }
 
+const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs } = DEFAULT_LIMITS;
+
 export const config = {
-  baseUrl: __ENV.BASE_URL || 'http://localhost:3333',
-  thinkTimeSeconds: numberFromEnv('THINK_TIME_SECONDS', 1),
-  maxErrorRate: numberFromEnv('MAX_ERROR_RATE', 0.01),
+  baseUrl: __ENV.BASE_URL || 'http://localhost:10001',
+  thinkTimeSeconds: numberFromEnv('THINK_TIME_SECONDS', thinkTimeSeconds),
+  maxErrorRate: numberFromEnv('MAX_ERROR_RATE', maxErrorRate),
   latencyLimitsMs: {
-    p50: numberFromEnv('P50_MS', 200),
-    p90: numberFromEnv('P90_MS', 400),
-    p95: numberFromEnv('P95_MS', 500),
-    p99: numberFromEnv('P99_MS', 1000),
+    p50: numberFromEnv('P50_MS', latencyLimitsMs.p50),
+    p90: numberFromEnv('P90_MS', latencyLimitsMs.p90),
+    p95: numberFromEnv('P95_MS', latencyLimitsMs.p95),
+    p99: numberFromEnv('P99_MS', latencyLimitsMs.p99),
   },
 };
