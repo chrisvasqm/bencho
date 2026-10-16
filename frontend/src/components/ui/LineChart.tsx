@@ -1,5 +1,5 @@
-// Line chart on one y-axis. Series colors come from --series-N tokens (validated for CVD per
-// theme), text stays in text tokens. Two or more series get a legend plus a label at each
+// Line chart on one y-axis. Series colors come from --series-N tokens; give neighboring series a
+// `dash` too when hue alone may not separate them. Text stays in text tokens. Two or more series get a legend plus a label at each
 // line's last point, so identity never depends on color alone.
 import {
   CartesianGrid,
@@ -20,6 +20,8 @@ export interface LineSeries<Row> {
   label: string;
   /** CSS color, normally var(--series-N). Keep a series on the same slot everywhere. */
   color: string;
+  /** SVG dash pattern, so neighboring series differ by more than hue (color-vision deficiency). */
+  dash?: string;
 }
 
 export interface LineChartProps<Row> {
@@ -37,7 +39,7 @@ export interface LineChartProps<Row> {
   empty?: string;
 }
 
-const tick = { fill: 'var(--fg-muted)', fontSize: 11, fontFamily: 'var(--)' };
+const tick = { fill: 'var(--fg-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' };
 
 export function LineChart<Row extends object>({
   data,
@@ -118,9 +120,21 @@ export function LineChart<Row extends object>({
                   dataKey={line.key}
                   name={line.label}
                   stroke={line.color}
+                  strokeDasharray={line.dash}
                   strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4, stroke: 'var(--surface)', strokeWidth: 2 }}
+                  // A series with one value has no segment to draw, so it shows a dot instead.
+                  // Dot outlines stay solid on dashed series.
+                  dot={
+                    valueCount(data, line.key) === 1
+                      ? { strokeDasharray: '0', fill: 'var(--surface)' }
+                      : false
+                  }
+                  activeDot={{
+                    r: 4,
+                    stroke: 'var(--surface)',
+                    strokeWidth: 2,
+                    strokeDasharray: '0',
+                  }}
                   connectNulls
                   isAnimationActive={false}
                   label={
@@ -144,6 +158,10 @@ export function LineChart<Row extends object>({
   );
 }
 
+function valueCount<Row>(data: Row[], key: keyof Row): number {
+  return data.filter((row) => typeof row[key] === 'number').length;
+}
+
 /** Index of the last row where the series has a number; seconds without requests have none. */
 function lastValueIndex<Row>(data: Row[], key: keyof Row): number {
   for (let index = data.length - 1; index >= 0; index -= 1) {
@@ -161,7 +179,7 @@ function EndLabel({
 }: LabelProps & { lastIndex: number; text: string }) {
   if (index !== lastIndex || typeof x !== 'number' || typeof y !== 'number') return null;
   return (
-    <text x={x + 6} y={y + 4} fill="var(--fg-muted)" fontSize={11} fontFamily="var(--)">
+    <text x={x + 6} y={y + 4} fill="var(--fg-muted)" fontSize={11} fontFamily="var(--font-mono)">
       {text}
     </text>
   );
@@ -189,7 +207,17 @@ function ChartTooltip<Row>({
           if (!entry || typeof entry.value !== 'number') return null;
           return (
             <li key={line.key} className="flex items-center gap-2">
-              <span className="h-0.5 w-3 rounded-full" style={{ background: line.color }} />
+              <svg width="12" height="4" aria-hidden="true" className="shrink-0">
+                <line
+                  x1="0"
+                  y1="2"
+                  x2="12"
+                  y2="2"
+                  stroke={line.color}
+                  strokeWidth="2"
+                  strokeDasharray={line.dash}
+                />
+              </svg>
               <span className="text-fg-muted">{line.label}</span>
               <span className="ml-auto pl-3 text-fg tabular-nums">{formatY(entry.value)}</span>
             </li>

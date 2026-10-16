@@ -1,11 +1,12 @@
 /* Design tokens. Semantic names only; components never use raw palette colors.
-   Brand: pastel k6 orange (accent) and k6 purple (highlight). The pastel is too light for white
-   text, so accent-fg is dark (8.8:1); accent-strong is the readable orange for text.
-   accent-line is the orange for borders and indicators (3:1 or more on surfaces);
-   accent-hover is the primary button hover. The logo keeps the original purple mark through its own logo-* tokens. Light is the base;
-   dark overrides
-   under the system preference or data-theme="dark".
-   Chart series are validated for color-vision deficiency against each theme's surface. */
+   Palette "Peach", built on the original k6 purple #7D64FF: purple is the accent (actions,
+   tabs, focus), peach is the highlight (secondary accent), and purple, peach, mint and sky
+   are the four chart series (the latency chart also dashes p95 and p99, so it never relies
+   on hue alone). Light peach is a deeper orange so lines keep 3:1 on white.
+   info is sky blue so status badges differ from purple selection. accent-strong and
+   highlight-strong are the text shades (4.5:1+);
+   accent-line is for borders and indicators (3:1+). The logo keeps its own logo-* tokens.
+   Light is the base; dark overrides under the system preference or data-theme="dark". */
 :root {
   color-scheme: light;
   --canvas: #f5f4fa;
@@ -16,14 +17,15 @@
   --fg: #1b1830;
   --fg-muted: #5e5878;
   --fg-faint: #6b6587;
-  --accent: #ffb085;
-  --accent-strong: #b84300;
-  --accent-fg: #3d1a05;
-  --accent-soft: #ffe6d6;
-  --accent-line: #d9580f;
-  --accent-hover: #ff9a63;
-  --highlight: #6a50f0;
-  --highlight-soft: #ebe7ff;
+  --accent: #6a50f0;
+  --accent-strong: #5b3fe0;
+  --accent-fg: #ffffff;
+  --accent-soft: #ebe7ff;
+  --accent-line: #7d64ff;
+  --accent-hover: #4a30d6;
+  --highlight: #e8641c;
+  --highlight-soft: #ffe6d6;
+  --highlight-strong: #b84300;
   --logo-bg: #6a50f0;
   --logo-fg: #ffffff;
   --logo-bar: #f46800;
@@ -33,13 +35,13 @@
   --danger-soft: #fde4e2;
   --warning: #b45309;
   --warning-soft: #fdecd3;
-  --info: #6a50f0;
-  --info-soft: #ebe7ff;
+  --info: #1b5f9e;
+  --info-soft: #e1eefa;
   --focus: #6a50f0;
-  --series-1: #6a50f0;
-  --series-2: #0f9466;
-  --series-3: #f46800;
-  --series-4: #d55181;
+  --series-1: #7d64ff;
+  --series-2: var(--highlight);
+  --series-3: #0f8f6c;
+  --series-4: var(--info);
   --font-sans: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --radius-sm: 4px;
@@ -59,14 +61,15 @@
     --fg: #ece9f7;
     --fg-muted: #a39dbd;
     --fg-faint: #8f89ad;
-    --accent: #ffb894;
-    --accent-strong: #ffc6a8;
-    --accent-fg: #3d1a05;
-    --accent-soft: #3a2a20;
-    --accent-line: #ffb894;
-    --accent-hover: #ffa47a;
-    --highlight: #9b87ff;
-    --highlight-soft: #2a2350;
+    --accent: #9b87ff;
+    --accent-strong: #b6a7ff;
+    --accent-fg: #160f33;
+    --accent-soft: #2a2350;
+    --accent-line: #9b87ff;
+    --accent-hover: #b6a7ff;
+    --highlight: #ffb085;
+    --highlight-soft: #3a2a20;
+    --highlight-strong: #ffc6a8;
     --logo-bg: #9b87ff;
     --logo-fg: #160f33;
     --logo-bar: #ff8a33;
@@ -76,13 +79,11 @@
     --danger-soft: #3d1717;
     --warning: #fbbf24;
     --warning-soft: #3b2a0c;
-    --info: #9b87ff;
-    --info-soft: #2a2350;
+    --info: #7cc4ff;
+    --info-soft: #16283a;
     --focus: #9b87ff;
-    --series-1: #8a73ff;
-    --series-2: #199e70;
-    --series-3: #e0670f;
-    --series-4: #d84f95;
+    --series-1: #9b87ff;
+    --series-3: #6ed3b5;
     --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.35);
   }
 }
@@ -97,14 +98,15 @@
   --fg: #ece9f7;
   --fg-muted: #a39dbd;
   --fg-faint: #8f89ad;
-  --accent: #ffb894;
-  --accent-strong: #ffc6a8;
-  --accent-fg: #3d1a05;
-  --accent-soft: #3a2a20;
-  --accent-line: #ffb894;
-  --accent-hover: #ffa47a;
-  --highlight: #9b87ff;
-  --highlight-soft: #2a2350;
+  --accent: #9b87ff;
+  --accent-strong: #b6a7ff;
+  --accent-fg: #160f33;
+  --accent-soft: #2a2350;
+  --accent-line: #9b87ff;
+  --accent-hover: #b6a7ff;
+  --highlight: #ffb085;
+  --highlight-soft: #3a2a20;
+  --highlight-strong: #ffc6a8;
   --logo-bg: #9b87ff;
   --logo-fg: #160f33;
   --logo-bar: #ff8a33;
@@ -114,12 +116,10 @@
   --danger-soft: #3d1717;
   --warning: #fbbf24;
   --warning-soft: #3b2a0c;
-  --info: #9b87ff;
-  --info-soft: #2a2350;
+  --info: #7cc4ff;
+  --info-soft: #16283a;
   --focus: #9b87ff;
-  --series-1: #8a73ff;
-  --series-2: #199e70;
-  --series-3: #e0670f;
-  --series-4: #d84f95;
+  --series-1: #9b87ff;
+  --series-3: #6ed3b5;
   --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.35);
 }

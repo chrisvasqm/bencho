@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { cn } from './cn.ts';
 
-export type BadgeTone = 'neutral' | 'accent' | 'success' | 'danger' | 'warning' | 'info';
+export type BadgeTone =
+  'neutral' | 'accent' | 'highlight' | 'success' | 'danger' | 'warning' | 'info';
 
 export interface BadgeProps {
   tone?: BadgeTone;
@@ -13,6 +14,7 @@ export interface BadgeProps {
 const toneClasses: Record<BadgeTone, string> = {
   neutral: 'bg-surface-sunken text-fg-muted',
   accent: 'bg-accent-soft text-accent-strong',
+  highlight: 'bg-highlight-soft text-highlight-strong',
   success: 'bg-success-soft text-success',
   danger: 'bg-danger-soft text-danger',
   warning: 'bg-warning-soft text-warning',

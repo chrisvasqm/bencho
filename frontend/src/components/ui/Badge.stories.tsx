@@ -8,7 +8,7 @@ const meta = {
   argTypes: {
     tone: {
       control: 'select',
-      options: ['neutral', 'accent', 'success', 'danger', 'warning', 'info'],
+      options: ['neutral', 'accent', 'highlight', 'success', 'danger', 'warning', 'info'],
     },
   },
 } satisfies Meta<typeof Badge>;
@@ -30,6 +30,7 @@ export const AllTones: Story = {
       <Badge tone="danger">Failed</Badge>
       <Badge tone="warning">Error</Badge>
       <Badge tone="accent">Default</Badge>
+      <Badge tone="highlight">Highlight</Badge>
     </div>
   ),
 };
