@@ -4,6 +4,7 @@ export { Card, type CardProps } from './Card.tsx';
 export { Checkbox, type CheckboxProps } from './Checkbox.tsx';
 export { Field, type FieldProps } from './Field.tsx';
 export { Input, type InputProps } from './Input.tsx';
+export { Note, type NoteProps } from './Note.tsx';
 export { Pagination, type PaginationProps } from './Pagination.tsx';
 export {
   SegmentedControl,

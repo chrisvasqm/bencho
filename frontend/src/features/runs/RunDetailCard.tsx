@@ -1,7 +1,16 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import type { Run } from '../../api/runs.ts';
-import { Badge, Button, Card, Skeleton, Stat, type StatTone } from '../../components/ui/index.ts';
 import {
+  Badge,
+  Button,
+  Card,
+  Note,
+  Skeleton,
+  Stat,
+  type StatTone,
+} from '../../components/ui/index.ts';
+import {
+  EXPLAIN,
   RUN_TYPE_LABELS,
   STATUS_LABELS,
   STATUS_TONES,
@@ -122,6 +131,16 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
               value={requests ? String(requests.count) : '–'}
               unit={requests ? `${requests.rate.toFixed(1)}/s` : undefined}
             />
+            <Note title="How to read these numbers" className="col-span-full">
+              <p className="m-0">
+                Green means below its limit, red means it reached the limit. p50, p90, p95 and p99:{' '}
+                {EXPLAIN.percentile}
+              </p>
+              <p className="m-0">
+                {EXPLAIN.errorRate} Requests is the total sent, with the average per second.
+              </p>
+              <p className="m-0">{EXPLAIN.failRule}</p>
+            </Note>
           </div>
         ) : (
           <p className="text-sm text-fg-muted">
