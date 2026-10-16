@@ -81,4 +81,4 @@ pnpm test:db   # starts postgres-test on :10005 (in-memory, compose profile "tes
 pnpm test
 ```
 
-Set `TEST_DATABASE_URL` to use another Postgres server.
+Set `POSTGRES_TEST_PORT` (used by compose and tests) or `TEST_DATABASE_URL` to use another Postgres server. One `postgres-test` per machine: worktrees share it, each test file gets its own database.

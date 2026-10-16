@@ -1,12 +1,23 @@
 // Real k6 runs against the demo app (QuickPizza) from the local stack.
 import supertest from 'supertest';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.ts';
 import { RunsService } from '../src/modules/runs/service.ts';
 import { flowStep, shortRunPayload } from './helpers/payloads.ts';
 import { useTestApp } from './helpers/test-app.ts';
 
 const app = useTestApp();
+
+beforeAll(async () => {
+  try {
+    await fetch(app.k6.defaultBaseUrl, { signal: AbortSignal.timeout(3000) });
+  } catch (error) {
+    throw new Error(
+      `Target app not reachable at ${app.k6.defaultBaseUrl}. Start the stack (QuickPizza) or set DEFAULT_BASE_URL.`,
+      { cause: error },
+    );
+  }
+});
 
 /** Starts a run through the API and returns it once k6 has finished. */
 async function runToEnd(body: Record<string, unknown>, service = app.service) {
@@ -47,7 +58,8 @@ describe('run lifecycle', () => {
     const originalPath = process.env.PATH;
 
     afterEach(() => {
-      process.env.PATH = originalPath;
+      if (originalPath === undefined) delete process.env.PATH;
+      else process.env.PATH = originalPath;
     });
 
     it('records an error with k6 output when the bundle is missing', async () => {

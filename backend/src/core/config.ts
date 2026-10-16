@@ -5,8 +5,6 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.url().default('postgres://perf:perf@localhost:10002/perf'),
-  // Integration tests create and drop one database per test file on this server.
-  TEST_DATABASE_URL: z.url().default('postgres://perf:perf@localhost:10005/perf'),
   DEFAULT_BASE_URL: z.url().default('http://localhost:10001'),
   K6_BUNDLE_DIR: z.string().min(1).default('dist/k6'),
 });

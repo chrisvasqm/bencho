@@ -12,6 +12,8 @@ import type { NewRun, Run } from '../../src/modules/runs/schema.ts';
 import { RunsService, type K6Settings } from '../../src/modules/runs/service.ts';
 import { DEFAULT_LIMITS, DEFAULT_STAGES } from '../../k6/lib/defaults.ts';
 import { DEFAULT_FLOW } from '../../k6/lib/flow.ts';
+import { AppError } from '../../src/core/errors.ts';
+import { testDatabaseUrl } from './test-config.ts';
 
 export interface TestApp {
   request: () => supertest.Agent;
@@ -32,14 +34,12 @@ export interface TestApp {
 /** Registers the hooks and returns the app; fields are filled once beforeAll has run. */
 export function useTestApp(): TestApp {
   const config = loadConfig();
+  const serverUrl = testDatabaseUrl();
   const k6: K6Settings = {
     bundleDir: config.K6_BUNDLE_DIR,
     defaultBaseUrl: config.DEFAULT_BASE_URL,
   };
-  const databaseUrl = withDatabaseName(
-    config.TEST_DATABASE_URL,
-    `perf_test_${randomUUID().slice(0, 8)}`,
-  );
+  const databaseUrl = withDatabaseName(serverUrl, `perf_test_${randomUUID().slice(0, 8)}`);
   let pool: pg.Pool;
   let consoleError: MockInstance<typeof console.error>;
   let loggedErrorsAllowed = false;
@@ -65,7 +65,7 @@ export function useTestApp(): TestApp {
   } as TestApp;
 
   beforeAll(async () => {
-    await adminQuery(config.TEST_DATABASE_URL, `create database "${databaseName(databaseUrl)}"`);
+    await adminQuery(serverUrl, `create database "${databaseName(databaseUrl)}"`);
     databaseCreated = true;
     await runMigrations(databaseUrl);
     const connection = connectDatabase(databaseUrl);
@@ -101,7 +101,7 @@ export function useTestApp(): TestApp {
     await pool?.end();
     if (!databaseCreated) return;
     await adminQuery(
-      config.TEST_DATABASE_URL,
+      serverUrl,
       `drop database if exists "${databaseName(databaseUrl)}" with (force)`,
     );
   });
@@ -112,7 +112,14 @@ export function useTestApp(): TestApp {
 /** Stops every queued or running run, so no k6 process outlives its test. */
 async function stopActiveRuns(service: RunsService): Promise<void> {
   const { runs } = await service.list({ active: true, page: 1, pageSize: 50 });
-  await Promise.all(runs.map((run) => service.stop(run.id).catch(() => undefined)));
+  await Promise.all(
+    runs.map((run) =>
+      service.stop(run.id).catch((error: unknown) => {
+        // The run may finish between the list and the stop; anything else is a real failure.
+        if (!(error instanceof AppError && error.code === 'RUN_NOT_ACTIVE')) throw error;
+      }),
+    ),
+  );
 }
 
 async function adminQuery(connectionString: string, statement: string): Promise<void> {
