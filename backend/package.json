@@ -16,7 +16,7 @@
     "format": "prettier --write .",
     "check": "tsc --noEmit && eslint . && prettier --check . && pnpm build",
     "test": "vitest run",
-    "test:db": "docker compose --profile test up -d --wait postgres-test"
+    "test:db": "docker compose -p perf-test --profile test up -d --wait postgres-test"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

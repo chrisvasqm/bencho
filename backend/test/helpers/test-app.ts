@@ -87,6 +87,8 @@ export function useTestApp(): TestApp {
   });
 
   afterEach(async () => {
+    // beforeAll or beforeEach failed: let that error show, not a TypeError from here.
+    if (!context.service || !consoleError) return;
     try {
       await stopActiveRuns(context.service);
       await context.service.waitForIdle();
