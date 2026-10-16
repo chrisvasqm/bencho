@@ -306,7 +306,7 @@ function RunPanelForm({
                     <Field
                       label="Max error rate"
                       htmlFor="max-error-rate"
-                      hint="Percent of failed requests"
+                      hint="Percent of requests without the expected status"
                       error={errors.maxErrorRate}
                     >
                       <Input
