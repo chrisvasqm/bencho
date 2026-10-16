@@ -10,7 +10,7 @@ import {
   type Run,
   type RunType,
 } from './api/runs.ts';
-import { Card, Pagination, Skeleton, Tabs } from './components/ui/index.ts';
+import { Badge, Card, Pagination, Skeleton, Tabs } from './components/ui/index.ts';
 import { RUN_TYPE_LABELS, isActive } from './features/runs/format.ts';
 import { ActiveRunsWidget } from './features/runs/ActiveRunsWidget.tsx';
 import { BulkDeleteBar } from './features/runs/BulkDeleteBar.tsx';
@@ -175,12 +175,10 @@ export function App() {
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-3">
             <Logo />
-            <div>
-              <h1 className="text-lg leading-tight font-semibold tracking-tight text-fg">Bencho</h1>
-              <p className="hidden max-w-[60ch] text-xs text-fg-muted sm:block">
-                Load, stress and spike tests with k6. Every run is kept by type.
-              </p>
-            </div>
+            <h1 className="text-lg leading-tight font-semibold tracking-tight text-fg">Bencho</h1>
+            <Badge tone="highlight" className="tracking-wide">
+              BETA
+            </Badge>
           </div>
           <ThemeSwitch />
         </div>
