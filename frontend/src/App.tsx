@@ -175,10 +175,12 @@ export function App() {
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-3">
             <Logo />
-            <h1 className="text-lg leading-tight font-semibold tracking-tight text-fg">Bencho</h1>
-            <Badge tone="highlight" className="tracking-wide">
-              BETA
-            </Badge>
+            <h1 className="flex items-center gap-2 text-lg leading-tight font-semibold tracking-tight text-fg">
+              Bencho
+              <Badge tone="highlight" className="tracking-wide uppercase">
+                Beta
+              </Badge>
+            </h1>
           </div>
           <ThemeSwitch />
         </div>
