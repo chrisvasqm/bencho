@@ -113,7 +113,7 @@ export function ActiveRunsWidget({ anchorRef, onOpen }: ActiveRunsWidgetProps) {
                       aria-valuenow={Math.round(progress * 100)}
                     >
                       <span
-                        className="block h-full rounded-full bg-accent transition-[width] duration-1000 ease-linear"
+                        className="block h-full rounded-full bg-accent-line transition-[width] duration-1000 ease-linear"
                         style={{ width: `${progress * 100}%` }}
                       />
                     </span>

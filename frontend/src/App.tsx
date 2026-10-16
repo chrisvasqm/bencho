@@ -300,10 +300,10 @@ export function App() {
 function Logo() {
   return (
     <svg viewBox="0 0 32 32" className="size-8 shrink-0" aria-hidden="true">
-      <rect width="32" height="32" rx="8" fill="var(--accent)" />
-      <rect x="7" y="17" width="4" height="8" rx="1.5" fill="var(--accent-fg)" />
-      <rect x="14" y="11" width="4" height="14" rx="1.5" fill="var(--accent-fg)" />
-      <rect x="21" y="6" width="4" height="19" rx="1.5" fill="var(--highlight)" />
+      <rect width="32" height="32" rx="8" fill="var(--logo-bg)" />
+      <rect x="7" y="17" width="4" height="8" rx="1.5" fill="var(--logo-fg)" />
+      <rect x="14" y="11" width="4" height="14" rx="1.5" fill="var(--logo-fg)" />
+      <rect x="21" y="6" width="4" height="19" rx="1.5" fill="var(--logo-bar)" />
     </svg>
   );
 }

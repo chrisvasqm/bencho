@@ -23,8 +23,8 @@ const toasterStyle = {
   '--warning-bg': 'var(--warning-soft)',
   '--warning-text': 'var(--warning)',
   '--warning-border': 'var(--line)',
-  '--info-bg': 'var(--accent-soft)',
-  '--info-text': 'var(--accent-strong)',
+  '--info-bg': 'var(--info-soft)',
+  '--info-text': 'var(--info)',
   '--info-border': 'var(--line)',
   fontFamily: 'var(--font-sans)',
 } as CSSProperties;

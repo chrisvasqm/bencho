@@ -29,7 +29,9 @@ export function Tabs<Value extends string>({ items, value, onChange, label }: Ta
             onClick={() => onChange(item.value)}
             className={cn(
               'flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors',
-              selected ? 'border-accent text-fg' : 'border-transparent text-fg-muted hover:text-fg',
+              selected
+                ? 'border-accent-line text-fg'
+                : 'border-transparent text-fg-muted hover:text-fg',
             )}
           >
             {item.label}

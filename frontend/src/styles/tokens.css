@@ -1,5 +1,9 @@
 /* Design tokens. Semantic names only; components never use raw palette colors.
-   Brand: k6 purple (accent) and Grafana orange (highlight). Light is the base; dark overrides
+   Brand: pastel k6 orange (accent) and k6 purple (highlight). The pastel is too light for white
+   text, so accent-fg is dark (8.8:1); accent-strong is the readable orange for text.
+   accent-line is the orange for borders and indicators (3:1 or more on surfaces);
+   accent-hover is the primary button hover. The logo keeps the original purple mark through its own logo-* tokens. Light is the base;
+   dark overrides
    under the system preference or data-theme="dark".
    Chart series are validated for color-vision deficiency against each theme's surface. */
 :root {
@@ -12,12 +16,17 @@
   --fg: #1b1830;
   --fg-muted: #5e5878;
   --fg-faint: #6b6587;
-  --accent: #6a50f0;
-  --accent-strong: #5338e0;
-  --accent-fg: #ffffff;
-  --accent-soft: #ebe7ff;
-  --highlight: #f46800;
-  --highlight-soft: #ffeadb;
+  --accent: #ffb085;
+  --accent-strong: #b84300;
+  --accent-fg: #3d1a05;
+  --accent-soft: #ffe6d6;
+  --accent-line: #d9580f;
+  --accent-hover: #ff9a63;
+  --highlight: #6a50f0;
+  --highlight-soft: #ebe7ff;
+  --logo-bg: #6a50f0;
+  --logo-fg: #ffffff;
+  --logo-bar: #f46800;
   --success: #15803d;
   --success-soft: #dcf5e4;
   --danger: #c4261d;
@@ -50,12 +59,17 @@
     --fg: #ece9f7;
     --fg-muted: #a39dbd;
     --fg-faint: #8f89ad;
-    --accent: #9b87ff;
-    --accent-strong: #b6a7ff;
-    --accent-fg: #160f33;
-    --accent-soft: #2a2350;
-    --highlight: #ff8a33;
-    --highlight-soft: #3a2310;
+    --accent: #ffb894;
+    --accent-strong: #ffc6a8;
+    --accent-fg: #3d1a05;
+    --accent-soft: #3a2a20;
+    --accent-line: #ffb894;
+    --accent-hover: #ffa47a;
+    --highlight: #9b87ff;
+    --highlight-soft: #2a2350;
+    --logo-bg: #9b87ff;
+    --logo-fg: #160f33;
+    --logo-bar: #ff8a33;
     --success: #4ade80;
     --success-soft: #14321f;
     --danger: #ff7a70;
@@ -83,12 +97,17 @@
   --fg: #ece9f7;
   --fg-muted: #a39dbd;
   --fg-faint: #8f89ad;
-  --accent: #9b87ff;
-  --accent-strong: #b6a7ff;
-  --accent-fg: #160f33;
-  --accent-soft: #2a2350;
-  --highlight: #ff8a33;
-  --highlight-soft: #3a2310;
+  --accent: #ffb894;
+  --accent-strong: #ffc6a8;
+  --accent-fg: #3d1a05;
+  --accent-soft: #3a2a20;
+  --accent-line: #ffb894;
+  --accent-hover: #ffa47a;
+  --highlight: #9b87ff;
+  --highlight-soft: #2a2350;
+  --logo-bg: #9b87ff;
+  --logo-fg: #160f33;
+  --logo-bar: #ff8a33;
   --success: #4ade80;
   --success-soft: #14321f;
   --danger: #ff7a70;

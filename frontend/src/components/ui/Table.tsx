@@ -57,7 +57,7 @@ export function Table<Row>({
                 className={cn(
                   'border-b border-line last:border-b-0',
                   onRowClick && 'cursor-pointer hover:bg-surface-sunken',
-                  selected && 'bg-accent-soft/50',
+                  selected && 'bg-accent-soft',
                 )}
               >
                 {columns.map((column) => (

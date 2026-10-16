@@ -68,7 +68,7 @@ export function FlowEditor({ steps, onChange, openId, onOpenChange: setOpenId }:
                 className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left text-sm"
               >
                 <span className="w-5 shrink-0 text-xs tabular-nums text-fg-faint">{index + 1}</span>
-                <span className="w-14 shrink-0 font-mono text-xs font-semibold text-accent">
+                <span className="w-14 shrink-0 font-mono text-xs font-semibold text-accent-strong">
                   {step.method}
                 </span>
                 <span className="max-w-[55%] shrink-0 truncate font-medium text-fg">

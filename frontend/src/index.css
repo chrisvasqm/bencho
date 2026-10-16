@@ -18,6 +18,8 @@
   --color-accent-strong: var(--accent-strong);
   --color-accent-fg: var(--accent-fg);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+  --color-accent-hover: var(--accent-hover);
   --color-highlight: var(--highlight);
   --color-highlight-soft: var(--highlight-soft);
   --color-series-1: var(--series-1);
