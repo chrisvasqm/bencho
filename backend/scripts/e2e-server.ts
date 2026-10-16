@@ -30,4 +30,10 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
 const url = new URL(server);
 url.pathname = `/${name}`;
 process.env.DATABASE_URL = url.toString();
-await import('../src/server.ts');
+try {
+  await import('../src/server.ts');
+} catch (error) {
+  // Startup failed (migrations, config): no signal will come, so drop the database here.
+  await admin(`drop database if exists "${name}" with (force)`).catch(() => undefined);
+  throw error;
+}
