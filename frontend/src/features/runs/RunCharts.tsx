@@ -1,0 +1,84 @@
+// Per-second charts for one run. Latency, load and errors have different units, so each gets
+// its own chart on one axis instead of a shared dual-axis chart.
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { runsApi, type Run } from '../../api/runs.ts';
+import { LineChart, Tabs } from '../../components/ui/index.ts';
+import { formatMs, formatSeconds, isActive } from './format.ts';
+
+type ChartTab = 'latency' | 'load' | 'errors';
+
+const CHART_TABS: ReadonlyArray<{ value: ChartTab; label: string }> = [
+  { value: 'latency', label: 'Latency' },
+  { value: 'load', label: 'Load' },
+  { value: 'errors', label: 'Errors' },
+];
+
+export const LATENCY_SERIES = [
+  { key: 'p50', label: 'p50', color: 'var(--series-1)' },
+  { key: 'p90', label: 'p90', color: 'var(--series-2)' },
+  { key: 'p95', label: 'p95', color: 'var(--series-3)' },
+  { key: 'p99', label: 'p99', color: 'var(--series-4)' },
+] as const;
+
+const POLL_INTERVAL_MS = 2000;
+
+export function RunCharts({ run }: { run: Run }) {
+  const [tab, setTab] = useState<ChartTab>('latency');
+  const active = isActive(run.status);
+  const points = useQuery({
+    // Status in the key: one last fetch when the run finishes, then the cache holds.
+    queryKey: ['points', run.id, run.status],
+    queryFn: () => runsApi.points(run.id),
+    refetchInterval: active ? POLL_INTERVAL_MS : false,
+    placeholderData: (previous) => previous,
+  });
+  const data = points.data?.points ?? [];
+  const empty = active
+    ? 'Waiting for the first seconds of data…'
+    : 'No per-second data for this run.';
+  const shared = {
+    data,
+    xKey: 'second' as const,
+    formatX: formatSeconds,
+    loading: points.isPending,
+    empty,
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Tabs label="Run charts" value={tab} onChange={setTab} items={CHART_TABS} />
+      {tab === 'latency' && (
+        <LineChart
+          {...shared}
+          title="Response time per second"
+          series={LATENCY_SERIES}
+          formatY={(value) => formatMs(value)}
+          height={260}
+        />
+      )}
+      {tab === 'load' && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <LineChart
+            {...shared}
+            title="Virtual users"
+            series={[{ key: 'virtualUsers', label: 'Virtual users', color: 'var(--series-1)' }]}
+          />
+          <LineChart
+            {...shared}
+            title="Requests per second"
+            series={[{ key: 'requestsPerSecond', label: 'Requests/s', color: 'var(--series-3)' }]}
+          />
+        </div>
+      )}
+      {tab === 'errors' && (
+        <LineChart
+          {...shared}
+          title="Failed requests per second"
+          series={[{ key: 'errorRate', label: 'Error rate', color: 'var(--series-4)' }]}
+          formatY={(value) => `${(value * 100).toFixed(1)}%`}
+        />
+      )}
+    </div>
+  );
+}

@@ -62,3 +62,41 @@ export function durationSeconds(run: Run): number | undefined {
   if (!run.startedAt || !run.finishedAt) return undefined;
   return (new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000;
 }
+
+const DURATION_UNIT_SECONDS: Record<string, number> = { ms: 0.001, s: 1, m: 60, h: 3600 };
+
+/** "1m30s" → 90. Returns NaN when the string is not a k6 duration. */
+export function durationToSeconds(duration: string): number {
+  if (!/^(\d+(ms|s|m|h))+$/.test(duration)) return Number.NaN;
+  let total = 0;
+  for (const [, amount, unit] of duration.matchAll(/(\d+)(ms|s|m|h)/g)) {
+    total += Number(amount) * (DURATION_UNIT_SECONDS[unit ?? 's'] ?? 0);
+  }
+  return total;
+}
+
+export interface PlannedPoint {
+  second: number;
+  virtualUsers: number;
+}
+
+/** Planned virtual users over time: k6 ramps linearly from one stage target to the next. */
+export function plannedShape(stages: Stage[]): PlannedPoint[] {
+  const points: PlannedPoint[] = [{ second: 0, virtualUsers: 0 }];
+  let elapsed = 0;
+  for (const stage of stages) {
+    const seconds = durationToSeconds(stage.duration);
+    if (!Number.isFinite(seconds)) return points;
+    elapsed += seconds;
+    points.push({ second: elapsed, virtualUsers: stage.target });
+  }
+  return points;
+}
+
+export function formatSeconds(value: number | string): string {
+  const seconds = Number(value);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const rest = Math.round(seconds % 60);
+  return rest ? `${minutes}m${rest}s` : `${minutes}m`;
+}

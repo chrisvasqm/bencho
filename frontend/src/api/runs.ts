@@ -68,6 +68,26 @@ const runSchema = z.object({
 });
 export type Run = z.infer<typeof runSchema>;
 
+const pointSchema = z.object({
+  second: z.number(),
+  virtualUsers: z.number(),
+  requestsPerSecond: z.number(),
+  errorRate: z.number(),
+  p50: z.number().nullable(),
+  p90: z.number().nullable(),
+  p95: z.number().nullable(),
+  p99: z.number().nullable(),
+});
+export type RunPoint = z.infer<typeof pointSchema>;
+
+const runsPageSchema = z.object({
+  runs: z.array(runSchema),
+  total: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+});
+export type RunsPage = z.infer<typeof runsPageSchema>;
+
 const defaultsSchema = z.object({
   baseUrl: z.string(),
   stages: z.record(z.enum(RUN_TYPES), z.array(stageSchema)),
@@ -104,6 +124,7 @@ async function request<Output>(path: string, schema: z.ZodType<Output>, init?: R
     ...init,
     headers: { 'Content-Type': 'application/json', ...init?.headers },
   });
+  if (response.status === 204) return schema.parse(undefined);
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const parsed = errorBodySchema.safeParse(body);
@@ -117,7 +138,10 @@ async function request<Output>(path: string, schema: z.ZodType<Output>, init?: R
 
 export const runsApi = {
   defaults: () => request('/defaults', defaultsSchema),
-  list: (type: RunType) => request(`/runs?type=${type}`, z.object({ runs: z.array(runSchema) })),
+  list: (type: RunType, page: number, pageSize: number) =>
+    request(`/runs?type=${type}&page=${page}&pageSize=${pageSize}`, runsPageSchema),
+  points: (id: string) => request(`/runs/${id}/points`, z.object({ points: z.array(pointSchema) })),
+  remove: (id: string) => request(`/runs/${id}`, z.undefined(), { method: 'DELETE' }),
   get: (id: string) => request(`/runs/${id}`, z.object({ run: runSchema })),
   create: (input: CreateRunInput) =>
     request('/runs', z.object({ run: runSchema }), { method: 'POST', body: JSON.stringify(input) }),
