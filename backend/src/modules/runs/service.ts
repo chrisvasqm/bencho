@@ -7,10 +7,12 @@ import { AppError } from '../../core/errors.ts';
 import { DEFAULT_LIMITS, DEFAULT_STAGES, stagesToEnv } from '../../../k6/lib/defaults.ts';
 import type { RunType } from '../../../k6/lib/defaults.ts';
 import type { RunsRepository } from './repository.ts';
-import type { CreateRunInput, Run, RunStatus } from './schema.ts';
+import { FileTail, TimeseriesAggregator } from './timeseries.ts';
+import type { CreateRunInput, Run, RunPoint, RunStatus } from './schema.ts';
 
 const K6_THRESHOLD_FAILED_EXIT_CODE = 99;
 const MAX_CONCURRENT_RUNS = 3;
+const POINTS_FLUSH_INTERVAL_MS = 2000;
 
 export interface K6Settings {
   bundleDir: string;
@@ -59,6 +61,16 @@ export class RunsService {
     return run;
   }
 
+  async listPoints(id: string): Promise<RunPoint[]> {
+    await this.getById(id);
+    return this.repository.listPoints(id);
+  }
+
+  /** Call once at startup, before accepting runs. */
+  async failUnfinishedRuns(): Promise<number> {
+    return this.repository.failUnfinished('The backend restarted while this run was in progress.');
+  }
+
   list(type?: RunType): Promise<Run[]> {
     return this.repository.list(type);
   }
@@ -75,7 +87,10 @@ export class RunsService {
       await this.repository.update(run.id, { status: 'running', startedAt: new Date() });
       workDir = await mkdtemp(join(tmpdir(), 'k6-run-'));
       const summaryPath = join(workDir, 'summary.json');
-      const { exitCode, stderr } = await this.spawnK6(run, summaryPath);
+      const pointsPath = join(workDir, 'points.csv');
+      const { exitCode, stderr } = await this.withLivePoints(run.id, pointsPath, () =>
+        this.spawnK6(run, summaryPath, pointsPath),
+      );
       const summary = await readSummary(summaryPath);
       await this.repository.update(run.id, {
         status: statusFromExitCode(exitCode),
@@ -88,6 +103,33 @@ export class RunsService {
       await this.markError(run.id, error);
     } finally {
       if (workDir) await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
+    }
+  }
+
+  /** While `work` runs, turns new CSV rows into stored points every couple of seconds. */
+  private async withLivePoints<Result>(
+    runId: string,
+    pointsPath: string,
+    work: () => Promise<Result>,
+  ): Promise<Result> {
+    const tail = new FileTail(pointsPath);
+    const aggregator = new TimeseriesAggregator();
+    let flushing = Promise.resolve();
+    const flush = (all: boolean) => {
+      flushing = flushing.then(async () => {
+        aggregator.consume(await tail.read());
+        await this.repository.addPoints(runId, aggregator.drain(all));
+      });
+      return flushing;
+    };
+    const timer = setInterval(() => {
+      flush(false).catch((error: unknown) => console.error(`run ${runId} points flush`, error));
+    }, POINTS_FLUSH_INTERVAL_MS);
+    try {
+      return await work();
+    } finally {
+      clearInterval(timer);
+      await flush(true).catch((error: unknown) => console.error(`run ${runId} points`, error));
     }
   }
 
@@ -104,7 +146,11 @@ export class RunsService {
     }
   }
 
-  private spawnK6(run: Run, summaryPath: string): Promise<{ exitCode: number; stderr: string }> {
+  private spawnK6(
+    run: Run,
+    summaryPath: string,
+    pointsPath: string,
+  ): Promise<{ exitCode: number; stderr: string }> {
     const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs } = run.limits;
     // Only what k6 needs: the child must not inherit DATABASE_URL or other secrets.
     const env = {
@@ -121,9 +167,20 @@ export class RunsService {
     };
     const bundle = join(this.k6.bundleDir, `${run.type}.js`);
     return new Promise((resolve, reject) => {
-      const child = spawn('k6', ['run', '--quiet', '--summary-export', summaryPath, bundle], {
-        env,
-      });
+      const args = [
+        'run',
+        '--quiet',
+        '--summary-export',
+        summaryPath,
+        '--out',
+        `csv=${pointsPath}`,
+        '--system-tags=',
+        // Own REST API port per run (0 = any free one), so parallel runs never collide on 6565.
+        '--address',
+        'localhost:0',
+        bundle,
+      ];
+      const child = spawn('k6', args, { env });
       let stderr = '';
       child.stderr.on('data', (chunk: Buffer) => {
         stderr = (stderr + chunk.toString()).slice(-4000);

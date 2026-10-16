@@ -58,3 +58,14 @@ export const DEFAULT_STAGES: Record<RunType, LoadStage[]> = {
 export function stagesToEnv(stages: LoadStage[]): string {
   return stages.map((stage) => `${stage.duration}:${stage.target}`).join(',');
 }
+
+const DURATION_UNIT_SECONDS: Record<string, number> = { ms: 0.001, s: 1, m: 60, h: 3600 };
+
+/** "1m30s" → 90. Assumes the string already matches DURATION_PATTERN. */
+export function durationToSeconds(duration: string): number {
+  let total = 0;
+  for (const [, amount, unit] of duration.matchAll(/(\d+)(ms|s|m|h)/g)) {
+    total += Number(amount) * (DURATION_UNIT_SECONDS[unit ?? 's'] ?? 0);
+  }
+  return total;
+}

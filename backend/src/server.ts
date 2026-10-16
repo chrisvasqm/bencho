@@ -12,6 +12,10 @@ const runsService = new RunsService(new RunsRepository(db), {
   defaultBaseUrl: config.DEFAULT_BASE_URL,
 });
 
+const staleRuns = await runsService.failUnfinishedRuns();
+if (staleRuns > 0)
+  console.log(`marked ${staleRuns} unfinished run(s) from a previous start as error`);
+
 createApp(runsService).listen(config.PORT, () => {
   console.log(`backend listening on :${config.PORT} (${config.NODE_ENV})`);
 });

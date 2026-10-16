@@ -23,5 +23,13 @@ export function runsRoutes(service: RunsService): Router {
     response.json({ run: await service.getById(response.locals.params.id) });
   });
 
+  router.get(
+    '/runs/:id/points',
+    validate('params', runIdParamsSchema),
+    async (_request, response) => {
+      response.json({ points: await service.listPoints(response.locals.params.id) });
+    },
+  );
+
   return router;
 }

@@ -1,8 +1,18 @@
-import { integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  doublePrecision,
+  integer,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { z } from 'zod';
 import {
   DURATION_PATTERN,
   RUN_TYPES,
+  durationToSeconds,
   type LoadStage,
   type RunLimits,
   type RunType,
@@ -27,10 +37,31 @@ export const runs = pgTable('runs', {
 });
 
 export type Run = typeof runs.$inferSelect;
+
+/** One point per second of a run, built from k6's CSV output. */
+export const runPoints = pgTable(
+  'run_points',
+  {
+    runId: uuid('run_id')
+      .notNull()
+      .references(() => runs.id, { onDelete: 'cascade' }),
+    second: integer('second').notNull(),
+    virtualUsers: integer('virtual_users').notNull(),
+    requestsPerSecond: integer('requests_per_second').notNull(),
+    errorRate: doublePrecision('error_rate').notNull(),
+    p50: doublePrecision('p50'),
+    p90: doublePrecision('p90'),
+    p95: doublePrecision('p95'),
+    p99: doublePrecision('p99'),
+  },
+  (table) => [primaryKey({ columns: [table.runId, table.second] })],
+);
+export type RunPoint = typeof runPoints.$inferSelect;
 export type NewRun = typeof runs.$inferInsert;
 
 export const MAX_VIRTUAL_USERS = 1000;
 export const MAX_STAGES = 20;
+export const MAX_RUN_SECONDS = 3600;
 
 const stageSchema = z.object({
   duration: z.string().regex(DURATION_PATTERN, 'Use a k6 duration such as 30s or 1m'),
@@ -42,7 +73,17 @@ const positiveMs = z.number().int().positive();
 export const createRunSchema = z.object({
   type: z.enum(RUN_TYPES),
   baseUrl: z.url(),
-  stages: z.array(stageSchema).min(1).max(MAX_STAGES).optional(),
+  stages: z
+    .array(stageSchema)
+    .min(1)
+    .max(MAX_STAGES)
+    .refine(
+      (stages) =>
+        stages.reduce((total, stage) => total + durationToSeconds(stage.duration), 0) <=
+        MAX_RUN_SECONDS,
+      { message: `All stages together must last at most ${MAX_RUN_SECONDS / 60} minutes` },
+    )
+    .optional(),
   thinkTimeSeconds: z.number().min(0).optional(),
   maxErrorRate: z.number().min(0).max(1).optional(),
   latencyLimitsMs: z

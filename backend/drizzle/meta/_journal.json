@@ -8,6 +8,13 @@
       "when": 1792109868936,
       "tag": "0000_ordinary_doctor_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792111271347,
+      "tag": "0001_perfect_azazel",
+      "breakpoints": true
     }
   ]
 }
