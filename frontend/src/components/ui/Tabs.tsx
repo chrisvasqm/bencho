@@ -4,6 +4,8 @@ export interface TabItem<Value extends string> {
   value: Value;
   label: string;
   count?: number;
+  /** Marks the tab as needing attention, e.g. a form error inside it. */
+  alert?: boolean;
 }
 
 export interface TabsProps<Value extends string> {
@@ -33,6 +35,9 @@ export function Tabs<Value extends string>({ items, value, onChange, label }: Ta
             )}
           >
             {item.label}
+            {item.alert && (
+              <span aria-label="has errors" className="size-1.5 rounded-full bg-danger" />
+            )}
             {item.count !== undefined && (
               <span className="rounded-full bg-surface-sunken px-1.5 font-mono text-xs tabular-nums text-fg-muted">
                 {item.count}

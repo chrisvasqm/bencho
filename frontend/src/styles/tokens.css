@@ -1,86 +1,106 @@
 /* Design tokens. Semantic names only; components never use raw palette colors.
-   Light is the base; dark overrides under system preference or data-theme="dark". */
+   Brand: k6 purple (accent) and Grafana orange (highlight). Light is the base; dark overrides
+   under the system preference or data-theme="dark".
+   Chart series are validated for color-vision deficiency against each theme's surface. */
 :root {
   color-scheme: light;
-  --canvas: #f2f4f3;
+  --canvas: #f5f4fa;
   --surface: #ffffff;
-  --surface-sunken: #e9edeb;
-  --line: #d3d9d6;
-  --line-strong: #aab3ae;
-  --fg: #141a18;
-  --fg-muted: #5c6763;
-  --fg-faint: #8b9590;
-  --accent: #0f766e;
-  --accent-strong: #0b5e58;
+  --surface-sunken: #efedf7;
+  --line: #dfdbee;
+  --line-strong: #b9b2d6;
+  --fg: #1b1830;
+  --fg-muted: #5e5878;
+  --fg-faint: #8a84a6;
+  --accent: #6a50f0;
+  --accent-strong: #5338e0;
   --accent-fg: #ffffff;
-  --accent-soft: #d8efe9;
+  --accent-soft: #ebe7ff;
+  --highlight: #f46800;
+  --highlight-soft: #ffeadb;
   --success: #15803d;
   --success-soft: #dcf5e4;
-  --danger: #b91c1c;
-  --danger-soft: #fbe1e1;
+  --danger: #c4261d;
+  --danger-soft: #fde4e2;
   --warning: #b45309;
   --warning-soft: #fdecd3;
-  --info: #1d4ed8;
-  --info-soft: #dde8fd;
-  --focus: #0f766e;
+  --info: #6a50f0;
+  --info-soft: #ebe7ff;
+  --focus: #6a50f0;
+  --series-1: #6a50f0;
+  --series-2: #0f9466;
+  --series-3: #f46800;
+  --series-4: #d55181;
   --font-sans: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
-  --shadow-raised: 0 1px 2px rgb(20 26 24 / 0.06), 0 4px 12px rgb(20 26 24 / 0.05);
+  --shadow-raised: 0 1px 2px rgb(27 24 48 / 0.06), 0 4px 12px rgb(27 24 48 / 0.05);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --canvas: #0f1413;
-    --surface: #171d1b;
-    --surface-sunken: #0b0f0e;
-    --line: #28312e;
-    --line-strong: #3f4a46;
-    --fg: #e7ecea;
-    --fg-muted: #9aa5a0;
-    --fg-faint: #6b7571;
-    --accent: #2dd4bf;
-    --accent-strong: #5eead4;
-    --accent-fg: #082f2b;
-    --accent-soft: #123a36;
+    --canvas: #110f1a;
+    --surface: #1a1726;
+    --surface-sunken: #0d0b14;
+    --line: #2c2840;
+    --line-strong: #453f60;
+    --fg: #ece9f7;
+    --fg-muted: #a39dbd;
+    --fg-faint: #6f6990;
+    --accent: #9b87ff;
+    --accent-strong: #b6a7ff;
+    --accent-fg: #160f33;
+    --accent-soft: #2a2350;
+    --highlight: #ff8a33;
+    --highlight-soft: #3a2310;
     --success: #4ade80;
     --success-soft: #14321f;
-    --danger: #f87171;
-    --danger-soft: #3b1515;
+    --danger: #ff7a70;
+    --danger-soft: #3d1717;
     --warning: #fbbf24;
     --warning-soft: #3b2a0c;
-    --info: #60a5fa;
-    --info-soft: #152748;
-    --focus: #2dd4bf;
+    --info: #9b87ff;
+    --info-soft: #2a2350;
+    --focus: #9b87ff;
+    --series-1: #8a73ff;
+    --series-2: #199e70;
+    --series-3: #e0670f;
+    --series-4: #d84f95;
     --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.35);
   }
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --canvas: #0f1413;
-  --surface: #171d1b;
-  --surface-sunken: #0b0f0e;
-  --line: #28312e;
-  --line-strong: #3f4a46;
-  --fg: #e7ecea;
-  --fg-muted: #9aa5a0;
-  --fg-faint: #6b7571;
-  --accent: #2dd4bf;
-  --accent-strong: #5eead4;
-  --accent-fg: #082f2b;
-  --accent-soft: #123a36;
+  --canvas: #110f1a;
+  --surface: #1a1726;
+  --surface-sunken: #0d0b14;
+  --line: #2c2840;
+  --line-strong: #453f60;
+  --fg: #ece9f7;
+  --fg-muted: #a39dbd;
+  --fg-faint: #6f6990;
+  --accent: #9b87ff;
+  --accent-strong: #b6a7ff;
+  --accent-fg: #160f33;
+  --accent-soft: #2a2350;
+  --highlight: #ff8a33;
+  --highlight-soft: #3a2310;
   --success: #4ade80;
   --success-soft: #14321f;
-  --danger: #f87171;
-  --danger-soft: #3b1515;
+  --danger: #ff7a70;
+  --danger-soft: #3d1717;
   --warning: #fbbf24;
   --warning-soft: #3b2a0c;
-  --info: #60a5fa;
-  --info-soft: #152748;
-  --focus: #2dd4bf;
+  --info: #9b87ff;
+  --info-soft: #2a2350;
+  --focus: #9b87ff;
+  --series-1: #8a73ff;
+  --series-2: #199e70;
+  --series-3: #e0670f;
+  --series-4: #d84f95;
   --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.35);
 }

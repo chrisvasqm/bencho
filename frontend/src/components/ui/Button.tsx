@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { cn } from './cn.ts';
+import { Spinner } from './Spinner.tsx';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md';
@@ -49,14 +50,5 @@ export function Button({
       {loading && <Spinner />}
       {children}
     </button>
-  );
-}
-
-function Spinner() {
-  return (
-    <span
-      aria-hidden="true"
-      className="size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"
-    />
   );
 }
