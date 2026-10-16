@@ -13,6 +13,7 @@ import { RUN_TYPE_LABELS, isActive } from './features/runs/format.ts';
 import { RunDetail } from './features/runs/RunDetail.tsx';
 import { RunForm } from './features/runs/RunForm.tsx';
 import { RunsTable } from './features/runs/RunsTable.tsx';
+import { ThemeSwitch } from './features/theme/ThemeSwitch.tsx';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -51,12 +52,15 @@ export function App() {
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">Load Bench</h1>
-        <p className="max-w-2xl text-sm text-fg-muted">
-          Point k6 at any HTTP endpoint, shape the traffic, set the limits, and keep every run on
-          record by test type.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">Load Bench</h1>
+          <p className="max-w-2xl text-sm text-fg-muted">
+            Point k6 at any HTTP endpoint, shape the traffic, set the limits, and keep every run on
+            record by test type.
+          </p>
+        </div>
+        <ThemeSwitch />
       </header>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_1fr]">
