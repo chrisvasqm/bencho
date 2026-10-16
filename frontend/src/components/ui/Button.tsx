@@ -25,7 +25,7 @@ const sizeClasses: Record<ButtonSize, string> = {
   // press (it would show gaps at the edges), and the focus ring sits inside: outside it would
   // cover the card body. `!` beats the unlayered global :focus-visible rule.
   block:
-    'min-h-14 w-full rounded-b-lg px-5 text-base active:brightness-90 focus-visible:-outline-offset-4! focus-visible:outline-accent-fg!',
+    'min-h-14 w-full rounded-b-lg px-5 text-base active:brightness-90 focus-visible:-outline-offset-4! focus-visible:outline-current!',
 };
 
 export function Button({
@@ -44,7 +44,7 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex items-center justify-center gap-2 font-medium whitespace-nowrap transition-[background-color,color,transform] duration-150',
+        'inline-flex items-center justify-center gap-2 font-medium whitespace-nowrap transition-[background-color,color,transform,filter] duration-150',
         'disabled:cursor-not-allowed disabled:opacity-50',
         variantClasses[variant],
         sizeClasses[size],
