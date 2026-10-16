@@ -29,9 +29,12 @@ export const runs = pgTable('runs', {
 export type Run = typeof runs.$inferSelect;
 export type NewRun = typeof runs.$inferInsert;
 
+export const MAX_VIRTUAL_USERS = 1000;
+export const MAX_STAGES = 20;
+
 const stageSchema = z.object({
   duration: z.string().regex(DURATION_PATTERN, 'Use a k6 duration such as 30s or 1m'),
-  target: z.number().int().min(0),
+  target: z.number().int().min(0).max(MAX_VIRTUAL_USERS),
 });
 
 const positiveMs = z.number().int().positive();
@@ -39,7 +42,7 @@ const positiveMs = z.number().int().positive();
 export const createRunSchema = z.object({
   type: z.enum(RUN_TYPES),
   baseUrl: z.url(),
-  stages: z.array(stageSchema).min(1).optional(),
+  stages: z.array(stageSchema).min(1).max(MAX_STAGES).optional(),
   thinkTimeSeconds: z.number().min(0).optional(),
   maxErrorRate: z.number().min(0).max(1).optional(),
   latencyLimitsMs: z

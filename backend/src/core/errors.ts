@@ -22,8 +22,24 @@ export const errorHandler: ErrorRequestHandler = (error, _request, response, _ne
     });
     return;
   }
+  const status = statusOf(error);
+  if (status >= 400 && status < 500) {
+    response.status(status).json({
+      error: { code: 'BAD_REQUEST', message: 'The request could not be read.', details: null },
+    });
+    return;
+  }
   console.error(error);
   response.status(500).json({
     error: { code: 'INTERNAL', message: 'Something went wrong. Try again.', details: null },
   });
 };
+
+/** body-parser and similar set `status` on client errors (malformed JSON, body too large). */
+function statusOf(error: unknown): number {
+  if (typeof error === 'object' && error !== null && 'status' in error) {
+    const { status } = error as { status: unknown };
+    if (typeof status === 'number') return status;
+  }
+  return 500;
+}

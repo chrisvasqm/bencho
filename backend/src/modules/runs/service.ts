@@ -10,6 +10,7 @@ import type { RunsRepository } from './repository.ts';
 import type { CreateRunInput, Run, RunStatus } from './schema.ts';
 
 const K6_THRESHOLD_FAILED_EXIT_CODE = 99;
+const MAX_CONCURRENT_RUNS = 3;
 
 export interface K6Settings {
   bundleDir: string;
@@ -30,6 +31,13 @@ export class RunsService {
 
   /** Stores the run as queued and starts k6 in the background. Poll getById for the outcome. */
   async start(input: CreateRunInput): Promise<Run> {
+    if (this.inFlight.size >= MAX_CONCURRENT_RUNS) {
+      throw new AppError(
+        409,
+        'TOO_MANY_RUNS',
+        `At most ${MAX_CONCURRENT_RUNS} runs can be in progress. Wait for one to finish.`,
+      );
+    }
     const run = await this.repository.create({
       type: input.type,
       baseUrl: input.baseUrl,
@@ -60,11 +68,13 @@ export class RunsService {
     await Promise.allSettled([...this.inFlight]);
   }
 
+  /** Never rejects: a detached promise that rejects would crash the process. */
   private async execute(run: Run): Promise<void> {
-    await this.repository.update(run.id, { status: 'running', startedAt: new Date() });
-    const workDir = await mkdtemp(join(tmpdir(), 'k6-run-'));
-    const summaryPath = join(workDir, 'summary.json');
+    let workDir: string | undefined;
     try {
+      await this.repository.update(run.id, { status: 'running', startedAt: new Date() });
+      workDir = await mkdtemp(join(tmpdir(), 'k6-run-'));
+      const summaryPath = join(workDir, 'summary.json');
       const { exitCode, stderr } = await this.spawnK6(run, summaryPath);
       const summary = await readSummary(summaryPath);
       await this.repository.update(run.id, {
@@ -75,20 +85,31 @@ export class RunsService {
         finishedAt: new Date(),
       });
     } catch (error) {
-      await this.repository.update(run.id, {
+      await this.markError(run.id, error);
+    } finally {
+      if (workDir) await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
+    }
+  }
+
+  private async markError(runId: string, error: unknown): Promise<void> {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    try {
+      await this.repository.update(runId, {
         status: 'error',
-        errorMessage: error instanceof Error ? error.message : String(error),
+        errorMessage,
         finishedAt: new Date(),
       });
-    } finally {
-      await rm(workDir, { recursive: true, force: true });
+    } catch (updateError) {
+      console.error(`run ${runId} failed and could not be marked as error`, updateError);
     }
   }
 
   private spawnK6(run: Run, summaryPath: string): Promise<{ exitCode: number; stderr: string }> {
     const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs } = run.limits;
+    // Only what k6 needs: the child must not inherit DATABASE_URL or other secrets.
     const env = {
-      ...process.env,
+      PATH: process.env.PATH,
+      HOME: process.env.HOME,
       BASE_URL: run.baseUrl,
       STAGES: stagesToEnv(run.stages),
       THINK_TIME_SECONDS: String(thinkTimeSeconds),

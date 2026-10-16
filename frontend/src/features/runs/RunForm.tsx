@@ -31,14 +31,20 @@ function validate(input: CreateRunInput): Record<string, string> {
   }
   if (input.stages.some((stage) => !DURATION_PATTERN.test(stage.duration))) {
     errors.stages = 'Durations use k6 units: 10s, 1m, 1h30m';
-  }
-  if (input.stages.some((stage) => !Number.isInteger(stage.target) || stage.target < 0)) {
+  } else if (input.stages.some((stage) => !Number.isInteger(stage.target) || stage.target < 0)) {
     errors.stages = 'Virtual users must be a whole number of 0 or more';
   }
-  if (input.maxErrorRate < 0 || input.maxErrorRate > 1) {
+  if (!Number.isFinite(input.thinkTimeSeconds) || input.thinkTimeSeconds < 0) {
+    errors.thinkTime = 'Use a number of seconds, 0 or more';
+  }
+  if (!Number.isFinite(input.maxErrorRate) || input.maxErrorRate < 0 || input.maxErrorRate > 1) {
     errors.maxErrorRate = 'Use a percentage between 0 and 100';
   }
-  if (PERCENTILES.some((key) => input.latencyLimitsMs[key] <= 0)) {
+  if (
+    PERCENTILES.some(
+      (key) => !Number.isFinite(input.latencyLimitsMs[key]) || input.latencyLimitsMs[key] <= 0,
+    )
+  ) {
     errors.latency = 'Every limit must be above 0 ms';
   }
   return errors;
@@ -59,10 +65,12 @@ export function RunForm({
   const [latency, setLatency] = useState(defaults.limits.latencyLimitsMs);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const changeType = (next: RunType) => {
-    onTypeChange(next);
-    setStages(defaults.stages[next]);
-  };
+  // The type can also change from the Runs tabs; the stages must follow either way.
+  const [stagesType, setStagesType] = useState(type);
+  if (stagesType !== type) {
+    setStagesType(type);
+    setStages(defaults.stages[type]);
+  }
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -85,7 +93,7 @@ export function RunForm({
         <Select
           id="run-type"
           value={type}
-          onChange={changeType}
+          onChange={onTypeChange}
           options={RUN_TYPES.map((value) => ({ value, label: RUN_TYPE_LABELS[value] }))}
         />
       </Field>
@@ -106,7 +114,12 @@ export function RunForm({
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Think time" htmlFor="think-time" hint="Seconds between requests per user">
+        <Field
+          label="Think time"
+          htmlFor="think-time"
+          hint="Seconds between requests per user"
+          error={errors.thinkTime}
+        >
           <Input
             id="think-time"
             mono
