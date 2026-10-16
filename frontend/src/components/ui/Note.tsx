@@ -11,7 +11,8 @@ export interface NoteProps {
 export function Note({ title, children, className }: NoteProps) {
   const titleId = useId();
   return (
-    <aside
+    <div
+      role="note"
       aria-labelledby={title ? titleId : undefined}
       className={cn(
         'flex flex-col gap-1 rounded-md border border-line bg-surface-sunken px-3 py-2 text-xs leading-relaxed text-fg-muted',
@@ -24,6 +25,6 @@ export function Note({ title, children, className }: NoteProps) {
         </h3>
       )}
       {children}
-    </aside>
+    </div>
   );
 }

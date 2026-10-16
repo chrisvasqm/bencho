@@ -272,13 +272,13 @@ function RunPanelForm({
                     <p className="m-0">
                       A virtual user (VU) is one simulated user. It runs the steps in the Flow tab
                       in order, waits the think time after each step, then starts again until the
-                      run ends. When a step fails, the VU skips the remaining steps and starts
-                      again.
+                      run ends. When a step fails, the VU waits the think time, skips the remaining
+                      steps and starts again.
                     </p>
                     <p className="m-0">
                       Stages run in order. During each stage, the number of VUs changes steadily to
-                      the stage's target. For example, 30s → 20 then 1m → 20 adds users for 30
-                      seconds, then holds 20 users for 1 minute.
+                      the stage's target. For example, 30s → 20 VUs, then 1m → 20 VUs adds users for
+                      30 seconds, then holds 20 users for 1 minute.
                     </p>
                   </Note>
                 </>
@@ -354,8 +354,8 @@ function RunPanelForm({
                   <Note title="What do p50, p90, p95 and p99 mean?">
                     <p className="m-0">{EXPLAIN.percentile}</p>
                     <p className="m-0">
-                      p50 is the typical request. p99 shows the slowest 1%. An average hides these
-                      slow requests, so the limits use percentiles.
+                      p50 is the typical request. p99 is the line the slowest 1% of requests are
+                      above. An average hides these slow requests, so the limits use percentiles.
                     </p>
                   </Note>
                   <Note title="When does a run fail?">

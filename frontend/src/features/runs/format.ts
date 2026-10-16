@@ -106,7 +106,7 @@ export function formatSeconds(value: number | string): string {
 // Plain-language explanations shared by the inline notes, so the wording stays the same everywhere.
 export const EXPLAIN = {
   percentile:
-    'A percentile of the response time. A p95 of 300 ms means 95 of every 100 requests took less than 300 ms; the slowest 5 took longer.',
+    'A percentile of the response time. A p95 of 300 ms means 95 of every 100 requests took 300 ms or less; the slowest 5 took longer.',
   errorRate: 'Error rate is the share of requests that did not get the status their step expects.',
   failRule:
     'A run fails when any latency value reaches its limit (each must stay below it), when the error rate reaches the maximum, or when 99% or fewer of the checks pass. Checks confirm that each step got its expected status and saved its values, so a run can fail with a 0% error rate.',
