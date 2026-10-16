@@ -3,7 +3,7 @@ import { cn } from './cn.ts';
 import { Spinner } from './Spinner.tsx';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
-export type ButtonSize = 'sm' | 'md';
+export type ButtonSize = 'sm' | 'md' | 'block';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -19,8 +19,10 @@ const variantClasses: Record<ButtonVariant, string> = {
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-sm',
-  md: 'h-10 px-4 text-sm',
+  sm: 'h-8 rounded-md px-3 text-sm',
+  md: 'h-10 rounded-md px-4 text-sm',
+  // Fills its container edge to edge, e.g. a flush card footer.
+  block: 'h-full min-h-14 w-full rounded-none px-5 text-base',
 };
 
 export function Button({
@@ -39,7 +41,7 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-md font-medium whitespace-nowrap transition-[background-color,color,transform] duration-150 active:scale-[0.98]',
+        'inline-flex items-center justify-center gap-2 font-medium whitespace-nowrap transition-[background-color,color,transform] duration-150 active:scale-[0.98]',
         'disabled:cursor-not-allowed disabled:opacity-50',
         variantClasses[variant],
         sizeClasses[size],

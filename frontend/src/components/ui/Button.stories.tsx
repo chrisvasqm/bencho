@@ -7,7 +7,7 @@ const meta = {
   args: { children: 'Start load test', variant: 'primary', size: 'md' },
   argTypes: {
     variant: { control: 'select', options: ['primary', 'secondary', 'ghost', 'danger'] },
-    size: { control: 'select', options: ['sm', 'md'] },
+    size: { control: 'select', options: ['sm', 'md', 'block'] },
   },
 } satisfies Meta<typeof Button>;
 export default meta;
