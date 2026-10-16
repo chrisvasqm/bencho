@@ -11,9 +11,14 @@ describe('POST /api/v1/runs/:id/stop', () => {
   it('stops a live k6 run and records it as stopped', async () => {
     const created = await app.request().post('/api/v1/runs').send(longRunPayload());
     const { id } = created.body.run;
+    // Wait until k6 is sending requests (first stored points), not just spawned: a SIGINT
+    // during k6 startup kills it before it can stop gracefully.
     await expect
-      .poll(async () => (await app.request().get(`/api/v1/runs/${id}`)).body.run.status)
-      .toBe('running');
+      .poll(async () => (await app.repository.listPoints(id)).length, {
+        timeout: 20_000,
+        interval: 500,
+      })
+      .toBeGreaterThan(0);
 
     const response = await stopRun(id);
     await app.service.waitForIdle();
@@ -23,6 +28,9 @@ describe('POST /api/v1/runs/:id/stop', () => {
     const { run } = (await app.request().get(`/api/v1/runs/${id}`)).body;
     expect(run).toMatchObject({ status: 'stopped', errorMessage: null });
     expect(run.finishedAt).not.toBeNull();
+    // k6 got SIGINT and stopped gracefully: it ran (exit code set) and wrote its summary.
+    expect(run.exitCode).not.toBe(-1);
+    expect(run.summary).toHaveProperty('metrics');
   });
 
   it('stops a run right after it was queued, before k6 starts', async () => {
@@ -33,7 +41,8 @@ describe('POST /api/v1/runs/:id/stop', () => {
 
     expect(response.status).toBe(202);
     const { run } = (await app.request().get(`/api/v1/runs/${created.body.run.id}`)).body;
-    expect(run.status).toBe('stopped');
+    // k6 never started: no exit code from k6 and no summary.
+    expect(run).toMatchObject({ status: 'stopped', exitCode: -1, summary: null });
   });
 
   it.each(['queued', 'running'] as const)(

@@ -20,8 +20,11 @@ export interface TestApp {
   db: Database;
   k6: K6Settings;
   databaseUrl: string;
-  /** Lets the current test log through console.error (checked after each test otherwise). */
-  allowLoggedErrors: () => void;
+  /**
+   * Lets the current test log through console.error (checked after each test otherwise).
+   * Returns the console.error spy, so the test can assert what was logged.
+   */
+  allowLoggedErrors: () => MockInstance<typeof console.error>;
   /** Inserts a run row directly, without starting k6. */
   seedRun: (overrides?: Partial<NewRun>) => Promise<Run>;
 }
@@ -29,7 +32,10 @@ export interface TestApp {
 /** Registers the hooks and returns the app; fields are filled once beforeAll has run. */
 export function useTestApp(): TestApp {
   const config = loadConfig();
-  const k6: K6Settings = { bundleDir: 'dist/k6', defaultBaseUrl: config.DEFAULT_BASE_URL };
+  const k6: K6Settings = {
+    bundleDir: config.K6_BUNDLE_DIR,
+    defaultBaseUrl: config.DEFAULT_BASE_URL,
+  };
   const databaseUrl = withDatabaseName(
     config.TEST_DATABASE_URL,
     `perf_test_${randomUUID().slice(0, 8)}`,
@@ -37,12 +43,14 @@ export function useTestApp(): TestApp {
   let pool: pg.Pool;
   let consoleError: MockInstance<typeof console.error>;
   let loggedErrorsAllowed = false;
+  let databaseCreated = false;
 
   const context = {
     k6,
     databaseUrl,
     allowLoggedErrors: () => {
       loggedErrorsAllowed = true;
+      return consoleError;
     },
     seedRun: async (overrides: Partial<NewRun> = {}) =>
       context.repository.create({
@@ -58,6 +66,7 @@ export function useTestApp(): TestApp {
 
   beforeAll(async () => {
     await adminQuery(config.TEST_DATABASE_URL, `create database "${databaseName(databaseUrl)}"`);
+    databaseCreated = true;
     await runMigrations(databaseUrl);
     const connection = connectDatabase(databaseUrl);
     pool = connection.pool;
@@ -78,15 +87,19 @@ export function useTestApp(): TestApp {
   });
 
   afterEach(async () => {
-    await stopActiveRuns(context.service);
-    await context.service.waitForIdle();
-    consoleError.mockRestore();
-    if (!loggedErrorsAllowed)
-      expect(consoleError, 'console.error was called').not.toHaveBeenCalled();
+    try {
+      await stopActiveRuns(context.service);
+      await context.service.waitForIdle();
+    } finally {
+      const logged = [...consoleError.mock.calls];
+      consoleError.mockRestore();
+      if (!loggedErrorsAllowed) expect(logged, 'console.error was called').toEqual([]);
+    }
   });
 
   afterAll(async () => {
     await pool?.end();
+    if (!databaseCreated) return;
     await adminQuery(
       config.TEST_DATABASE_URL,
       `drop database if exists "${databaseName(databaseUrl)}" with (force)`,

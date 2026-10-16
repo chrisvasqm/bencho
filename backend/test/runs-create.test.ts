@@ -150,11 +150,15 @@ describe('POST /api/v1/runs', () => {
       const started = await Promise.all(
         Array.from({ length: 3 }, () => createRun(longRunPayload())),
       );
-      await app.request().post(`/api/v1/runs/${started[0]?.body.run.id}/stop`);
+      const stopped = await app.request().post(`/api/v1/runs/${started[0]?.body.run.id}/stop`);
+      expect(stopped.status).toBe(202);
 
       // The slot frees once k6 has exited; a 409 meanwhile creates nothing.
       await expect
-        .poll(async () => (await createRun(longRunPayload())).status, { timeout: 15_000 })
+        .poll(async () => (await createRun(longRunPayload())).status, {
+          timeout: 15_000,
+          interval: 250,
+        })
         .toBe(202);
     });
   });

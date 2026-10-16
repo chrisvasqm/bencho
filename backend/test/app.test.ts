@@ -2,6 +2,8 @@ import supertest from 'supertest';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.ts';
 import { connectDatabase, pingDatabase } from '../src/core/db.ts';
+import { RunsRepository } from '../src/modules/runs/repository.ts';
+import { RunsService } from '../src/modules/runs/service.ts';
 import { DEFAULT_LIMITS, DEFAULT_STAGES } from '../k6/lib/defaults.ts';
 import { DEFAULT_FLOW } from '../k6/lib/flow.ts';
 import { expectError, useTestApp } from './helpers/test-app.ts';
@@ -23,7 +25,7 @@ describe('GET /api/v1/health', () => {
     afterAll(() => unreachable.pool.end());
 
     it('returns 503 DATABASE_UNAVAILABLE and logs the cause', async () => {
-      app.allowLoggedErrors();
+      const logged = app.allowLoggedErrors();
       const offline = createApp({
         runsService: app.service,
         checkDatabase: () => pingDatabase(unreachable.db),
@@ -33,6 +35,7 @@ describe('GET /api/v1/health', () => {
 
       expect(response.status).toBe(503);
       expectError(response.body, 'DATABASE_UNAVAILABLE');
+      expect(logged).toHaveBeenCalledWith('health: database check failed', expect.any(String));
     });
   });
 });
@@ -94,10 +97,26 @@ describe('unknown routes and unreadable bodies', () => {
   });
 });
 
-describe('error shape', () => {
-  it('never leaks a stack trace', async () => {
-    const response = await app.request().get('/api/v1/runs/not-a-uuid');
+describe('unexpected errors', () => {
+  // A real service whose database refuses connections: every query throws.
+  const unreachable = connectDatabase('postgres://perf:perf@127.0.0.1:1/perf');
 
-    expect(JSON.stringify(response.body)).not.toMatch(/at .+\.ts:\d+/);
+  afterAll(() => unreachable.pool.end());
+
+  it('returns 500 INTERNAL with a friendly message, no stack, and logs the error', async () => {
+    const logged = app.allowLoggedErrors();
+    const broken = createApp({
+      runsService: new RunsService(new RunsRepository(unreachable.db), app.k6),
+      checkDatabase: async () => undefined,
+    });
+
+    const response = await supertest(broken).get('/api/v1/runs');
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({
+      error: { code: 'INTERNAL', message: 'Something went wrong. Try again.', details: null },
+    });
+    expect(response.text).not.toMatch(/ECONNREFUSED|\.ts:\d+/);
+    expect(logged).toHaveBeenCalledOnce();
   });
 });

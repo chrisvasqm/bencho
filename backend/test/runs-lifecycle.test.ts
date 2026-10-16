@@ -10,8 +10,11 @@ const app = useTestApp();
 
 /** Starts a run through the API and returns it once k6 has finished. */
 async function runToEnd(body: Record<string, unknown>, service = app.service) {
-  const target = createApp({ runsService: service, checkDatabase: async () => undefined });
-  const created = await supertest(target).post('/api/v1/runs').send(body);
+  const request =
+    service === app.service
+      ? app.request()
+      : supertest(createApp({ runsService: service, checkDatabase: async () => undefined }));
+  const created = await request.post('/api/v1/runs').send(body);
   expect(created.status).toBe(202);
   await service.waitForIdle();
   return (await app.request().get(`/api/v1/runs/${created.body.run.id}`)).body.run;
