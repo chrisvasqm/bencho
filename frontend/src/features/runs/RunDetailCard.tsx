@@ -66,7 +66,7 @@ export function RunDetailCard({ run, onDelete, deleting }: RunDetailCardProps) {
   return (
     <Card
       title={`${RUN_TYPE_LABELS[run.type]} run · ${formatTime(run.createdAt)}`}
-      description={<span className="font-mono text-xs">{run.baseUrl}</span>}
+      description={<span className="text-xs">{run.baseUrl}</span>}
       actions={deleteButton}
     >
       <div className="flex flex-col gap-5">
@@ -74,7 +74,7 @@ export function RunDetailCard({ run, onDelete, deleting }: RunDetailCardProps) {
           <Badge tone={STATUS_TONES[run.status]} pulse={active}>
             {STATUS_LABELS[run.status]}
           </Badge>
-          <span className="font-mono text-xs text-fg-muted">{formatStages(run.stages)}</span>
+          <span className="text-xs text-fg-muted">{formatStages(run.stages)}</span>
           <span className="text-xs text-fg-muted">think time {run.limits.thinkTimeSeconds}s</span>
           {elapsed !== undefined && (
             <span className="text-xs text-fg-faint">took {elapsed.toFixed(0)}s</span>

@@ -27,15 +27,9 @@ export function Card({
   ...rest
 }: CardProps) {
   return (
-    <section
-      className={cn(
-        'flex flex-col rounded-lg border border-line bg-surface shadow-raised',
-        className,
-      )}
-      {...rest}
-    >
+    <section className={cn('flex flex-col rounded-lg bg-surface', className)} {...rest}>
       {(title || actions || headerExtra) && (
-        <header className="flex shrink-0 flex-col gap-3 border-b border-line px-5 pt-4 pb-3">
+        <header className="flex shrink-0 flex-col gap-3 px-5 pt-5 pb-2">
           {(title || actions) && (
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
@@ -56,9 +50,7 @@ export function Card({
         {children}
       </div>
       {footer && (
-        <footer className="shrink-0 rounded-b-lg border-t border-line bg-surface px-5 py-3">
-          {footer}
-        </footer>
+        <footer className="shrink-0 rounded-b-lg bg-surface-sunken px-5 py-3">{footer}</footer>
       )}
     </section>
   );

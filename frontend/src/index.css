@@ -3,6 +3,9 @@
 
 /* Expose semantic tokens as Tailwind utilities: bg-surface, text-fg-muted, border-line, font-mono... */
 @theme inline {
+  /* Nothing meant to be read goes below 13px. */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.15rem;
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-surface-sunken: var(--surface-sunken);
@@ -48,15 +51,6 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
-}
-
-@keyframes shimmer {
-  from {
-    background-position: 100% 0;
-  }
-  to {
-    background-position: -100% 0;
-  }
 }
 
 :focus-visible {

@@ -20,7 +20,7 @@ export function Input({ invalid, mono, loading, className, ...rest }: InputProps
       aria-busy={loading || undefined}
       className={cn(
         inputClasses,
-        mono && 'font-mono tabular-nums',
+        mono && 'tabular-nums',
         invalid && 'border-danger focus:border-danger',
         loading && 'pr-9',
         className,

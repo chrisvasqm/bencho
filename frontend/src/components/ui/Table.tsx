@@ -65,7 +65,7 @@ export function Table<Row>({
                     key={column.key}
                     className={cn(
                       'px-3 py-2.5 align-middle',
-                      column.align === 'right' && 'text-right font-mono tabular-nums',
+                      column.align === 'right' && 'text-right tabular-nums',
                       column.className,
                     )}
                   >

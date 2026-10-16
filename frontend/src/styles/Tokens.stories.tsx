@@ -28,7 +28,7 @@ function Swatches() {
                 style={{ background: `var(--${name})` }}
               />
               <div className="min-w-0">
-                <div className="font-mono text-xs">--{name}</div>
+                <div className="text-xs">--{name}</div>
                 <div className="truncate text-xs text-fg-muted">{role}</div>
               </div>
             </div>
@@ -40,9 +40,11 @@ function Swatches() {
         <p className="text-2xl font-semibold tracking-tight">
           Instrument Sans for everything you read
         </p>
-        <p className="mt-1 text-sm text-fg-muted">Body copy at 14px. Labels at 12px.</p>
-        <p className="mt-3 font-mono text-sm tabular-nums">
-          JetBrains Mono: 30s:10,1m:10,30s:0 · p95 212.4 ms
+        <p className="mt-1 text-sm text-fg-muted">
+          Body copy at 14px. Labels at 13px, never smaller.
+        </p>
+        <p className="mt-3 text-sm tabular-nums">
+          Tabular figures for numbers: p95 212.4 ms · 4280 requests
         </p>
       </section>
     </div>

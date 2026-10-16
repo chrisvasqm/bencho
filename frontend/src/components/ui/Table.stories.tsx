@@ -22,7 +22,7 @@ const columns: Column<Row>[] = [
       <Badge tone={row.status === 'passed' ? 'success' : 'danger'}>{row.status}</Badge>
     ),
   },
-  { key: 'target', header: 'Target', className: 'font-mono text-xs', render: (row) => row.target },
+  { key: 'target', header: 'Target', className: 'text-xs', render: (row) => row.target },
   { key: 'p95', header: 'p95', align: 'right', render: (row) => row.p95 },
 ];
 

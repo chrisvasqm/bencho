@@ -270,10 +270,7 @@ function RunPanelForm({
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                       {PERCENTILES.map((key) => (
                         <div key={key} className="flex flex-col gap-1">
-                          <label
-                            htmlFor={`limit-${key}`}
-                            className="font-mono text-xs text-fg-muted"
-                          >
+                          <label htmlFor={`limit-${key}`} className="text-xs text-fg-muted">
                             {key}
                           </label>
                           <Input
@@ -317,7 +314,7 @@ function RunPanelSkeleton({ className }: { className?: string }) {
       scrollBody
       className={className}
       headerExtra={
-        <div className="flex gap-4 border-b border-line pb-2">
+        <div className="flex gap-4 pb-2">
           {PANEL_TABS.map((item) => (
             <Skeleton key={item.value} className="h-5 w-16" />
           ))}

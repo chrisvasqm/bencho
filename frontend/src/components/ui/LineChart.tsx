@@ -37,7 +37,7 @@ export interface LineChartProps<Row> {
   empty?: string;
 }
 
-const tick = { fill: 'var(--fg-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' };
+const tick = { fill: 'var(--fg-muted)', fontSize: 11, fontFamily: 'var(--)' };
 
 export function LineChart<Row extends object>({
   data,
@@ -161,7 +161,7 @@ function EndLabel({
 }: LabelProps & { lastIndex: number; text: string }) {
   if (index !== lastIndex || typeof x !== 'number' || typeof y !== 'number') return null;
   return (
-    <text x={x + 6} y={y + 4} fill="var(--fg-muted)" fontSize={11} fontFamily="var(--font-mono)">
+    <text x={x + 6} y={y + 4} fill="var(--fg-muted)" fontSize={11} fontFamily="var(--)">
       {text}
     </text>
   );
@@ -182,7 +182,7 @@ function ChartTooltip<Row>({
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-md border border-line bg-surface px-3 py-2 text-xs shadow-raised">
-      <p className="mb-1 font-mono text-fg-muted">{formatX(label as number | string)}</p>
+      <p className="mb-1 text-fg-muted">{formatX(label as number | string)}</p>
       <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
         {series.map((line) => {
           const entry = payload.find((item) => item.dataKey === line.key);
@@ -191,9 +191,7 @@ function ChartTooltip<Row>({
             <li key={line.key} className="flex items-center gap-2">
               <span className="h-0.5 w-3 rounded-full" style={{ background: line.color }} />
               <span className="text-fg-muted">{line.label}</span>
-              <span className="ml-auto pl-3 font-mono text-fg tabular-nums">
-                {formatY(entry.value)}
-              </span>
+              <span className="ml-auto pl-3 text-fg tabular-nums">{formatY(entry.value)}</span>
             </li>
           );
         })}

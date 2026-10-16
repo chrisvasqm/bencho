@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AnimatePresence, motion } from 'motion/react';
+import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -113,13 +113,13 @@ export function App() {
 
   return (
     <div className="flex min-h-dvh flex-col lg:h-dvh">
-      <header className="shrink-0 border-b border-line bg-surface">
+      <header className="shrink-0 bg-surface">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-3">
             <Logo />
             <div>
               <h1 className="text-lg leading-tight font-semibold tracking-tight text-fg">Bencho</h1>
-              <p className="hidden text-xs text-fg-muted sm:block">
+              <p className="hidden max-w-[60ch] text-xs text-fg-muted sm:block">
                 Load, stress and spike tests with k6. Every run is kept by type.
               </p>
             </div>
@@ -178,33 +178,30 @@ export function App() {
                 selectedId={selectedRun?.id}
                 onSelect={(run) => setSelectedId(run.id)}
                 pageSize={PAGE_SIZE}
+                listKey={`${type}:${page}`}
               />
             )}
           </Card>
 
-          <AnimatePresence mode="wait" initial={false}>
-            {selectedRun ? (
-              <motion.div
-                key={selectedRun.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
-              >
-                <RunDetailCard
-                  run={selectedRun}
-                  deleting={remove.isPending}
-                  onDelete={(run) => remove.mutate(run)}
-                />
-              </motion.div>
-            ) : runs.isPending || (effectiveId && selected.isPending) ? (
-              <motion.div key="loading" exit={{ opacity: 0 }}>
-                <Card title={<Skeleton className="h-5 w-48" />}>
-                  <Skeleton className="h-64 w-full" />
-                </Card>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
+          {/* Swap in place: no exit phase, so the trend card below never jumps up and back. */}
+          {selectedRun ? (
+            <motion.div
+              key={selectedRun.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
+            >
+              <RunDetailCard
+                run={selectedRun}
+                deleting={remove.isPending}
+                onDelete={(run) => remove.mutate(run)}
+              />
+            </motion.div>
+          ) : runs.isPending || (effectiveId && selected.isPending) ? (
+            <Card title={<Skeleton className="h-5 w-48" />}>
+              <Skeleton className="h-64 w-full" />
+            </Card>
+          ) : null}
 
           <TrendCard type={type} />
         </div>

@@ -17,7 +17,7 @@ export interface TabsProps<Value extends string> {
 
 export function Tabs<Value extends string>({ items, value, onChange, label }: TabsProps<Value>) {
   return (
-    <div role="tablist" aria-label={label} className="flex gap-1 border-b border-line">
+    <div role="tablist" aria-label={label} className="-mx-3 flex gap-1 overflow-x-auto">
       {items.map((item) => {
         const selected = item.value === value;
         return (
@@ -28,10 +28,8 @@ export function Tabs<Value extends string>({ items, value, onChange, label }: Ta
             aria-selected={selected}
             onClick={() => onChange(item.value)}
             className={cn(
-              '-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
-              selected
-                ? 'border-accent text-fg'
-                : 'border-transparent text-fg-muted hover:border-line-strong hover:text-fg',
+              'flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors',
+              selected ? 'border-accent text-fg' : 'border-transparent text-fg-muted hover:text-fg',
             )}
           >
             {item.label}
@@ -39,7 +37,7 @@ export function Tabs<Value extends string>({ items, value, onChange, label }: Ta
               <span aria-label="has errors" className="size-1.5 rounded-full bg-danger" />
             )}
             {item.count !== undefined && (
-              <span className="rounded-full bg-surface-sunken px-1.5 font-mono text-xs tabular-nums text-fg-muted">
+              <span className="rounded-full bg-surface-sunken px-1.5 text-xs tabular-nums text-fg-muted">
                 {item.count}
               </span>
             )}

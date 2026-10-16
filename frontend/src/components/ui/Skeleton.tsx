@@ -9,10 +9,7 @@ export function Skeleton({ className }: SkeletonProps) {
   return (
     <span
       aria-hidden="true"
-      className={cn(
-        'block rounded-md bg-[linear-gradient(90deg,var(--surface-sunken)_25%,var(--line)_50%,var(--surface-sunken)_75%)] bg-[length:200%_100%] motion-safe:animate-[shimmer_1.4s_linear_infinite]',
-        className,
-      )}
+      className={cn('block rounded-md bg-surface-sunken motion-safe:animate-pulse', className)}
     />
   );
 }
