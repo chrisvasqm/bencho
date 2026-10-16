@@ -1,13 +1,7 @@
 // Left-hand control panel: build a run across four tabs, start it from the pinned footer.
 import { AnimatePresence, m } from 'motion/react';
-import { Suspense, lazy, useState, type FormEvent } from 'react';
-import {
-  RUN_TYPES,
-  type CreateRunInput,
-  type RunDefaults,
-  type RunType,
-  type Stage,
-} from '../../api/runs.ts';
+import { Suspense, lazy, useCallback, useState, type FormEvent } from 'react';
+import { RUN_TYPES, type CreateRunInput, type RunDefaults, type RunType } from '../../api/runs.ts';
 import {
   Button,
   Card,
@@ -21,6 +15,7 @@ import {
 } from '../../components/ui/index.ts';
 import { EXPLAIN, RUN_TYPE_DESCRIPTIONS, RUN_TYPE_LABELS, durationToSeconds } from './format.ts';
 import { StagesEditor } from './StagesEditor.tsx';
+import { toStageRow, type StageRow } from './stages.ts';
 import { FlowEditor } from './FlowEditor.tsx';
 import { draftProblem, flowProblem, fromDraft, toDraft, type StepDraft } from './flow.ts';
 
@@ -121,13 +116,14 @@ function RunPanelForm({
 }: RunPanelProps & { defaults: RunDefaults }) {
   const [tab, setTab] = useState<PanelTab>('target');
   const [baseUrl, setBaseUrl] = useState(defaults.baseUrl);
-  const [stages, setStages] = useState<Stage[]>(defaults.stages[type]);
+  const [stages, setStages] = useState<StageRow[]>(() => defaults.stages[type].map(toStageRow));
   const [flowSteps, setFlowSteps] = useState<StepDraft[]>(() => defaults.flow.map(toDraft));
   // Kept here, not in FlowEditor: switching tabs remounts the editor.
   const [openStepId, setOpenStepId] = useState<string | undefined>(flowSteps[0]?.id);
   const [submitCount, setSubmitCount] = useState(0);
   // The submit whose flow problem was already scrolled into view; remounts do not scroll again.
   const [shownErrorRevision, setShownErrorRevision] = useState(0);
+  const markErrorShown = useCallback(() => setShownErrorRevision(submitCount), [submitCount]);
   const [thinkTime, setThinkTime] = useState(defaults.limits.thinkTimeSeconds);
   const [maxErrorPercent, setMaxErrorPercent] = useState(defaults.limits.maxErrorRate * 100);
   const [latency, setLatency] = useState(defaults.limits.latencyLimitsMs);
@@ -137,7 +133,7 @@ function RunPanelForm({
   const [stagesType, setStagesType] = useState(type);
   if (stagesType !== type) {
     setStagesType(type);
-    setStages(defaults.stages[type]);
+    setStages(defaults.stages[type].map(toStageRow));
   }
 
   // Edits clear flow errors, so the marked step always still exists.
@@ -149,7 +145,7 @@ function RunPanelForm({
     const input: CreateRunInput = {
       type,
       baseUrl: baseUrl.trim(),
-      stages,
+      stages: stages.map(({ duration, target }) => ({ duration, target })),
       flow: flowSteps.map(fromDraft),
       thinkTimeSeconds: thinkTime,
       maxErrorRate: maxErrorPercent / 100,
@@ -158,7 +154,10 @@ function RunPanelForm({
     const nextErrors = validate(input, flowSteps);
     setErrors(nextErrors);
     const firstError = Object.keys(nextErrors)[0];
-    setSubmitCount((count) => count + 1);
+    const revision = submitCount + 1;
+    setSubmitCount(revision);
+    // Scroll to a flow problem only when this submit opens the Flow tab, not on a later visit.
+    if (ERROR_TAB[Object.keys(nextErrors)[0] ?? ''] !== 'flow') setShownErrorRevision(revision);
     if (nextErrors.flowStep) setOpenStepId(nextErrors.flowStep);
     if (firstError) {
       setTab(ERROR_TAB[firstError] ?? 'target');
@@ -250,14 +249,9 @@ function RunPanelForm({
                     errorStepId={errorStepId}
                     error={errors.flow}
                     scrollToError={submitCount !== shownErrorRevision}
-                    onErrorShown={() => setShownErrorRevision(submitCount)}
+                    onErrorShown={markErrorShown}
+                    errorLabel={errors.flowStepLabel}
                   />
-                  {errors.flow && (!errorStepId || errorStepId !== openStepId) && (
-                    <p role="alert" className="text-xs text-danger">
-                      {errors.flowStepLabel ? `${errors.flowStepLabel}: ` : ''}
-                      {errors.flow}
-                    </p>
-                  )}
                 </>
               )}
 

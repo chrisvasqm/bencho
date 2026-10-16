@@ -58,6 +58,7 @@ export function RunCharts({ run }: { run: Run }) {
           {...shared}
           title="Response time per second"
           series={LATENCY_SERIES}
+          minYStep={0.1}
           formatY={(value) => formatMs(value)}
           height={260}
         />
@@ -85,6 +86,7 @@ export function RunCharts({ run }: { run: Run }) {
           {...shared}
           title="Failed requests (share of each second)"
           series={[{ key: 'errorRate', label: 'Error rate', color: 'var(--danger)' }]}
+          minYStep={0.001}
           formatY={(value) => `${(value * 100).toFixed(1)}%`}
         />
       )}

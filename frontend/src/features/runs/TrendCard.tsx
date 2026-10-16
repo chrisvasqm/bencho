@@ -39,6 +39,7 @@ export function TrendCard({ type }: { type: RunType }) {
         xKey="when"
         xType="category"
         series={LATENCY_SERIES}
+        minYStep={0.1}
         formatY={(value) => formatMs(value)}
         loading={trend.isPending}
         empty="Finish a run of this type to start the trend."
