@@ -5,19 +5,21 @@
   "scripts": {
     "start": "docker compose up -d",
     "stop": "docker compose down",
-    "load": "tsx scripts/run.ts load",
-    "stress": "tsx scripts/run.ts stress",
-    "spike": "tsx scripts/run.ts spike",
+    "build": "tsx scripts/build.ts",
+    "load": "pnpm build && tsx scripts/run.ts load",
+    "stress": "pnpm build && tsx scripts/run.ts stress",
+    "spike": "pnpm build && tsx scripts/run.ts spike",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "check": "tsc --noEmit && eslint . && prettier --check ."
+    "check": "tsc --noEmit && eslint . && prettier --check . && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/k6": "2.3.0",
     "@types/node": "24.19.1",
     "dotenv": "18.0.6",
+    "esbuild": "0.28.2",
     "eslint": "10.12.0",
     "eslint-config-prettier": "10.1.8",
     "prettier": "3.9.9",

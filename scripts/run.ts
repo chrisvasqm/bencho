@@ -1,6 +1,7 @@
-// Node entry point: loads .env, then hands off to k6, which runs the TS test natively.
+// Node entry point: loads .env, then runs the bundled test (pnpm build) with k6.
 // k6 has its own JS runtime (not Node), so dotenv must run here, not inside the test.
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { config } from 'dotenv';
 
 config({ quiet: true });
@@ -13,8 +14,11 @@ if (!TEST_NAMES.includes(testName)) {
   process.exit(1);
 }
 
-const k6Process = spawnSync('k6', ['run', `tests/${testName}.ts`], {
-  stdio: 'inherit',
-  env: process.env,
-});
+const bundlePath = `dist/${testName}.js`;
+if (!existsSync(bundlePath)) {
+  console.error(`${bundlePath} not found. Run pnpm build first.`);
+  process.exit(1);
+}
+
+const k6Process = spawnSync('k6', ['run', bundlePath], { stdio: 'inherit', env: process.env });
 process.exit(k6Process.status ?? 1);
