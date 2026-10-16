@@ -1,0 +1,1 @@
+ALTER TABLE "runs" ADD COLUMN "flow" jsonb DEFAULT '[{"name":"Home","method":"GET","path":"","headers":{},"body":null,"expectedStatus":200,"extract":[]}]'::jsonb NOT NULL;

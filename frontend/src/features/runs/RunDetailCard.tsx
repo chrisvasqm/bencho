@@ -90,6 +90,10 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
             {STATUS_LABELS[run.status]}
           </Badge>
           <span className="text-xs text-fg-muted">{formatStages(run.stages)}</span>
+          <span className="text-xs text-fg-muted">
+            {run.flow.length === 1 ? '1 step' : `${run.flow.length} steps`}:{' '}
+            {run.flow.map((step) => step.name).join(' → ')}
+          </span>
           <span className="text-xs text-fg-muted">think time {run.limits.thinkTimeSeconds}s</span>
           {elapsed !== undefined && (
             <span className="text-xs text-fg-faint">took {elapsed.toFixed(0)}s</span>

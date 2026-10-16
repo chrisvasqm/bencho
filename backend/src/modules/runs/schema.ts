@@ -19,6 +19,20 @@ import {
   type RunLimits,
   type RunType,
 } from '../../../k6/lib/defaults.ts';
+import {
+  BUILTIN_PLACEHOLDERS,
+  DEFAULT_FLOW,
+  HTTP_METHODS,
+  MAX_BODY_LENGTH,
+  MAX_EXTRACTS,
+  MAX_HEADERS,
+  MAX_HEADER_VALUE_LENGTH,
+  MAX_STEPS,
+  MAX_STEP_NAME_LENGTH,
+  PLACEHOLDER_NAME_PATTERN,
+  flowProblem,
+  type FlowStep,
+} from '../../../k6/lib/flow.ts';
 
 export const RUN_STATUSES = ['queued', 'running', 'passed', 'failed', 'error', 'stopped'] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
@@ -33,6 +47,7 @@ export const runs = pgTable(
     baseUrl: text('base_url').notNull(),
     stages: jsonb('stages').$type<LoadStage[]>().notNull(),
     limits: jsonb('limits').$type<RunLimits>().notNull(),
+    flow: jsonb('flow').$type<FlowStep[]>().notNull().default(DEFAULT_FLOW),
     status: text('status').$type<RunStatus>().notNull().default('queued'),
     exitCode: integer('exit_code'),
     summary: jsonb('summary').$type<Record<string, unknown>>(),
@@ -88,6 +103,44 @@ const stageSchema = z.object({
 
 const positiveMs = z.number().int().positive();
 
+const placeholderName = z
+  .string()
+  .regex(PLACEHOLDER_NAME_PATTERN, 'Use letters, digits and _, not starting with a digit')
+  .refine((name) => !(BUILTIN_PLACEHOLDERS as readonly string[]).includes(name), {
+    message: 'This name is built in',
+  });
+
+const flowStepSchema = z.object({
+  name: z.string().trim().min(1).max(MAX_STEP_NAME_LENGTH),
+  method: z.enum(HTTP_METHODS),
+  path: z.string().max(2000),
+  headers: z
+    .record(
+      z.string().regex(/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/, 'Invalid header name'),
+      z
+        .string()
+        .max(MAX_HEADER_VALUE_LENGTH)
+        .regex(/^[^\r\n]*$/, 'Header values cannot contain line breaks'),
+    )
+    .refine((headers) => Object.keys(headers).length <= MAX_HEADERS, {
+      message: `Use at most ${MAX_HEADERS} headers`,
+    }),
+  body: z.string().max(MAX_BODY_LENGTH).nullable(),
+  expectedStatus: z.number().int().min(100).max(599),
+  extract: z
+    .array(z.object({ name: placeholderName, path: z.string().trim().min(1).max(200) }))
+    .max(MAX_EXTRACTS),
+});
+
+const flowSchema = z
+  .array(flowStepSchema)
+  .min(1)
+  .max(MAX_STEPS)
+  .superRefine((steps, context) => {
+    const problem = flowProblem(steps);
+    if (problem) context.addIssue({ code: 'custom', message: problem });
+  });
+
 export const createRunSchema = z.object({
   type: z.enum(RUN_TYPES),
   baseUrl: z.url(),
@@ -102,6 +155,7 @@ export const createRunSchema = z.object({
       { message: `All stages together must last at most ${MAX_RUN_SECONDS / 60} minutes` },
     )
     .optional(),
+  flow: flowSchema.optional(),
   thinkTimeSeconds: z.number().min(0).optional(),
   maxErrorRate: z.number().min(0).max(1).optional(),
   latencyLimitsMs: z

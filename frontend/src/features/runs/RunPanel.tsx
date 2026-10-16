@@ -1,4 +1,4 @@
-// Left-hand control panel: build a run across three tabs, start it from the pinned footer.
+// Left-hand control panel: build a run across four tabs, start it from the pinned footer.
 import { AnimatePresence, motion } from 'motion/react';
 import { Suspense, lazy, useState, type FormEvent } from 'react';
 import {
@@ -20,17 +20,21 @@ import {
 } from '../../components/ui/index.ts';
 import { RUN_TYPE_DESCRIPTIONS, RUN_TYPE_LABELS, durationToSeconds } from './format.ts';
 import { StagesEditor } from './StagesEditor.tsx';
+import { FlowEditor } from './FlowEditor.tsx';
+import { draftProblem, flowProblem, fromDraft, toDraft, type StepDraft } from './flow.ts';
 
-type PanelTab = 'target' | 'shape' | 'limits';
+type PanelTab = 'target' | 'flow' | 'shape' | 'limits';
 
 const PANEL_TABS: ReadonlyArray<{ value: PanelTab; label: string }> = [
   { value: 'target', label: 'Target' },
+  { value: 'flow', label: 'Flow' },
   { value: 'shape', label: 'Load shape' },
   { value: 'limits', label: 'Limits' },
 ];
 
 const ERROR_TAB: Record<string, PanelTab> = {
   baseUrl: 'target',
+  flow: 'flow',
   stages: 'shape',
   thinkTime: 'limits',
   maxErrorRate: 'limits',
@@ -47,13 +51,15 @@ const MAX_VIRTUAL_USERS = 1000;
 const MAX_STAGES = 20;
 const FORM_ID = 'run-form';
 
-function validate(input: CreateRunInput): Record<string, string> {
+function validate(input: CreateRunInput, steps: StepDraft[]): Record<string, string> {
   const errors: Record<string, string> = {};
   try {
     new URL(input.baseUrl);
   } catch {
     errors.baseUrl = 'Enter a full URL, including http:// or https://';
   }
+  const problem = draftProblem(steps) ?? flowProblem(input.flow);
+  if (problem) errors.flow = problem;
   const seconds = input.stages.map((stage) => durationToSeconds(stage.duration));
   if (seconds.some((value) => !Number.isFinite(value))) {
     errors.stages = 'Durations use k6 units: 10s, 1m, 1h30m';
@@ -107,6 +113,9 @@ function RunPanelForm({
   const [tab, setTab] = useState<PanelTab>('target');
   const [baseUrl, setBaseUrl] = useState(defaults.baseUrl);
   const [stages, setStages] = useState<Stage[]>(defaults.stages[type]);
+  const [flowSteps, setFlowSteps] = useState<StepDraft[]>(() => defaults.flow.map(toDraft));
+  // Kept here, not in FlowEditor: switching tabs remounts the editor.
+  const [openStepId, setOpenStepId] = useState<string | undefined>(flowSteps[0]?.id);
   const [thinkTime, setThinkTime] = useState(defaults.limits.thinkTimeSeconds);
   const [maxErrorPercent, setMaxErrorPercent] = useState(defaults.limits.maxErrorRate * 100);
   const [latency, setLatency] = useState(defaults.limits.latencyLimitsMs);
@@ -127,11 +136,12 @@ function RunPanelForm({
       type,
       baseUrl: baseUrl.trim(),
       stages,
+      flow: flowSteps.map(fromDraft),
       thinkTimeSeconds: thinkTime,
       maxErrorRate: maxErrorPercent / 100,
       latencyLimitsMs: latency,
     };
-    const nextErrors = validate(input);
+    const nextErrors = validate(input, flowSteps);
     setErrors(nextErrors);
     const firstError = Object.keys(nextErrors)[0];
     if (firstError) {
@@ -186,9 +196,9 @@ function RunPanelForm({
                     />
                   </Field>
                   <Field
-                    label="Target URL"
+                    label="Base URL"
                     htmlFor="base-url"
-                    hint="Every virtual user sends GET requests to this URL."
+                    hint="The steps in the Flow tab send their requests to paths under this URL."
                     error={errors.baseUrl}
                   >
                     <Input
@@ -200,6 +210,22 @@ function RunPanelForm({
                       invalid={Boolean(errors.baseUrl)}
                     />
                   </Field>
+                </>
+              )}
+
+              {tab === 'flow' && (
+                <>
+                  <FlowEditor
+                    steps={flowSteps}
+                    onChange={setFlowSteps}
+                    openId={openStepId}
+                    onOpenChange={setOpenStepId}
+                  />
+                  {errors.flow && (
+                    <p role="alert" className="text-xs text-danger">
+                      {errors.flow}
+                    </p>
+                  )}
                 </>
               )}
 
@@ -220,7 +246,7 @@ function RunPanelForm({
                     <Field
                       label="Think time"
                       htmlFor="think-time"
-                      hint="Seconds between requests per user"
+                      hint="Seconds a user waits after each step"
                       error={errors.thinkTime}
                     >
                       <Input

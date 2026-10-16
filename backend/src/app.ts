@@ -11,7 +11,7 @@ export interface AppDependencies {
 
 export function createApp({ runsService, checkDatabase }: AppDependencies): express.Express {
   const app = express();
-  app.use(express.json({ limit: '100kb' }));
+  app.use(express.json({ limit: '2mb' }));
   app.get('/api/v1/health', async (_request, response) => {
     try {
       await checkDatabase();

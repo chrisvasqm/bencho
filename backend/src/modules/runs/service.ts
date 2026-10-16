@@ -1,10 +1,11 @@
 // Starts k6 runs as child processes and records their outcome.
 import { spawn, type ChildProcess } from 'node:child_process';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AppError } from '../../core/errors.ts';
 import { DEFAULT_LIMITS, DEFAULT_STAGES, stagesToEnv } from '../../../k6/lib/defaults.ts';
+import { DEFAULT_FLOW } from '../../../k6/lib/flow.ts';
 import type { RunsRepository } from './repository.ts';
 import { FileTail, TimeseriesAggregator, type RunPointValues } from './timeseries.ts';
 import {
@@ -44,7 +45,12 @@ export class RunsService {
   ) {}
 
   defaults() {
-    return { baseUrl: this.k6.defaultBaseUrl, stages: DEFAULT_STAGES, limits: DEFAULT_LIMITS };
+    return {
+      baseUrl: this.k6.defaultBaseUrl,
+      stages: DEFAULT_STAGES,
+      limits: DEFAULT_LIMITS,
+      flow: DEFAULT_FLOW,
+    };
   }
 
   /** Stores the run as queued and starts k6 in the background. Poll getById for the outcome. */
@@ -64,6 +70,7 @@ export class RunsService {
         type: input.type,
         baseUrl: input.baseUrl,
         stages: input.stages ?? DEFAULT_STAGES[input.type],
+        flow: input.flow ?? DEFAULT_FLOW,
         limits: {
           thinkTimeSeconds: input.thinkTimeSeconds ?? DEFAULT_LIMITS.thinkTimeSeconds,
           maxErrorRate: input.maxErrorRate ?? DEFAULT_LIMITS.maxErrorRate,
@@ -136,8 +143,11 @@ export class RunsService {
       workDir = await mkdtemp(join(tmpdir(), 'k6-run-'));
       const summaryPath = join(workDir, 'summary.json');
       const pointsPath = join(workDir, 'points.csv');
+      // A file, not an env var: large flows would pass the OS limit for one env string.
+      const flowPath = join(workDir, 'flow.json');
+      await writeFile(flowPath, JSON.stringify(run.flow));
       const { exitCode, stderr } = await this.withLivePoints(run.id, pointsPath, () =>
-        this.spawnK6(run, summaryPath, pointsPath),
+        this.spawnK6(run, { summaryPath, pointsPath, flowPath }),
       );
       const summary = await readSummary(summaryPath);
       const stopped = this.stopRequested.has(run.id);
@@ -233,8 +243,11 @@ export class RunsService {
 
   private spawnK6(
     run: Run,
-    summaryPath: string,
-    pointsPath: string,
+    {
+      summaryPath,
+      pointsPath,
+      flowPath,
+    }: { summaryPath: string; pointsPath: string; flowPath: string },
   ): Promise<{ exitCode: number; stderr: string }> {
     const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs } = run.limits;
     // Only what k6 needs: the child must not inherit DATABASE_URL or other secrets.
@@ -243,6 +256,7 @@ export class RunsService {
       HOME: process.env.HOME,
       BASE_URL: run.baseUrl,
       STAGES: stagesToEnv(run.stages),
+      FLOW_PATH: flowPath,
       THINK_TIME_SECONDS: String(thinkTimeSeconds),
       MAX_ERROR_RATE: String(maxErrorRate),
       P50_MS: String(latencyLimitsMs.p50),

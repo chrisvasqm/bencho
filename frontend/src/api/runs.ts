@@ -25,6 +25,20 @@ const limitsSchema = z.object({
 });
 export type RunLimits = z.infer<typeof limitsSchema>;
 
+export const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
+export type HttpMethod = (typeof HTTP_METHODS)[number];
+
+const flowStepSchema = z.object({
+  name: z.string(),
+  method: z.enum(HTTP_METHODS),
+  path: z.string(),
+  headers: z.record(z.string(), z.string()),
+  body: z.string().nullable(),
+  expectedStatus: z.number(),
+  extract: z.array(z.object({ name: z.string(), path: z.string() })),
+});
+export type FlowStep = z.infer<typeof flowStepSchema>;
+
 const trendSchema = z
   .object({
     avg: z.number(),
@@ -58,6 +72,7 @@ const runSchema = z.object({
   baseUrl: z.string(),
   stages: z.array(stageSchema),
   limits: limitsSchema,
+  flow: z.array(flowStepSchema),
   status: z.enum(RUN_STATUSES),
   exitCode: z.number().nullable(),
   summary: summarySchema.nullable(),
@@ -92,6 +107,7 @@ const defaultsSchema = z.object({
   baseUrl: z.string(),
   stages: z.record(z.enum(RUN_TYPES), z.array(stageSchema)),
   limits: limitsSchema,
+  flow: z.array(flowStepSchema),
 });
 export type RunDefaults = z.infer<typeof defaultsSchema>;
 
@@ -99,6 +115,7 @@ export interface CreateRunInput {
   type: RunType;
   baseUrl: string;
   stages: Stage[];
+  flow: FlowStep[];
   thinkTimeSeconds: number;
   maxErrorRate: number;
   latencyLimitsMs: LatencyLimitsMs;

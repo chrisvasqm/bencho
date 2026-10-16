@@ -15,5 +15,6 @@ export { FieldSkeleton, Skeleton, type SkeletonProps } from './Skeleton.tsx';
 export { Spinner, type SpinnerProps } from './Spinner.tsx';
 export { Stat, type StatProps, type StatTone } from './Stat.tsx';
 export { Table, type Column, type TableProps } from './Table.tsx';
+export { Textarea, type TextareaProps } from './Textarea.tsx';
 export { Tabs, type TabItem, type TabsProps } from './Tabs.tsx';
 export { cn } from './cn.ts';
