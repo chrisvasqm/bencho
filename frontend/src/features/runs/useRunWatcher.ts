@@ -1,7 +1,8 @@
-// Follows runs started in this browser session and toasts once when each one finishes.
+// Follows runs started in this browser session, plus runs already in progress when the page
+// loads, and toasts once when each one finishes.
 // Polls each run by id, so it keeps working when the user switches tabs or pages.
-import { useQueries, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useState } from 'react';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { runsApi, type Run } from '../../api/runs.ts';
 import { RUN_TYPE_LABELS, formatMs, isActive } from './format.ts';
@@ -29,6 +30,7 @@ function announce(run: Run): void {
 export function useRunWatcher() {
   const queryClient = useQueryClient();
   const [watched, setWatched] = useState<string[]>([]);
+  const announced = useRef(new Set<string>());
 
   const results = useQueries({
     queries: watched.map((id) => ({
@@ -45,7 +47,10 @@ export function useRunWatcher() {
 
   useEffect(() => {
     if (finished.length === 0) return;
-    for (const run of finished) announce(run);
+    for (const run of finished) {
+      announced.current.add(run.id);
+      announce(run);
+    }
     const done = new Set(finished.map((run) => run.id));
     setWatched((current) => current.filter((id) => !done.has(id)));
     void queryClient.invalidateQueries({ queryKey: ['runs'] });
@@ -54,8 +59,21 @@ export function useRunWatcher() {
   }, [finishedKey]);
 
   const watch = useCallback((id: string) => {
+    // A stale active list can still name a run that was already announced; never re-add it.
+    if (announced.current.has(id)) return;
     setWatched((current) => (current.includes(id) ? current : [...current, id]));
   }, []);
+
+  // Also follow runs that were in progress when the page loaded, so a reload does not lose their
+  // finish toast. Only the first answer counts: runs started later in other tabs are theirs.
+  // Shares the active-runs query (and its polling) with ActiveRunsWidget.
+  const active = useQuery({ queryKey: ['runs', 'active'], queryFn: runsApi.active });
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (seeded.current || !active.data) return;
+    seeded.current = true;
+    for (const run of active.data.runs) watch(run.id);
+  }, [active.data, watch]);
 
   return { watch };
 }

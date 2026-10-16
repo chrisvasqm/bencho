@@ -7,7 +7,14 @@ import { AppError } from '../../core/errors.ts';
 import { DEFAULT_LIMITS, DEFAULT_STAGES, stagesToEnv } from '../../../k6/lib/defaults.ts';
 import type { RunsRepository } from './repository.ts';
 import { FileTail, TimeseriesAggregator, type RunPointValues } from './timeseries.ts';
-import type { CreateRunInput, ListRunsQuery, Run, RunPoint, RunStatus } from './schema.ts';
+import {
+  ACTIVE_RUN_STATUSES,
+  type CreateRunInput,
+  type ListRunsQuery,
+  type Run,
+  type RunPoint,
+  type RunStatus,
+} from './schema.ts';
 
 const K6_THRESHOLD_FAILED_EXIT_CODE = 99;
 /** After SIGINT, k6 gets this long to stop gracefully (and write its summary) before SIGKILL. */
@@ -93,7 +100,6 @@ export class RunsService {
     return { runs, total, page, pageSize };
   }
 
-  /** Deletes a finished run. Runs still in progress cannot be deleted. */
   /** Deletes the finished runs among `ids`. Runs in progress and unknown ids are skipped. */
   async deleteMany(ids: string[]): Promise<{ deleted: string[]; skipped: string[] }> {
     const unique = [...new Set(ids)];
@@ -102,9 +108,10 @@ export class RunsService {
     return { deleted, skipped: unique.filter((id) => !done.has(id)) };
   }
 
+  /** Deletes a finished run. Runs still in progress cannot be deleted. */
   async delete(id: string): Promise<void> {
     const run = await this.getById(id);
-    if (run.status === 'queued' || run.status === 'running') {
+    if (ACTIVE_RUN_STATUSES.includes(run.status)) {
       throw new AppError(
         409,
         'RUN_IN_PROGRESS',
@@ -157,7 +164,7 @@ export class RunsService {
    */
   async stop(id: string): Promise<Run> {
     const run = await this.getById(id);
-    if (run.status !== 'queued' && run.status !== 'running') {
+    if (!ACTIVE_RUN_STATUSES.includes(run.status)) {
       throw new AppError(409, 'RUN_NOT_ACTIVE', 'This run has already finished.');
     }
     this.stopRequested.add(id);

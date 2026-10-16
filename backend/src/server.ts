@@ -1,6 +1,6 @@
 import { createApp } from './app.ts';
 import { loadConfig } from './core/config.ts';
-import { connectDatabase, runMigrations } from './core/db.ts';
+import { connectDatabase, pingDatabase, runMigrations } from './core/db.ts';
 import { RunsRepository } from './modules/runs/repository.ts';
 import { RunsService } from './modules/runs/service.ts';
 
@@ -16,6 +16,6 @@ const staleRuns = await runsService.failUnfinishedRuns();
 if (staleRuns > 0)
   console.log(`marked ${staleRuns} unfinished run(s) from a previous start as error`);
 
-createApp(runsService).listen(config.PORT, () => {
+createApp({ runsService, checkDatabase: () => pingDatabase(db) }).listen(config.PORT, () => {
   console.log(`backend listening on :${config.PORT} (${config.NODE_ENV})`);
 });

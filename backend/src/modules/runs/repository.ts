@@ -1,6 +1,13 @@
 import { and, asc, count, desc, eq, inArray, notInArray } from 'drizzle-orm';
 import type { Database } from '../../core/db.ts';
-import { runPoints, runs, type NewRun, type Run, type RunPoint } from './schema.ts';
+import {
+  ACTIVE_RUN_STATUSES,
+  runPoints,
+  runs,
+  type NewRun,
+  type Run,
+  type RunPoint,
+} from './schema.ts';
 import type { RunPointValues } from './timeseries.ts';
 import type { RunType } from '../../../k6/lib/defaults.ts';
 
@@ -25,7 +32,7 @@ export class RunsRepository {
   ): Promise<{ runs: Run[]; total: number }> {
     const where = and(
       type ? eq(runs.type, type) : undefined,
-      active ? inArray(runs.status, ['queued', 'running']) : undefined,
+      active ? inArray(runs.status, [...ACTIVE_RUN_STATUSES]) : undefined,
     );
     const [rows, [totals]] = await Promise.all([
       this.db.query.runs.findMany({
@@ -39,16 +46,16 @@ export class RunsRepository {
     return { runs: rows, total: totals?.total ?? 0 };
   }
 
-  /** Deletes the run and, by cascade, its points. Returns false when no row matched. */
   /** Deletes the finished runs among `ids` (cascade removes points). Returns the deleted ids. */
   async deleteFinished(ids: string[]): Promise<string[]> {
     const deleted = await this.db
       .delete(runs)
-      .where(and(inArray(runs.id, ids), notInArray(runs.status, ['queued', 'running'])))
+      .where(and(inArray(runs.id, ids), notInArray(runs.status, [...ACTIVE_RUN_STATUSES])))
       .returning({ id: runs.id });
     return deleted.map((row) => row.id);
   }
 
+  /** Deletes the run and, by cascade, its points. Returns false when no row matched. */
   async delete(id: string): Promise<boolean> {
     const deleted = await this.db.delete(runs).where(eq(runs.id, id)).returning({ id: runs.id });
     return deleted.length > 0;
@@ -78,7 +85,7 @@ export class RunsRepository {
     const stale = await this.db
       .update(runs)
       .set({ status: 'error', errorMessage: message, finishedAt: new Date() })
-      .where(inArray(runs.status, ['queued', 'running']))
+      .where(inArray(runs.status, [...ACTIVE_RUN_STATUSES]))
       .returning({ id: runs.id });
     return stale.length;
   }

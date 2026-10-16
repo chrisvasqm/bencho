@@ -1,5 +1,6 @@
 import {
   doublePrecision,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -8,6 +9,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   DURATION_PATTERN,
@@ -20,21 +22,37 @@ import {
 
 export const RUN_STATUSES = ['queued', 'running', 'passed', 'failed', 'error', 'stopped'] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
+/** Statuses of a run that has not finished yet. */
+export const ACTIVE_RUN_STATUSES: readonly RunStatus[] = ['queued', 'running'];
 
-export const runs = pgTable('runs', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  type: text('type').$type<RunType>().notNull(),
-  baseUrl: text('base_url').notNull(),
-  stages: jsonb('stages').$type<LoadStage[]>().notNull(),
-  limits: jsonb('limits').$type<RunLimits>().notNull(),
-  status: text('status').$type<RunStatus>().notNull().default('queued'),
-  exitCode: integer('exit_code'),
-  summary: jsonb('summary').$type<Record<string, unknown>>(),
-  errorMessage: text('error_message'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  startedAt: timestamp('started_at', { withTimezone: true }),
-  finishedAt: timestamp('finished_at', { withTimezone: true }),
-});
+export const runs = pgTable(
+  'runs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    type: text('type').$type<RunType>().notNull(),
+    baseUrl: text('base_url').notNull(),
+    stages: jsonb('stages').$type<LoadStage[]>().notNull(),
+    limits: jsonb('limits').$type<RunLimits>().notNull(),
+    status: text('status').$type<RunStatus>().notNull().default('queued'),
+    exitCode: integer('exit_code'),
+    summary: jsonb('summary').$type<Record<string, unknown>>(),
+    errorMessage: text('error_message'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+  },
+  (table) => [
+    // The list query filters by type and pages newest first.
+    index('runs_type_created_at_idx').on(table.type, table.createdAt.desc()),
+    // The active-runs poll (every 2 s while runs are going) reads only queued and running rows.
+    index('runs_active_created_at_idx')
+      .on(table.createdAt.desc())
+      .where(
+        // Drizzle Kit cannot inline bound parameters in an index predicate; write literals.
+        sql`${table.status} in (${sql.raw(ACTIVE_RUN_STATUSES.map((status) => `'${status}'`).join(', '))})`,
+      ),
+  ],
+);
 
 export type Run = typeof runs.$inferSelect;
 
