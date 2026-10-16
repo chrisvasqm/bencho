@@ -23,7 +23,7 @@ export interface RunsTableProps {
 
 // Fixed geometry: the table area is always `pageSize` rows tall, so switching type or page
 // never resizes the card. More runs than fit go to the next page.
-const ROW_HEIGHT_PX = 44;
+const ROW_HEIGHT_PX = 34;
 const HEAD_HEIGHT_PX = 36;
 
 const HEADERS = [
