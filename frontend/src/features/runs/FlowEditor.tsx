@@ -25,6 +25,8 @@ export interface FlowEditorProps {
   /** True right after a submit found the problem: scroll it into view once. */
   scrollToError?: boolean;
   onErrorShown?: () => void;
+  /** "Step 2 (Log in)", shown with the message when that step is closed. */
+  errorLabel?: string;
 }
 
 const METHOD_OPTIONS = HTTP_METHODS.map((value) => ({ value, label: value }));
@@ -38,7 +40,16 @@ export function FlowEditor({
   error,
   scrollToError,
   onErrorShown,
+  errorLabel,
 }: FlowEditorProps) {
+  // A problem with no step, or with its step closed, shows under the list instead.
+  const listError = error && (!errorStepId || errorStepId !== openId) ? error : undefined;
+  const listErrorRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (!listError || !scrollToError) return;
+    listErrorRef.current?.scrollIntoView({ block: 'nearest' });
+    onErrorShown?.();
+  }, [listError, scrollToError, onErrorShown]);
   const update = (id: string, patch: Partial<StepDraft>) =>
     onChange(steps.map((step) => (step.id === id ? { ...step, ...patch } : step)));
   const move = (index: number, offset: number) => {
@@ -151,6 +162,12 @@ export function FlowEditor({
           </li>
         ))}
       </ol>
+      {listError && (
+        <p ref={listErrorRef} role="alert" className="m-0 text-xs text-danger">
+          {errorStepId && errorLabel ? `${errorLabel}: ` : ''}
+          {listError}
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" size="sm" onClick={add}>
           Add step

@@ -1,37 +1,21 @@
-import { useState } from 'react';
 import { Button, Input } from '../../components/ui/index.ts';
 import type { Stage } from '../../api/runs.ts';
+import { toStageRow, type StageRow } from './stages.ts';
 
 export interface StagesEditorProps {
-  stages: Stage[];
-  onChange: (stages: Stage[]) => void;
+  stages: StageRow[];
+  onChange: (stages: StageRow[]) => void;
 }
 
 /** Rows of duration + target users. The last row usually ramps down to 0. */
-let nextKey = 0;
-const newKey = () => `stage-${(nextKey += 1)}`;
-
 export function StagesEditor({ stages, onChange }: StagesEditorProps) {
-  // Stable row keys, so removing a row never moves focus to its neighbor.
-  const [keys, setKeys] = useState(() => stages.map(newKey));
-  // The stages can be replaced from outside (the test type changed): start new keys then.
-  const [keyedStages, setKeyedStages] = useState(stages);
-  if (keyedStages !== stages && keys.length !== stages.length) {
-    setKeyedStages(stages);
-    setKeys(stages.map(newKey));
-  }
   const update = (index: number, patch: Partial<Stage>) =>
     onChange(
       stages.map((stage, position) => (position === index ? { ...stage, ...patch } : stage)),
     );
-  const remove = (index: number) => {
-    setKeys(keys.filter((_key, position) => position !== index));
+  const remove = (index: number) =>
     onChange(stages.filter((_stage, position) => position !== index));
-  };
-  const add = () => {
-    setKeys([...keys, newKey()]);
-    onChange([...stages, { duration: '30s', target: 0 }]);
-  };
+  const add = () => onChange([...stages, toStageRow({ duration: '30s', target: 0 })]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -41,7 +25,7 @@ export function StagesEditor({ stages, onChange }: StagesEditorProps) {
         <span className="w-8" />
       </div>
       {stages.map((stage, index) => (
-        <div key={keys[index]} className="grid grid-cols-[1fr_1fr_auto] items-center gap-2">
+        <div key={stage.id} className="grid grid-cols-[1fr_1fr_auto] items-center gap-2">
           <Input
             id={`stage-${index}-duration`}
             aria-label={`Stage ${index + 1} duration`}
