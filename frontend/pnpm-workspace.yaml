@@ -1,0 +1,8 @@
+saveExact: true
+minimumReleaseAge: 10080
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  # semver@6.3.1 (2023) predates npm provenance; required by Storybook 10 via ^6, no newer 6.x exists.
+  - semver@6.3.1
+allowBuilds:
+  esbuild: true

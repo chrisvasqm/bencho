@@ -1,0 +1,39 @@
+{
+  "name": "api-performance-testing-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "check": "tsc --noEmit && eslint . && prettier --check . && vite build",
+    "storybook": "storybook dev -p 10006 --no-open",
+    "build:storybook": "storybook build"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.104.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@storybook/addon-docs": "10.6.1",
+    "@storybook/react-vite": "10.6.1",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "eslint": "10.12.0",
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.9.9",
+    "storybook": "10.6.1",
+    "tailwindcss": "4.3.3",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "8.71.1",
+    "vite": "8.3.4"
+  }
+}

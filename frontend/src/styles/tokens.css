@@ -1,0 +1,86 @@
+/* Design tokens. Semantic names only; components never use raw palette colors.
+   Light is the base; dark overrides under system preference or data-theme="dark". */
+:root {
+  color-scheme: light;
+  --canvas: #f2f4f3;
+  --surface: #ffffff;
+  --surface-sunken: #e9edeb;
+  --line: #d3d9d6;
+  --line-strong: #aab3ae;
+  --fg: #141a18;
+  --fg-muted: #5c6763;
+  --fg-faint: #8b9590;
+  --accent: #0f766e;
+  --accent-strong: #0b5e58;
+  --accent-fg: #ffffff;
+  --accent-soft: #d8efe9;
+  --success: #15803d;
+  --success-soft: #dcf5e4;
+  --danger: #b91c1c;
+  --danger-soft: #fbe1e1;
+  --warning: #b45309;
+  --warning-soft: #fdecd3;
+  --info: #1d4ed8;
+  --info-soft: #dde8fd;
+  --focus: #0f766e;
+  --font-sans: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-raised: 0 1px 2px rgb(20 26 24 / 0.06), 0 4px 12px rgb(20 26 24 / 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --canvas: #0f1413;
+    --surface: #171d1b;
+    --surface-sunken: #0b0f0e;
+    --line: #28312e;
+    --line-strong: #3f4a46;
+    --fg: #e7ecea;
+    --fg-muted: #9aa5a0;
+    --fg-faint: #6b7571;
+    --accent: #2dd4bf;
+    --accent-strong: #5eead4;
+    --accent-fg: #082f2b;
+    --accent-soft: #123a36;
+    --success: #4ade80;
+    --success-soft: #14321f;
+    --danger: #f87171;
+    --danger-soft: #3b1515;
+    --warning: #fbbf24;
+    --warning-soft: #3b2a0c;
+    --info: #60a5fa;
+    --info-soft: #152748;
+    --focus: #2dd4bf;
+    --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.35);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #0f1413;
+  --surface: #171d1b;
+  --surface-sunken: #0b0f0e;
+  --line: #28312e;
+  --line-strong: #3f4a46;
+  --fg: #e7ecea;
+  --fg-muted: #9aa5a0;
+  --fg-faint: #6b7571;
+  --accent: #2dd4bf;
+  --accent-strong: #5eead4;
+  --accent-fg: #082f2b;
+  --accent-soft: #123a36;
+  --success: #4ade80;
+  --success-soft: #14321f;
+  --danger: #f87171;
+  --danger-soft: #3b1515;
+  --warning: #fbbf24;
+  --warning-soft: #3b2a0c;
+  --info: #60a5fa;
+  --info-soft: #152748;
+  --focus: #2dd4bf;
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.35);
+}
