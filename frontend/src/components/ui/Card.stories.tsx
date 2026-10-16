@@ -24,4 +24,10 @@ export const WithActions: Story = {
     ),
   },
 };
+export const WithFlushFooter: Story = {
+  args: {
+    flushFooter: true,
+    footer: <Button size="block">Start load test</Button>,
+  },
+};
 export const Plain: Story = { args: { title: undefined, description: undefined } };

@@ -172,6 +172,7 @@ function RunPanelForm({
       title="New run"
       description={RUN_TYPE_DESCRIPTIONS[type]}
       scrollBody
+      flushFooter
       className={className}
       headerExtra={
         <Tabs
@@ -182,7 +183,7 @@ function RunPanelForm({
         />
       }
       footer={
-        <Button type="submit" form={FORM_ID} loading={submitting} className="w-full">
+        <Button type="submit" form={FORM_ID} loading={submitting} size="block">
           {submitting ? 'Starting…' : `Start ${RUN_TYPE_LABELS[type].toLowerCase()} test`}
         </Button>
       }
@@ -378,6 +379,7 @@ function RunPanelSkeleton({ className }: { className?: string }) {
       title="New run"
       description={<Skeleton className="mt-1 h-4 w-56" />}
       scrollBody
+      flushFooter
       className={className}
       headerExtra={
         <div className="flex gap-4 pb-2">
@@ -387,7 +389,7 @@ function RunPanelSkeleton({ className }: { className?: string }) {
         </div>
       }
       footer={
-        <Button loading disabled className="w-full">
+        <Button loading disabled size="block">
           Loading settings…
         </Button>
       }
