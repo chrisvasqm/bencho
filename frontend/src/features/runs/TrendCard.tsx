@@ -1,7 +1,9 @@
 // Latency percentiles across the latest finished runs of one type, oldest on the left.
 import { useQuery } from '@tanstack/react-query';
 import { runsApi, type RunType } from '../../api/runs.ts';
-import { Card, LineChart } from '../../components/ui/index.ts';
+import { Card } from '../../components/ui/index.ts';
+// Imported directly, not via the barrel, so recharts stays in the lazy chunk.
+import { LineChart } from '../../components/ui/LineChart.tsx';
 import { LATENCY_SERIES } from './RunCharts.tsx';
 import { RUN_TYPE_LABELS, formatMs, formatTime } from './format.ts';
 

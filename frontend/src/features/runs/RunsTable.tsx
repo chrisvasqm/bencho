@@ -103,7 +103,7 @@ export function RunsTable({
                           event.stopPropagation();
                           onSelect(run);
                         }}
-                        aria-label={`Show run from ${formatTime(run.createdAt)}`}
+                        aria-label={`${STATUS_LABELS[run.status]}, run from ${formatTime(run.createdAt)}`}
                         className="rounded-full"
                       >
                         <Badge tone={STATUS_TONES[run.status]} pulse={isActive(run.status)}>

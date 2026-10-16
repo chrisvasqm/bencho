@@ -3,7 +3,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { runsApi, type Run } from '../../api/runs.ts';
-import { LineChart, Tabs } from '../../components/ui/index.ts';
+import { Tabs } from '../../components/ui/index.ts';
+// Imported directly, not via the barrel, so recharts stays in the lazy chunk.
+import { LineChart } from '../../components/ui/LineChart.tsx';
 import { formatMs, formatSeconds, isActive } from './format.ts';
 
 type ChartTab = 'latency' | 'load' | 'errors';

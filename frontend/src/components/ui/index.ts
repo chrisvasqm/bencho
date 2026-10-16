@@ -3,7 +3,6 @@ export { Button, type ButtonProps } from './Button.tsx';
 export { Card, type CardProps } from './Card.tsx';
 export { Field, type FieldProps } from './Field.tsx';
 export { Input, type InputProps } from './Input.tsx';
-export { LineChart, type LineChartProps, type LineSeries } from './LineChart.tsx';
 export { Pagination, type PaginationProps } from './Pagination.tsx';
 export {
   SegmentedControl,

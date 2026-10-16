@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
   ApiError,
@@ -15,11 +15,14 @@ import { RUN_TYPE_LABELS, isActive } from './features/runs/format.ts';
 import { RunDetailCard } from './features/runs/RunDetailCard.tsx';
 import { RunPanel } from './features/runs/RunPanel.tsx';
 import { RunsTable } from './features/runs/RunsTable.tsx';
-import { TrendCard } from './features/runs/TrendCard.tsx';
 import { useRunWatcher } from './features/runs/useRunWatcher.ts';
 import { ThemeSwitch } from './features/theme/ThemeSwitch.tsx';
 
 const POLL_INTERVAL_MS = 2000;
+
+const TrendCard = lazy(() =>
+  import('./features/runs/TrendCard.tsx').then((module) => ({ default: module.TrendCard })),
+);
 const PAGE_SIZE = 8;
 
 export function App() {
@@ -203,7 +206,15 @@ export function App() {
             </Card>
           ) : null}
 
-          <TrendCard type={type} />
+          <Suspense
+            fallback={
+              <Card title="Trend">
+                <Skeleton className="h-56 w-full" />
+              </Card>
+            }
+          >
+            <TrendCard type={type} />
+          </Suspense>
         </div>
       </main>
     </div>

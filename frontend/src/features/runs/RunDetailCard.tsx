@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import type { Run } from '../../api/runs.ts';
-import { Badge, Button, Card, Stat, type StatTone } from '../../components/ui/index.ts';
-import { RunCharts } from './RunCharts.tsx';
+import { Badge, Button, Card, Skeleton, Stat, type StatTone } from '../../components/ui/index.ts';
 import {
   RUN_TYPE_LABELS,
   STATUS_LABELS,
@@ -28,6 +27,11 @@ const PERCENTILE_KEYS = [
 ] as const;
 
 const CONFIRM_TIMEOUT_MS = 4000;
+
+// Charts pull in recharts; load them after the first paint.
+const RunCharts = lazy(() =>
+  import('./RunCharts.tsx').then((module) => ({ default: module.RunCharts })),
+);
 
 function toneFor(value: number | undefined, limit: number): StatTone {
   if (value === undefined) return 'neutral';
@@ -112,7 +116,9 @@ export function RunDetailCard({ run, onDelete, deleting }: RunDetailCardProps) {
           </p>
         )}
 
-        <RunCharts run={run} />
+        <Suspense fallback={<Skeleton className="h-72 w-full" />}>
+          <RunCharts run={run} />
+        </Suspense>
 
         {run.errorMessage && (
           <pre className="m-0 overflow-x-auto rounded-md bg-surface-sunken p-3 font-mono text-xs whitespace-pre-wrap text-danger">

@@ -1,6 +1,6 @@
 // Left-hand control panel: build a run across three tabs, start it from the pinned footer.
 import { AnimatePresence, motion } from 'motion/react';
-import { useState, type FormEvent } from 'react';
+import { Suspense, lazy, useState, type FormEvent } from 'react';
 import {
   RUN_TYPES,
   type CreateRunInput,
@@ -14,18 +14,11 @@ import {
   Field,
   FieldSkeleton,
   Input,
-  LineChart,
   Select,
   Skeleton,
   Tabs,
 } from '../../components/ui/index.ts';
-import {
-  RUN_TYPE_DESCRIPTIONS,
-  RUN_TYPE_LABELS,
-  durationToSeconds,
-  formatSeconds,
-  plannedShape,
-} from './format.ts';
+import { RUN_TYPE_DESCRIPTIONS, RUN_TYPE_LABELS, durationToSeconds } from './format.ts';
 import { StagesEditor } from './StagesEditor.tsx';
 
 type PanelTab = 'target' | 'shape' | 'limits';
@@ -45,6 +38,9 @@ const ERROR_TAB: Record<string, PanelTab> = {
 };
 
 const PERCENTILES = ['p50', 'p90', 'p95', 'p99'] as const;
+
+// recharts is large; the preview loads after the panel is usable.
+const LoadShapeChart = lazy(() => import('./LoadShapeChart.tsx'));
 // Mirrors the backend limits so the user sees which field to fix.
 const MAX_RUN_SECONDS = 3600;
 const MAX_VIRTUAL_USERS = 1000;
@@ -209,17 +205,9 @@ function RunPanelForm({
 
               {tab === 'shape' && (
                 <>
-                  <LineChart
-                    title="Planned virtual users"
-                    data={plannedShape(stages)}
-                    xKey="second"
-                    series={[
-                      { key: 'virtualUsers', label: 'Virtual users', color: 'var(--series-1)' },
-                    ]}
-                    formatX={formatSeconds}
-                    height={140}
-                    empty="Fix the stage durations to see the shape."
-                  />
+                  <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
+                    <LoadShapeChart stages={stages} />
+                  </Suspense>
                   <Field label="Stages" htmlFor="stage-0-duration" error={errors.stages}>
                     <StagesEditor stages={stages} onChange={setStages} />
                   </Field>
