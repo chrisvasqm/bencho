@@ -1,6 +1,6 @@
 // Line chart on one y-axis. Series colors come from --series-N tokens; give neighboring series a
-// `dash` too when hue alone may not separate them. Text stays in text tokens. Two or more series get a legend plus a label at each
-// line's last point, so identity never depends on color alone.
+// `dash` too when hue alone may not separate them. Text stays in text tokens. Two or more series
+// get a legend plus a label at each line's last point, so identity never depends on color alone.
 import {
   CartesianGrid,
   Legend,
@@ -37,6 +37,8 @@ export interface LineChartProps<Row> {
   height?: number;
   /** Whole-number y values only (such as virtual users), so ticks never read 2.25 users. */
   integerY?: boolean;
+  /** Smallest y tick step, so ticks never read the same once formatted (0.001 = 0.1%). */
+  minYStep?: number;
   /** Whole-number x values only (such as seconds). */
   integerX?: boolean;
   loading?: boolean;
@@ -56,14 +58,31 @@ export function LineChart<Row extends object>({
   height = 220,
   integerY = false,
   integerX = false,
+  minYStep = 0,
   loading,
   empty = 'No data yet.',
 }: LineChartProps<Row>) {
   const showLegend = series.length > 1;
-  const endLabels = showLegend ? endLabelTexts(data, series, height) : new Map<string, string>();
-  // Room on the right for the longest end label (about 7px per 11px mono character), and at
-  // least enough for the last x tick, which is centered on the plot's right edge.
-  const rightMargin = Math.max(48, ...[...endLabels.values()].map((text) => text.length * 7 + 10));
+  // The y axis uses this exact scale, so label spacing can be measured in pixels.
+  const yTicks = niceTicks(seriesMax(data, series), integerY, minYStep);
+  const yMax = yTicks[yTicks.length - 1] ?? 1;
+  const plotHeight = Math.max(
+    1,
+    height - MARGIN_TOP_PX - X_AXIS_HEIGHT_PX - (showLegend ? LEGEND_HEIGHT_PX : 0),
+  );
+  // Recharts puts a top legend above the plot, so the plot starts below both.
+  const plotTop = MARGIN_TOP_PX + (showLegend ? LEGEND_HEIGHT_PX : 0);
+  const endLabels = showLegend
+    ? layoutEndLabels(data, series, { top: plotTop, height: plotHeight, max: yMax })
+    : new Map<string, EndLabelGroup>();
+  // Room on the right for the longest end label line (about 7px per 11px mono character), and
+  // at least enough for the last x tick, which is centered on the plot's right edge.
+  const rightMargin = Math.max(
+    48,
+    ...[...endLabels.values()]
+      .flatMap((group) => group.labels)
+      .map((item) => item.label.length * 7 + 10),
+  );
   return (
     <figure className="m-0 flex min-w-0 flex-col gap-2">
       <figcaption className="text-sm font-medium text-fg">{title}</figcaption>
@@ -83,7 +102,7 @@ export function LineChart<Row extends object>({
           <ResponsiveContainer width="100%" height="100%">
             <RechartsLineChart
               data={data}
-              margin={{ top: 8, right: rightMargin, bottom: 0, left: 0 }}
+              margin={{ top: MARGIN_TOP_PX, right: rightMargin, bottom: 0, left: 0 }}
             >
               <CartesianGrid stroke="var(--line)" strokeDasharray="2 4" vertical={false} />
               <XAxis
@@ -95,6 +114,7 @@ export function LineChart<Row extends object>({
                 stroke="var(--line-strong)"
                 tickLine={false}
                 minTickGap={24}
+                height={X_AXIS_HEIGHT_PX}
                 allowDecimals={!integerX}
               />
               <YAxis
@@ -103,7 +123,8 @@ export function LineChart<Row extends object>({
                 stroke="var(--line-strong)"
                 tickLine={false}
                 axisLine={false}
-                allowDecimals={!integerY}
+                domain={[0, yMax]}
+                ticks={yTicks}
                 width={72}
               />
               <Tooltip
@@ -121,7 +142,7 @@ export function LineChart<Row extends object>({
                 <Legend
                   verticalAlign="top"
                   align="right"
-                  height={24}
+                  height={LEGEND_HEIGHT_PX}
                   iconType="plainline"
                   formatter={(value: string) => (
                     <span className="text-xs text-fg-muted">{value}</span>
@@ -152,17 +173,13 @@ export function LineChart<Row extends object>({
                   }}
                   connectNulls
                   isAnimationActive={false}
-                  label={
-                    endLabels.has(line.key)
-                      ? (props: LabelProps) => (
-                          <EndLabel
-                            {...props}
-                            lastIndex={lastValueIndex(data, line.key)}
-                            text={endLabels.get(line.key) ?? line.label}
-                          />
-                        )
-                      : undefined
-                  }
+                  label={(() => {
+                    // Only series with an end label get a label renderer (it runs per point).
+                    const group = endLabels.get(line.key);
+                    return group
+                      ? (props: LabelProps) => <EndLabel {...props} group={group} />
+                      : undefined;
+                  })()}
                 />
               ))}
             </RechartsLineChart>
@@ -173,44 +190,111 @@ export function LineChart<Row extends object>({
   );
 }
 
-/** Labels closer than this many pixels would overlap; they merge into one. */
+const MARGIN_TOP_PX = 8;
+const LEGEND_HEIGHT_PX = 24;
+/** Recharts' default x axis height. */
+const X_AXIS_HEIGHT_PX = 30;
+/** Points closer than this many pixels share one stacked label. */
 const END_LABEL_MIN_GAP_PX = 14;
-/** Chart height taken by the legend and the x axis, not by the plot. */
-const NON_PLOT_HEIGHT_PX = 52;
+const END_LABEL_LINE_PX = 12;
+const Y_TICK_COUNT = 5;
+
+function numberAt<Row>(row: Row | undefined, key: keyof Row): number | undefined {
+  const value: unknown = row?.[key];
+  return typeof value === 'number' ? value : undefined;
+}
+
+function seriesMax<Row>(data: Row[], series: ReadonlyArray<LineSeries<Row>>): number {
+  let max = 0;
+  for (const line of series) {
+    for (const row of data) max = Math.max(max, numberAt(row, line.key) ?? 0);
+  }
+  return max;
+}
 
 /**
- * Text of the label at each series' last point. Series that end close together share one label
- * ("p95 p99") on the highest of them, so labels never print over each other.
+ * Evenly spaced ticks from 0 with a round step (1, 2, 2.5 or 5 times a power of ten). With a
+ * minimum step, the step is a whole multiple of it, so formatted ticks stay exact and distinct.
  */
-function endLabelTexts<Row>(data: Row[], series: ReadonlyArray<LineSeries<Row>>, height: number) {
-  const plotHeight = Math.max(1, height - NON_PLOT_HEIGHT_PX);
-  const numberAt = (row: Row | undefined, key: keyof Row): number | undefined => {
-    const value: unknown = row?.[key];
-    return typeof value === 'number' ? value : undefined;
-  };
-  const ends = series
-    .map((line) => ({ line, value: numberAt(data[lastValueIndex(data, line.key)], line.key) }))
-    .flatMap(({ line, value }) => (value === undefined ? [] : [{ line, value }]))
-    .sort((first, second) => second.value - first.value);
-  const values = series.flatMap((line) => data.flatMap((row) => numberAt(row, line.key) ?? []));
-  const max = Math.max(0, ...values);
-  const texts = new Map<string, string>();
-  let leader: { key: string; value: number; index: number; labels: string[] } | undefined;
-  for (const { line, value } of ends) {
+function niceTicks(max: number, integer: boolean, minStep: number): number[] {
+  const floor = integer ? Math.max(1, minStep) : minStep;
+  if (max <= 0) return [0, floor > 0 ? floor : 1];
+  const rawStep = Math.max(max / (Y_TICK_COUNT - 1), floor, Number.MIN_VALUE);
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+  const factors = integer || minStep > 0 ? [1, 2, 5, 10] : [1, 2, 2.5, 5, 10];
+  const factor = factors.find((candidate) => candidate * magnitude >= rawStep) ?? 10;
+  let step = factor * magnitude;
+  if (floor > 0) step = Math.ceil(step / floor - 1e-9) * floor;
+  const count = Math.max(1, Math.ceil(max / step - 1e-9));
+  return Array.from({ length: count + 1 }, (_value, index) => Number((index * step).toFixed(10)));
+}
+
+interface EndLabelGroup {
+  /** Row of the series' last value, where the label is drawn. */
+  index: number;
+  labels: Array<{ key: string; label: string }>;
+  /** Baseline of the first line, in chart pixels. */
+  firstLineY: number;
+}
+
+/**
+ * Lays out the labels at each series' last point. Series ending at the same x within a few
+ * pixels share one stacked label; groups are then kept inside the plot and pushed apart so no
+ * two stacks overlap. Keyed by the series that draws the group.
+ */
+function layoutEndLabels<Row>(
+  data: Row[],
+  series: ReadonlyArray<LineSeries<Row>>,
+  plot: { top: number; height: number; max: number },
+): Map<string, EndLabelGroup> {
+  const toY = (value: number) => plot.top + plot.height * (1 - value / plot.max);
+  const ends = series.flatMap((line, order) => {
     const index = lastValueIndex(data, line.key);
-    const pixels = max > 0 ? ((leader?.value ?? 0) - value) * (plotHeight / max) : 0;
-    // Only labels drawn at the same x can collide; a series ending earlier keeps its own label.
-    if (leader && leader.index === index && pixels < END_LABEL_MIN_GAP_PX) {
-      leader.labels.push(line.label);
-      const order = series.map((item) => item.label);
-      leader.labels.sort((first, second) => order.indexOf(first) - order.indexOf(second));
-      texts.set(leader.key, leader.labels.join(' '));
-      continue;
+    const value = numberAt(data[index], line.key);
+    return value === undefined ? [] : [{ line, order, index, y: toY(value) }];
+  });
+  const layout = new Map<string, EndLabelGroup>();
+  for (const index of new Set(ends.map((end) => end.index))) {
+    const column = ends.filter((end) => end.index === index).sort((a, b) => a.y - b.y);
+    // Group points that are closer than one label line apart, top to bottom.
+    const groups: Array<{ key: string; members: typeof column }> = [];
+    for (const end of column) {
+      const last = groups[groups.length - 1];
+      const lastY = last?.members[last.members.length - 1]?.y;
+      if (last && lastY !== undefined && end.y - lastY < END_LABEL_MIN_GAP_PX) {
+        last.members.push(end);
+      } else groups.push({ key: end.line.key, members: [end] });
     }
-    leader = { key: line.key, value, index, labels: [line.label] };
-    texts.set(line.key, line.label);
+    // Center each stack on its points, then push stacks apart and keep them inside the plot.
+    const placed = groups.map((group) => {
+      const center = group.members.reduce((sum, end) => sum + end.y, 0) / group.members.length;
+      const lines = group.members.length;
+      return { group, lines, first: center + 4 - ((lines - 1) * END_LABEL_LINE_PX) / 2 };
+    });
+    const minFirst = plot.top + 9;
+    const maxLast = plot.top + plot.height - 4;
+    let floor = minFirst;
+    for (const item of placed) {
+      item.first = Math.max(item.first, floor);
+      floor = item.first + item.lines * END_LABEL_LINE_PX;
+    }
+    let ceiling = maxLast;
+    for (const item of [...placed].reverse()) {
+      item.first = Math.min(item.first, ceiling - (item.lines - 1) * END_LABEL_LINE_PX);
+      ceiling = item.first - END_LABEL_LINE_PX;
+    }
+    // Stacks taller than the plot cannot all fit; keep the top one readable below the legend.
+    for (const item of placed) item.first = Math.max(item.first, minFirst);
+    for (const { group, first } of placed) {
+      const members = [...group.members].sort((a, b) => a.order - b.order);
+      layout.set(group.key, {
+        index,
+        labels: members.map((end) => ({ key: end.line.key, label: end.line.label })),
+        firstLineY: first,
+      });
+    }
   }
-  return texts;
+  return layout;
 }
 
 function valueCount<Row>(data: Row[], key: keyof Row): number {
@@ -225,17 +309,21 @@ function lastValueIndex<Row>(data: Row[], key: keyof Row): number {
   return -1;
 }
 
-function EndLabel({
-  x,
-  y,
-  index,
-  lastIndex,
-  text,
-}: LabelProps & { lastIndex: number; text: string }) {
-  if (index !== lastIndex || typeof x !== 'number' || typeof y !== 'number') return null;
+function EndLabel({ x, index, group }: LabelProps & { group: EndLabelGroup }) {
+  if (index !== group.index || typeof x !== 'number') return null;
   return (
-    <text x={x + 6} y={y + 4} fill="var(--fg-muted)" fontSize={11} fontFamily="var(--font-mono)">
-      {text}
+    <text
+      x={x + 6}
+      y={group.firstLineY}
+      fill="var(--fg-muted)"
+      fontSize={11}
+      fontFamily="var(--font-mono)"
+    >
+      {group.labels.map((item, position) => (
+        <tspan key={item.key} x={x + 6} dy={position === 0 ? 0 : END_LABEL_LINE_PX}>
+          {item.label}
+        </tspan>
+      ))}
     </text>
   );
 }

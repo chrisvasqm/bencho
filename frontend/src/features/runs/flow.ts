@@ -1,6 +1,7 @@
 // Flow editing helpers: drafts the editor can hold mid-typing, the QuickPizza example and
 // checks that mirror the backend so the user sees which step to fix.
 import type { FlowStep, HttpMethod } from '../../api/runs.ts';
+import { newId } from './ids.ts';
 
 export interface Pair {
   /** Stable React key, so removing a row never moves focus to another one. */
@@ -34,16 +35,13 @@ const PLACEHOLDER_PATTERN = /\{\{\s*([^}]*?)\s*\}\}/g;
 const NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const HEADER_NAME_PATTERN = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
 
-let nextId = 0;
-const newId = () => `step-${(nextId += 1)}`;
-
 export function newPair(key = '', value = ''): Pair {
-  return { id: `pair-${(nextId += 1)}`, key, value };
+  return { id: newId('pair'), key, value };
 }
 
 export function toDraft(step: FlowStep): StepDraft {
   return {
-    id: newId(),
+    id: newId('step'),
     name: step.name,
     method: step.method,
     path: step.path,
