@@ -18,7 +18,7 @@ import {
   type RunType,
 } from '../../../k6/lib/defaults.ts';
 
-export const RUN_STATUSES = ['queued', 'running', 'passed', 'failed', 'error'] as const;
+export const RUN_STATUSES = ['queued', 'running', 'passed', 'failed', 'error', 'stopped'] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
 
 export const runs = pgTable('runs', {
@@ -94,8 +94,18 @@ export type CreateRunInput = z.infer<typeof createRunSchema>;
 
 export const listRunsQuerySchema = z.object({
   type: z.enum(RUN_TYPES).optional(),
+  /** Only runs still queued or running, across types when `type` is not given. */
+  active: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === 'true'),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(10),
 });
 export type ListRunsQuery = z.infer<typeof listRunsQuerySchema>;
 export const runIdParamsSchema = z.object({ id: z.uuid() });
+
+export const MAX_BULK_DELETE = 50;
+export const bulkDeleteSchema = z.object({
+  ids: z.array(z.uuid()).min(1).max(MAX_BULK_DELETE),
+});

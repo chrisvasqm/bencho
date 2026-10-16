@@ -19,6 +19,7 @@ export const STATUS_LABELS: Record<RunStatus, string> = {
   passed: 'Passed',
   failed: 'Failed',
   error: 'Error',
+  stopped: 'Stopped',
 };
 
 export const STATUS_TONES: Record<RunStatus, BadgeTone> = {
@@ -27,6 +28,7 @@ export const STATUS_TONES: Record<RunStatus, BadgeTone> = {
   passed: 'success',
   failed: 'danger',
   error: 'warning',
+  stopped: 'neutral',
 };
 
 export const isActive = (status: RunStatus) => status === 'queued' || status === 'running';

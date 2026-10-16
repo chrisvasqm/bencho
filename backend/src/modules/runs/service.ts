@@ -1,5 +1,5 @@
 // Starts k6 runs as child processes and records their outcome.
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,6 +10,8 @@ import { FileTail, TimeseriesAggregator, type RunPointValues } from './timeserie
 import type { CreateRunInput, ListRunsQuery, Run, RunPoint, RunStatus } from './schema.ts';
 
 const K6_THRESHOLD_FAILED_EXIT_CODE = 99;
+/** After SIGINT, k6 gets this long to stop gracefully (and write its summary) before SIGKILL. */
+const STOP_GRACE_MS = 10_000;
 const MAX_CONCURRENT_RUNS = 3;
 const POINTS_FLUSH_INTERVAL_MS = 2000;
 
@@ -22,6 +24,12 @@ export class RunsService {
   private readonly inFlight = new Set<Promise<void>>();
   /** Slots taken by start() calls still inserting their row; counted with inFlight for the cap. */
   private starting = 0;
+  /** k6 processes by run id, so a run can be stopped. */
+  private readonly processes = new Map<string, ChildProcess>();
+  /** Runs this process is executing (queued or running). */
+  private readonly executing = new Set<string>();
+  /** Runs the user asked to stop; their outcome is recorded as 'stopped'. */
+  private readonly stopRequested = new Set<string>();
 
   constructor(
     private readonly repository: RunsRepository,
@@ -58,6 +66,7 @@ export class RunsService {
     } finally {
       this.starting -= 1;
     }
+    this.executing.add(run.id);
     const execution = this.execute(run).finally(() => this.inFlight.delete(execution));
     this.inFlight.add(execution);
     return run;
@@ -79,12 +88,20 @@ export class RunsService {
     return this.repository.failUnfinished('The backend restarted while this run was in progress.');
   }
 
-  async list({ type, page, pageSize }: ListRunsQuery) {
-    const { runs, total } = await this.repository.listPage(type, page, pageSize);
+  async list({ type, active, page, pageSize }: ListRunsQuery) {
+    const { runs, total } = await this.repository.listPage(type, active, page, pageSize);
     return { runs, total, page, pageSize };
   }
 
   /** Deletes a finished run. Runs still in progress cannot be deleted. */
+  /** Deletes the finished runs among `ids`. Runs in progress and unknown ids are skipped. */
+  async deleteMany(ids: string[]): Promise<{ deleted: string[]; skipped: string[] }> {
+    const unique = [...new Set(ids)];
+    const deleted = await this.repository.deleteFinished(unique);
+    const done = new Set(deleted);
+    return { deleted, skipped: unique.filter((id) => !done.has(id)) };
+  }
+
   async delete(id: string): Promise<void> {
     const run = await this.getById(id);
     if (run.status === 'queued' || run.status === 'running') {
@@ -116,18 +133,47 @@ export class RunsService {
         this.spawnK6(run, summaryPath, pointsPath),
       );
       const summary = await readSummary(summaryPath);
+      const stopped = this.stopRequested.has(run.id);
       await this.repository.update(run.id, {
-        status: statusFromExitCode(exitCode),
+        status: stopped ? 'stopped' : statusFromExitCode(exitCode),
         exitCode,
         summary,
-        errorMessage: exitCode === 0 || exitCode === K6_THRESHOLD_FAILED_EXIT_CODE ? null : stderr,
+        errorMessage:
+          stopped || exitCode === 0 || exitCode === K6_THRESHOLD_FAILED_EXIT_CODE ? null : stderr,
         finishedAt: new Date(),
       });
     } catch (error) {
       await this.markError(run.id, error);
     } finally {
+      this.stopRequested.delete(run.id);
+      this.executing.delete(run.id);
       if (workDir) await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
     }
+  }
+
+  /**
+   * Stops a run in progress: SIGINT lets k6 end gracefully and keep partial results;
+   * SIGKILL follows if it has not exited after the grace period.
+   */
+  async stop(id: string): Promise<Run> {
+    const run = await this.getById(id);
+    if (run.status !== 'queued' && run.status !== 'running') {
+      throw new AppError(409, 'RUN_NOT_ACTIVE', 'This run has already finished.');
+    }
+    this.stopRequested.add(id);
+    const child = this.processes.get(id);
+    if (child) {
+      child.kill('SIGINT');
+      const timer = setTimeout(() => {
+        if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+      }, STOP_GRACE_MS);
+      child.once('close', () => clearTimeout(timer));
+    } else if (!this.executing.has(id)) {
+      // Not started by this process (left over from a restart): nothing to signal.
+      await this.repository.update(id, { status: 'stopped', finishedAt: new Date() });
+      this.stopRequested.delete(id);
+    }
+    return this.getById(id);
   }
 
   /** While `work` runs, turns new CSV rows into stored points every couple of seconds. */
@@ -212,13 +258,22 @@ export class RunsService {
         'localhost:0',
         bundle,
       ];
+      if (this.stopRequested.has(run.id)) {
+        // Stopped while still queued: never start k6.
+        resolve({ exitCode: -1, stderr: '' });
+        return;
+      }
       const child = spawn('k6', args, { env });
+      this.processes.set(run.id, child);
       let stderr = '';
       child.stderr.on('data', (chunk: Buffer) => {
         stderr = (stderr + chunk.toString()).slice(-4000);
       });
       child.on('error', reject);
-      child.on('close', (code) => resolve({ exitCode: code ?? -1, stderr: stderr.trim() }));
+      child.on('close', (code) => {
+        this.processes.delete(run.id);
+        resolve({ exitCode: code ?? -1, stderr: stderr.trim() });
+      });
     });
   }
 }

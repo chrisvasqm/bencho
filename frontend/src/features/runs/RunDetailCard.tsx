@@ -17,6 +17,8 @@ export interface RunDetailCardProps {
   run: Run;
   onDelete: (run: Run) => void;
   deleting: boolean;
+  onStop: (run: Run) => void;
+  stopping: boolean;
 }
 
 const PERCENTILE_KEYS = [
@@ -38,8 +40,13 @@ function toneFor(value: number | undefined, limit: number): StatTone {
   return value < limit ? 'success' : 'danger';
 }
 
-export function RunDetailCard({ run, onDelete, deleting }: RunDetailCardProps) {
+export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: RunDetailCardProps) {
   const [confirming, setConfirming] = useState(false);
+  const [confirmingFor, setConfirmingFor] = useState(run.status);
+  if (confirmingFor !== run.status) {
+    setConfirmingFor(run.status);
+    setConfirming(false);
+  }
   useEffect(() => {
     if (!confirming) return;
     const timer = setTimeout(() => setConfirming(false), CONFIRM_TIMEOUT_MS);
@@ -52,18 +59,22 @@ export function RunDetailCard({ run, onDelete, deleting }: RunDetailCardProps) {
   const elapsed = durationSeconds(run);
   const active = isActive(run.status);
 
-  const deleteButton = active ? null : confirming ? (
+  // Same two-step confirm for both: stop while active, delete once finished.
+  const action = active
+    ? { label: 'Stop', confirm: 'Stop run', busy: stopping, run: () => onStop(run) }
+    : { label: 'Delete', confirm: 'Delete run', busy: deleting, run: () => onDelete(run) };
+  const actionButtons = confirming ? (
     <div className="flex items-center gap-2">
       <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
         Keep
       </Button>
-      <Button variant="danger" size="sm" loading={deleting} onClick={() => onDelete(run)}>
-        Delete run
+      <Button variant="danger" size="sm" loading={action.busy} onClick={action.run}>
+        {action.confirm}
       </Button>
     </div>
   ) : (
-    <Button variant="ghost" size="sm" onClick={() => setConfirming(true)}>
-      Delete
+    <Button variant={active ? 'danger' : 'ghost'} size="sm" onClick={() => setConfirming(true)}>
+      {action.label}
     </Button>
   );
 
@@ -71,7 +82,7 @@ export function RunDetailCard({ run, onDelete, deleting }: RunDetailCardProps) {
     <Card
       title={`${RUN_TYPE_LABELS[run.type]} run · ${formatTime(run.createdAt)}`}
       description={<span className="text-xs">{run.baseUrl}</span>}
-      actions={deleteButton}
+      actions={actionButtons}
     >
       <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">

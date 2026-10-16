@@ -17,6 +17,8 @@ function announce(run: Run): void {
     toast.error(`${label} failed`, {
       description: 'A limit was crossed. See the run for details.',
     });
+  } else if (run.status === 'stopped') {
+    toast(`${label} stopped`, { description: 'Partial results were kept.' });
   } else {
     toast.warning(`${label} could not finish`, {
       description: run.errorMessage?.split('\n')[0] ?? undefined,

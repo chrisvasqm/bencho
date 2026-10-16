@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const RUN_TYPES = ['load', 'stress', 'spike'] as const;
 export type RunType = (typeof RUN_TYPES)[number];
 
-export const RUN_STATUSES = ['queued', 'running', 'passed', 'failed', 'error'] as const;
+export const RUN_STATUSES = ['queued', 'running', 'passed', 'failed', 'error', 'stopped'] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
 
 const stageSchema = z.object({ duration: z.string(), target: z.number() });
@@ -140,8 +140,20 @@ export const runsApi = {
   defaults: () => request('/defaults', defaultsSchema),
   list: (type: RunType, page: number, pageSize: number) =>
     request(`/runs?type=${type}&page=${page}&pageSize=${pageSize}`, runsPageSchema),
+  active: () => request('/runs?active=true&pageSize=10', runsPageSchema),
   points: (id: string) => request(`/runs/${id}/points`, z.object({ points: z.array(pointSchema) })),
   remove: (id: string) => request(`/runs/${id}`, z.undefined(), { method: 'DELETE' }),
+  stop: (id: string) =>
+    request(`/runs/${id}/stop`, z.object({ run: runSchema }), { method: 'POST' }),
+  removeMany: (ids: string[]) =>
+    request(
+      '/runs/delete',
+      z.object({ deleted: z.array(z.string()), skipped: z.array(z.string()) }),
+      {
+        method: 'POST',
+        body: JSON.stringify({ ids }),
+      },
+    ),
   get: (id: string) => request(`/runs/${id}`, z.object({ run: runSchema })),
   create: (input: CreateRunInput) =>
     request('/runs', z.object({ run: runSchema }), { method: 'POST', body: JSON.stringify(input) }),

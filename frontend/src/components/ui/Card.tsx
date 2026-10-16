@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode, Ref } from 'react';
 import { cn } from './cn.ts';
 
 export interface CardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
@@ -12,6 +12,7 @@ export interface CardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
   /** Body scrolls inside the card while header and footer stay visible. Give the card a height. */
   scrollBody?: boolean;
   bodyClassName?: string;
+  ref?: Ref<HTMLElement>;
 }
 
 export function Card({

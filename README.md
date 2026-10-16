@@ -42,14 +42,16 @@ Each project has `pnpm check` (typecheck, lint, format, build). CLI runs without
 
 ## API
 
-| Method | Path                                 | Purpose                                                                                                  |
-| ------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/v1/defaults`                   | Default target, stages per type, limits                                                                  |
-| POST   | `/api/v1/runs`                       | Start a run: `type`, `baseUrl`, optional `stages`, `thinkTimeSeconds`, `maxErrorRate`, `latencyLimitsMs` |
-| GET    | `/api/v1/runs?type=&page=&pageSize=` | One page of runs of a type, newest first, with `total`                                                   |
-| GET    | `/api/v1/runs/:id`                   | One run with status (`queued`, `running`, `passed`, `failed`, `error`) and k6 summary                    |
-| GET    | `/api/v1/runs/:id/points`            | Per-second points; filled live while the run is going                                                    |
-| DELETE | `/api/v1/runs/:id`                   | Delete a finished run and its points                                                                     |
+| Method | Path                                 | Purpose                                                                                                     |
+| ------ | ------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/defaults`                   | Default target, stages per type, limits                                                                     |
+| POST   | `/api/v1/runs`                       | Start a run: `type`, `baseUrl`, optional `stages`, `thinkTimeSeconds`, `maxErrorRate`, `latencyLimitsMs`    |
+| GET    | `/api/v1/runs?type=&page=&pageSize=` | One page of runs of a type, newest first, with `total`; `active=true` lists queued/running runs of any type |
+| GET    | `/api/v1/runs/:id`                   | One run with status (`queued`, `running`, `passed`, `failed`, `stopped`, `error`) and k6 summary            |
+| GET    | `/api/v1/runs/:id/points`            | Per-second points; filled live while the run is going                                                       |
+| POST   | `/api/v1/runs/:id/stop`              | Stop a queued or running run; partial totals and points are kept                                            |
+| DELETE | `/api/v1/runs/:id`                   | Delete a finished run and its points                                                                        |
+| POST   | `/api/v1/runs/delete`                | Delete up to 50 runs by `ids`; runs in progress are skipped                                                 |
 
 Limits: at most 1000 VUs, 20 stages, 60 minutes per run, 3 runs at a time. A run passes when every limit holds: error rate, p50/p90/p95/p99 latency, and check pass rate above 99%.
 

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'motion/react';
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   ApiError,
@@ -12,6 +12,8 @@ import {
 } from './api/runs.ts';
 import { Card, Pagination, Skeleton, Tabs } from './components/ui/index.ts';
 import { RUN_TYPE_LABELS, isActive } from './features/runs/format.ts';
+import { ActiveRunsWidget } from './features/runs/ActiveRunsWidget.tsx';
+import { BulkDeleteBar } from './features/runs/BulkDeleteBar.tsx';
 import { RunDetailCard } from './features/runs/RunDetailCard.tsx';
 import { RunPanel } from './features/runs/RunPanel.tsx';
 import { RunsTable } from './features/runs/RunsTable.tsx';
@@ -29,6 +31,8 @@ export function App() {
   const [type, setType] = useState<RunType>('load');
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string>();
+  const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(new Set());
+  const runsCardRef = useRef<HTMLElement>(null);
   const queryClient = useQueryClient();
   const { watch } = useRunWatcher();
 
@@ -90,6 +94,7 @@ export function App() {
       setPage(1);
       setSelectedId(run.id);
       void queryClient.invalidateQueries({ queryKey: ['runs', run.type] });
+      void queryClient.invalidateQueries({ queryKey: ['runs', 'active'] });
       toast.info(`${RUN_TYPE_LABELS[run.type]} test started`, {
         description: 'You will get a message when it finishes.',
       });
@@ -103,6 +108,11 @@ export function App() {
     mutationFn: (run: Run) => runsApi.remove(run.id),
     onSuccess: (_result, run) => {
       setSelectedId(undefined);
+      setCheckedIds((current) => {
+        const next = new Set(current);
+        next.delete(run.id);
+        return next;
+      });
       queryClient.removeQueries({ queryKey: ['run', run.id] });
       queryClient.removeQueries({ queryKey: ['points', run.id] });
       void queryClient.invalidateQueries({ queryKey: ['runs', run.type] });
@@ -114,10 +124,49 @@ export function App() {
     },
   });
 
+  const stop = useMutation({
+    mutationFn: (run: Run) => runsApi.stop(run.id),
+    onSuccess: ({ run }) => {
+      // The watcher toasts once k6 has exited and the outcome is stored.
+      watch(run.id);
+      toast.info(`Stopping ${RUN_TYPE_LABELS[run.type].toLowerCase()} test…`);
+      void queryClient.invalidateQueries({ queryKey: ['run', run.id] });
+    },
+    onError: (error) => {
+      toast.error('The run did not stop', { description: describeError(error) });
+    },
+  });
+
+  const removeMany = useMutation({
+    mutationFn: (ids: string[]) => runsApi.removeMany(ids),
+    onSuccess: ({ deleted, skipped }) => {
+      const gone = new Set(deleted);
+      if (selectedId && gone.has(selectedId)) setSelectedId(undefined);
+      setCheckedIds(new Set());
+      for (const id of deleted) {
+        queryClient.removeQueries({ queryKey: ['run', id] });
+        queryClient.removeQueries({ queryKey: ['points', id] });
+      }
+      void queryClient.invalidateQueries({ queryKey: ['runs', type] });
+      void queryClient.invalidateQueries({ queryKey: ['trend', type] });
+      const label = `${deleted.length} ${deleted.length === 1 ? 'run' : 'runs'} deleted`;
+      if (skipped.length === 0) toast.success(label);
+      else {
+        toast.warning(label, {
+          description: `${skipped.length} could not be deleted: still running or already gone.`,
+        });
+      }
+    },
+    onError: (error) => {
+      toast.error('The runs were not deleted', { description: describeError(error) });
+    },
+  });
+
   const selectType = (next: RunType) => {
     setType(next);
     setPage(1);
     setSelectedId(undefined);
+    setCheckedIds(new Set());
   };
 
   return (
@@ -151,8 +200,17 @@ export function App() {
 
         <div className="flex min-w-0 flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           <Card
+            ref={runsCardRef}
             title="Runs"
             description="Newest first. Select a run to see its numbers."
+            actions={
+              <BulkDeleteBar
+                count={checkedIds.size}
+                deleting={removeMany.isPending}
+                onClear={() => setCheckedIds(new Set())}
+                onDelete={() => removeMany.mutate([...checkedIds])}
+              />
+            }
             headerExtra={
               <Tabs
                 label="Test type"
@@ -186,6 +244,8 @@ export function App() {
                 onSelect={(run) => setSelectedId(run.id)}
                 pageSize={PAGE_SIZE}
                 listKey={`${type}:${page}`}
+                checkedIds={checkedIds}
+                onCheckedChange={setCheckedIds}
               />
             )}
           </Card>
@@ -202,6 +262,8 @@ export function App() {
                 run={shownRun}
                 deleting={remove.isPending}
                 onDelete={(run) => remove.mutate(run)}
+                stopping={stop.isPending}
+                onStop={(run) => stop.mutate(run)}
               />
             </motion.div>
           ) : runs.isPending || (effectiveId && selected.isPending) ? (
@@ -221,6 +283,16 @@ export function App() {
           </Suspense>
         </div>
       </main>
+
+      <ActiveRunsWidget
+        anchorRef={runsCardRef}
+        onOpen={(run) => {
+          setType(run.type);
+          setPage(1);
+          setSelectedId(run.id);
+          runsCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }}
+      />
     </div>
   );
 }

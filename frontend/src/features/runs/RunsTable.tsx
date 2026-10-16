@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import type { Run } from '../../api/runs.ts';
-import { Badge, Skeleton } from '../../components/ui/index.ts';
+import { Badge, Checkbox, Skeleton } from '../../components/ui/index.ts';
 import {
   STATUS_LABELS,
   STATUS_TONES,
@@ -19,6 +19,9 @@ export interface RunsTableProps {
   pageSize: number;
   /** Changes when a different list is shown (type or page): the body cross-fades as one. */
   listKey: string;
+  /** Ids ticked for bulk actions. Runs in progress cannot be ticked. */
+  checkedIds: ReadonlySet<string>;
+  onCheckedChange: (ids: ReadonlySet<string>) => void;
 }
 
 // Fixed geometry: the table area is always `pageSize` rows tall, so switching type or page
@@ -42,8 +45,28 @@ export function RunsTable({
   onSelect,
   pageSize,
   listKey,
+  checkedIds,
+  onCheckedChange,
 }: RunsTableProps) {
   const empty = !loading && runs.length === 0;
+  const checkable = runs.filter((run) => !isActive(run.status));
+  const checkedOnPage = checkable.filter((run) => checkedIds.has(run.id)).length;
+  const allChecked = checkable.length > 0 && checkedOnPage === checkable.length;
+
+  const toggle = (run: Run) => {
+    const next = new Set(checkedIds);
+    if (next.has(run.id)) next.delete(run.id);
+    else next.add(run.id);
+    onCheckedChange(next);
+  };
+  const toggleAll = () => {
+    const next = new Set(checkedIds);
+    for (const run of checkable) {
+      if (allChecked) next.delete(run.id);
+      else next.add(run.id);
+    }
+    onCheckedChange(next);
+  };
   return (
     <div
       className="relative overflow-x-auto overflow-y-hidden"
@@ -60,6 +83,15 @@ export function RunsTable({
             style={{ height: HEAD_HEIGHT_PX }}
             className="border-b border-line text-left text-xs text-fg-muted"
           >
+            <th scope="col" className="w-10 px-3 py-0">
+              <Checkbox
+                aria-label="Select all finished runs on this page"
+                checked={allChecked}
+                indeterminate={checkedOnPage > 0 && !allChecked}
+                disabled={loading || checkable.length === 0}
+                onChange={toggleAll}
+              />
+            </th>
             {HEADERS.map((header) => (
               <th
                 key={header.label}
@@ -84,6 +116,7 @@ export function RunsTable({
                   style={{ height: ROW_HEIGHT_PX }}
                   className="border-b border-line last:border-b-0"
                 >
+                  <td className="w-10 px-3 py-0" />
                   {HEADERS.map((header) => (
                     <td
                       key={header.label}
@@ -109,8 +142,16 @@ export function RunsTable({
                     onClick={() => onSelect(run)}
                     aria-selected={selected}
                     style={{ height: ROW_HEIGHT_PX }}
-                    className={`cursor-pointer border-b border-line last:border-b-0 hover:bg-surface-sunken ${selected ? 'bg-accent-soft' : ''}`}
+                    className={`cursor-pointer border-b border-line last:border-b-0 hover:bg-surface-sunken ${selected ? 'bg-accent-soft' : checkedIds.has(run.id) ? 'bg-surface-sunken' : ''}`}
                   >
+                    <td className="w-10 px-3 py-0" onClick={(event) => event.stopPropagation()}>
+                      <Checkbox
+                        aria-label={`Select run from ${formatTime(run.createdAt)}`}
+                        checked={checkedIds.has(run.id)}
+                        disabled={isActive(run.status)}
+                        onChange={() => toggle(run)}
+                      />
+                    </td>
                     <td className="px-3 py-0">
                       <button
                         type="button"

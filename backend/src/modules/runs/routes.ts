@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import { validate } from '../../core/validate.ts';
-import { createRunSchema, listRunsQuerySchema, runIdParamsSchema } from './schema.ts';
+import {
+  bulkDeleteSchema,
+  createRunSchema,
+  listRunsQuerySchema,
+  runIdParamsSchema,
+} from './schema.ts';
 import type { RunsService } from './service.ts';
 
 export function runsRoutes(service: RunsService): Router {
@@ -28,6 +33,18 @@ export function runsRoutes(service: RunsService): Router {
     validate('params', runIdParamsSchema),
     async (_request, response) => {
       response.json({ points: await service.listPoints(response.locals.params.id) });
+    },
+  );
+
+  router.post('/runs/delete', validate('body', bulkDeleteSchema), async (_request, response) => {
+    response.json(await service.deleteMany(response.locals.body.ids));
+  });
+
+  router.post(
+    '/runs/:id/stop',
+    validate('params', runIdParamsSchema),
+    async (_request, response) => {
+      response.status(202).json({ run: await service.stop(response.locals.params.id) });
     },
   );
 

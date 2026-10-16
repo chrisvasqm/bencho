@@ -1,6 +1,7 @@
 export { Badge, type BadgeProps, type BadgeTone } from './Badge.tsx';
 export { Button, type ButtonProps } from './Button.tsx';
 export { Card, type CardProps } from './Card.tsx';
+export { Checkbox, type CheckboxProps } from './Checkbox.tsx';
 export { Field, type FieldProps } from './Field.tsx';
 export { Input, type InputProps } from './Input.tsx';
 export { Pagination, type PaginationProps } from './Pagination.tsx';
