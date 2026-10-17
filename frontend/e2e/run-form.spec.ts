@@ -77,6 +77,25 @@ test.describe('run form validation', () => {
     await expect(page.getByTestId('think-time-error')).toBeVisible();
   });
 
+  test('rejects a step wait whose longest is shorter than its shortest', async ({ page }) => {
+    await page.getByTestId('panel-tab-flow').click();
+    await page.getByTestId('step-wait-min').fill('3');
+    await page.getByTestId('step-wait-max').fill('1');
+
+    await page.getByTestId('start-run').click();
+
+    await expect(page.getByTestId('flow-step-error')).toBeVisible();
+  });
+
+  test('rejects a step wait with only one end set', async ({ page }) => {
+    await page.getByTestId('panel-tab-flow').click();
+    await page.getByTestId('step-wait-min').fill('1');
+
+    await page.getByTestId('start-run').click();
+
+    await expect(page.getByTestId('flow-step-error')).toBeVisible();
+  });
+
   test('shows the errors of every tab at once and clears them once fixed', async ({ page }) => {
     await page.getByTestId('base-url').fill('nope');
     await page.getByTestId('panel-tab-limits').click();

@@ -20,6 +20,23 @@ test('a run within its limits passes and shows its numbers', async ({ page }) =>
   await expect(page.getByTestId('run-row')).toHaveAttribute('data-status', 'passed');
 });
 
+test('a run with a random wait after a step passes', async ({ page }) => {
+  await page.getByTestId('panel-tab-flow').click();
+  await page.getByTestId('step-wait-min').fill('0.1');
+  await page.getByTestId('step-wait-max').fill('0.3');
+  await setSingleStage(page, '1s');
+  await setLooseLimits(page);
+  const post = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith('/api/v1/runs'),
+  );
+
+  await startRun(page);
+
+  const body = (await post).postDataJSON() as { flow: { wait?: unknown }[] };
+  expect(body.flow[0]?.wait).toEqual({ minSeconds: 0.1, maxSeconds: 0.3 });
+  await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
+});
+
 test('a run over its error limit fails', async ({ page }) => {
   await setSingleStage(page, '1s');
   // 0% allows no errors at all: k6's threshold rate<0 can never hold.

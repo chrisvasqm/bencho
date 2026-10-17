@@ -55,6 +55,7 @@ describe('POST /api/v1/runs', () => {
             headers: { 'Content-Type': 'application/json' },
             body: '{"username": "user{{vu}}", "id": "{{uuid}}"}',
             extract: [{ name: 'token', path: 'token' }],
+            wait: { minSeconds: 1, maxSeconds: 2.5 },
           }),
           flowStep({
             name: 'Ratings',
@@ -235,6 +236,12 @@ describe('POST /api/v1/runs', () => {
         [flowStep({ extract: [{ name: '1id', path: 'id' }] })],
       ],
       ['an extract with an empty path', [flowStep({ extract: [{ name: 'id', path: ' ' }] })]],
+      ['a negative wait', [flowStep({ wait: { minSeconds: -1, maxSeconds: 1 } })]],
+      ['a wait over 300 seconds', [flowStep({ wait: { minSeconds: 1, maxSeconds: 301 } })]],
+      [
+        'a longest wait shorter than the shortest wait',
+        [flowStep({ wait: { minSeconds: 3, maxSeconds: 1 } })],
+      ],
     ])('returns 400 VALIDATION for a flow with %s', async (_label, flow) => {
       const response = await createRun(runPayload({ flow }));
 

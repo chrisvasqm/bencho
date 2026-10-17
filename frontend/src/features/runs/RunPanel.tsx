@@ -280,9 +280,9 @@ function RunPanelForm({
                   <Note title="How the load shape works">
                     <p className="m-0">
                       A virtual user (VU) is one simulated user. It runs the steps in the Flow tab
-                      in order, waits the think time after each step, then starts again until the
-                      run ends. When a step fails, the VU waits the think time, skips the remaining
-                      steps and starts again.
+                      in order, waits after each step (the step's own random wait, or the think
+                      time), then starts again until the run ends. When a step fails, the VU waits,
+                      skips the remaining steps and starts again.
                     </p>
                     <p className="m-0">
                       Stages run in order. During each stage, the number of VUs changes steadily to
@@ -299,7 +299,7 @@ function RunPanelForm({
                     <Field
                       label="Think time"
                       htmlFor="think-time"
-                      hint="Seconds a user waits after each step"
+                      hint="Seconds a user waits after each step with no wait of its own"
                       error={errors.thinkTime}
                     >
                       <Input

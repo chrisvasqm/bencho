@@ -9,6 +9,7 @@ import {
   fillJsonBody,
   fillPlaceholders,
   stepUrl,
+  waitSeconds,
   type FlowStep,
   type FlowValues,
 } from './flow.ts';
@@ -100,7 +101,7 @@ export default function (): void {
   };
   for (const step of flow) {
     const ok = runStep(step, values);
-    sleep(config.thinkTimeSeconds);
+    sleep(waitSeconds(step.step, config.thinkTimeSeconds));
     if (!ok) return;
   }
 }

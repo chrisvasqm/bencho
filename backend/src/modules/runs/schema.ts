@@ -29,6 +29,7 @@ import {
   MAX_HEADER_VALUE_LENGTH,
   MAX_STEPS,
   MAX_STEP_NAME_LENGTH,
+  MAX_WAIT_SECONDS,
   PLACEHOLDER_NAME_PATTERN,
   flowProblem,
   type FlowStep,
@@ -130,6 +131,12 @@ const flowStepSchema = z.object({
   extract: z
     .array(z.object({ name: placeholderName, path: z.string().trim().min(1).max(200) }))
     .max(MAX_EXTRACTS),
+  wait: z
+    .object({
+      minSeconds: z.number().min(0).max(MAX_WAIT_SECONDS),
+      maxSeconds: z.number().min(0).max(MAX_WAIT_SECONDS),
+    })
+    .optional(),
 });
 
 const flowSchema = z
