@@ -35,7 +35,7 @@ export const MAX_HEADERS = 20;
 export const MAX_BODY_LENGTH = 10_000;
 export const MAX_STEP_NAME_LENGTH = 60;
 export const MAX_HEADER_VALUE_LENGTH = 4000;
-/** Kept at k6's default graceful stop (30s) so a stage end does not cut waiting users off. */
+/** One wait fits in k6's default graceful stop (30s); whole iterations can still be cut off. */
 export const MAX_WAIT_SECONDS = 30;
 
 /** Values available to placeholders: built-ins and values saved from responses, typed. */

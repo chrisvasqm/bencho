@@ -164,12 +164,7 @@ export function FlowEditor({
         ))}
       </ol>
       {listError && (
-        <p
-          ref={listErrorRef}
-          role="alert"
-
-          className="m-0 text-xs text-danger"
-        >
+        <p ref={listErrorRef} role="alert" className="m-0 text-xs text-danger">
           {errorStepId && errorLabel ? `${errorLabel}: ` : ''}
           {listError}
         </p>

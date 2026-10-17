@@ -72,8 +72,8 @@ export function draftProblem(steps: StepDraft[]): FlowProblem | undefined {
 
 export function fromDraft(draft: StepDraft): FlowStep {
   // Rows with only a value stay, so validation can point at the missing name.
-  // One empty end becomes NaN, so validation asks for both.
-  const seconds = (text: string) => (text.trim() === '' ? Number.NaN : Number(text));
+  // An empty end or text such as 1e1 or 0x10 becomes NaN, so validation asks for both.
+  const seconds = (text: string) => (/^\s*\d+(\.\d+)?\s*$/.test(text) ? Number(text) : Number.NaN);
   const hasWait = draft.waitMin.trim() !== '' || draft.waitMax.trim() !== '';
   const filled = (pairs: Pair[]) =>
     pairs.filter((pair) => pair.key.trim() !== '' || pair.value.trim() !== '');
