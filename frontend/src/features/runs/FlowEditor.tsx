@@ -167,7 +167,7 @@ export function FlowEditor({
         <p
           ref={listErrorRef}
           role="alert"
-          data-testid="flow-error"
+
           className="m-0 text-xs text-danger"
         >
           {errorStepId && errorLabel ? `${errorLabel}: ` : ''}
@@ -297,19 +297,17 @@ function StepFields({
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium text-fg">Wait after this step</span>
         <p className="m-0 text-xs text-fg-muted">
-          Seconds. Each time, the user waits a random time in this range, like a real person reading
-          or typing. Leave both empty to use the think time.
+          Seconds, 0 to {MAX_WAIT_SECONDS}. Each time, the user waits a random time in this range,
+          like a real person reading or typing. Leave both empty to use the think time.
         </p>
+        {/* Text, not number: a number input reads unparseable text as empty. */}
         <div className="grid grid-cols-2 gap-2">
           <Field label="Shortest" htmlFor={`${id}-wait-min`}>
             <Input
               id={`${id}-wait-min`}
               data-testid="step-wait-min"
               mono
-              type="number"
-              min={0}
-              max={MAX_WAIT_SECONDS}
-              step="any"
+              inputMode="decimal"
               placeholder="Think time"
               value={step.waitMin}
               onChange={(event) => onChange({ waitMin: event.target.value })}
@@ -320,10 +318,7 @@ function StepFields({
               id={`${id}-wait-max`}
               data-testid="step-wait-max"
               mono
-              type="number"
-              min={0}
-              max={MAX_WAIT_SECONDS}
-              step="any"
+              inputMode="decimal"
               placeholder="Think time"
               value={step.waitMax}
               onChange={(event) => onChange({ waitMax: event.target.value })}

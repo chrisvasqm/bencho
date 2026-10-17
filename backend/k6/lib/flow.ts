@@ -35,7 +35,8 @@ export const MAX_HEADERS = 20;
 export const MAX_BODY_LENGTH = 10_000;
 export const MAX_STEP_NAME_LENGTH = 60;
 export const MAX_HEADER_VALUE_LENGTH = 4000;
-export const MAX_WAIT_SECONDS = 300;
+/** Kept at k6's default graceful stop (30s) so a stage end does not cut waiting users off. */
+export const MAX_WAIT_SECONDS = 30;
 
 /** Values available to placeholders: built-ins and values saved from responses, typed. */
 export type FlowValues = Record<string, unknown>;
@@ -111,14 +112,10 @@ function placeholdersIn(text: string): string[] {
 }
 
 /** Seconds to wait after a step: a random value in its wait range, or the run's think time. */
-export function waitSeconds(
-  step: FlowStep,
-  thinkTimeSeconds: number,
-  random: () => number = Math.random,
-): number {
+export function waitSeconds(step: FlowStep, thinkTimeSeconds: number): number {
   if (!step.wait) return thinkTimeSeconds;
   const { minSeconds, maxSeconds } = step.wait;
-  return minSeconds + random() * (maxSeconds - minSeconds);
+  return minSeconds + Math.random() * (maxSeconds - minSeconds);
 }
 
 /** Puts the path before the base URL's query, and merges both queries. */

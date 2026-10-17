@@ -237,7 +237,7 @@ describe('POST /api/v1/runs', () => {
       ],
       ['an extract with an empty path', [flowStep({ extract: [{ name: 'id', path: ' ' }] })]],
       ['a negative wait', [flowStep({ wait: { minSeconds: -1, maxSeconds: 1 } })]],
-      ['a wait over 300 seconds', [flowStep({ wait: { minSeconds: 1, maxSeconds: 301 } })]],
+      ['a wait over 30 seconds', [flowStep({ wait: { minSeconds: 1, maxSeconds: 31 } })]],
       [
         'a longest wait shorter than the shortest wait',
         [flowStep({ wait: { minSeconds: 3, maxSeconds: 1 } })],

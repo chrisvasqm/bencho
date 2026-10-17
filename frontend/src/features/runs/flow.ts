@@ -34,7 +34,8 @@ const MAX_EXTRACTS = 10;
 const MAX_PATH_LENGTH = 2000;
 const MAX_EXTRACT_PATH_LENGTH = 200;
 const MAX_HEADER_VALUE_LENGTH = 4000;
-export const MAX_WAIT_SECONDS = 300;
+/** Same as the backend's MAX_WAIT_SECONDS (k6's default graceful stop). */
+export const MAX_WAIT_SECONDS = 30;
 const PLACEHOLDER_PATTERN = /\{\{\s*([^}]*?)\s*\}\}/g;
 const NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const HEADER_NAME_PATTERN = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
@@ -65,19 +66,15 @@ export function draftProblem(steps: StepDraft[]): FlowProblem | undefined {
     if (new Set(names).size !== names.length) {
       return { message: 'Each header name can be used only once', step: index };
     }
-    if ((step.waitMin.trim() === '') !== (step.waitMax.trim() === '')) {
-      return {
-        message: 'Set both the shortest and the longest wait, or leave both empty',
-        step: index,
-      };
-    }
   }
   return undefined;
 }
 
 export function fromDraft(draft: StepDraft): FlowStep {
   // Rows with only a value stay, so validation can point at the missing name.
-  const hasWait = draft.waitMin.trim() !== '' && draft.waitMax.trim() !== '';
+  // One empty end becomes NaN, so validation asks for both.
+  const seconds = (text: string) => (text.trim() === '' ? Number.NaN : Number(text));
+  const hasWait = draft.waitMin.trim() !== '' || draft.waitMax.trim() !== '';
   const filled = (pairs: Pair[]) =>
     pairs.filter((pair) => pair.key.trim() !== '' || pair.value.trim() !== '');
   return {
@@ -92,7 +89,7 @@ export function fromDraft(draft: StepDraft): FlowStep {
       path: pair.value.trim(),
     })),
     ...(hasWait && {
-      wait: { minSeconds: Number(draft.waitMin), maxSeconds: Number(draft.waitMax) },
+      wait: { minSeconds: seconds(draft.waitMin), maxSeconds: seconds(draft.waitMax) },
     }),
   };
 }
@@ -243,7 +240,7 @@ function stepProblem(step: FlowStep, known: Set<string>): string | undefined {
     const valid = (seconds: number) =>
       Number.isFinite(seconds) && seconds >= 0 && seconds <= MAX_WAIT_SECONDS;
     if (!valid(minSeconds) || !valid(maxSeconds)) {
-      return `the wait must be from 0 to ${MAX_WAIT_SECONDS} seconds`;
+      return `set the shortest and longest wait as numbers from 0 to ${MAX_WAIT_SECONDS}, or leave both empty`;
     }
     if (maxSeconds < minSeconds) return 'the longest wait must be at least the shortest wait';
   }
