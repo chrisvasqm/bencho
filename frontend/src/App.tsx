@@ -11,7 +11,7 @@ import {
   type RunType,
   type RunsPage,
 } from './api/runs.ts';
-import { Badge, Card, Pagination, Skeleton, Tabs } from './components/ui/index.ts';
+import { Card, Pagination, Skeleton, Tabs } from './components/ui/index.ts';
 import { RUN_TYPE_LABELS, isActive } from './features/runs/format.ts';
 import { ActiveRunsWidget } from './features/runs/ActiveRunsWidget.tsx';
 import { BulkDeleteBar } from './features/runs/BulkDeleteBar.tsx';
@@ -194,12 +194,7 @@ export function App() {
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-3">
             <Logo />
-            <h1 className="flex items-center gap-2 text-lg leading-tight font-semibold tracking-tight text-fg">
-              Bencho{' '}
-              <Badge tone="highlight" className="tracking-wide uppercase">
-                Beta
-              </Badge>
-            </h1>
+            <h1 className="text-lg leading-tight font-semibold tracking-tight text-fg">Bencho</h1>
           </div>
           <ThemeSwitch />
         </div>
