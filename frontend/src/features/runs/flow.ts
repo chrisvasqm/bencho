@@ -39,6 +39,13 @@ export const MAX_WAIT_SECONDS = 30;
 const PLACEHOLDER_PATTERN = /\{\{\s*([^}]*?)\s*\}\}/g;
 const NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const HEADER_NAME_PATTERN = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
+const SECONDS_PATTERN = /^(\d+\.?\d*|\.\d+)$/;
+
+/** Plain decimal seconds (1, .5, 1.5 or 1,5). Empty, or text such as 1e1 or 0x10, is NaN. */
+function seconds(text: string): number {
+  const value = text.trim().replace(',', '.');
+  return SECONDS_PATTERN.test(value) ? Number(value) : Number.NaN;
+}
 
 export function newPair(key = '', value = ''): Pair {
   return { id: newId('pair'), key, value };
@@ -72,8 +79,6 @@ export function draftProblem(steps: StepDraft[]): FlowProblem | undefined {
 
 export function fromDraft(draft: StepDraft): FlowStep {
   // Rows with only a value stay, so validation can point at the missing name.
-  // An empty end or text such as 1e1 or 0x10 becomes NaN, so validation asks for both.
-  const seconds = (text: string) => (/^\s*\d+(\.\d+)?\s*$/.test(text) ? Number(text) : Number.NaN);
   const hasWait = draft.waitMin.trim() !== '' || draft.waitMax.trim() !== '';
   const filled = (pairs: Pair[]) =>
     pairs.filter((pair) => pair.key.trim() !== '' || pair.value.trim() !== '');

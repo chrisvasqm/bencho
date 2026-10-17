@@ -22,8 +22,8 @@ test('a run within its limits passes and shows its numbers', async ({ page }) =>
 
 test('a run with a random wait after a step passes', async ({ page }) => {
   await page.getByTestId('panel-tab-flow').click();
-  await page.getByTestId('step-wait-min').fill('0.1');
-  await page.getByTestId('step-wait-max').fill('0.3');
+  await page.getByTestId('step-wait-min').fill('.1');
+  await page.getByTestId('step-wait-max').fill('0,3');
   await setSingleStage(page, '1s');
   await setLooseLimits(page);
   const post = page.waitForRequest(
