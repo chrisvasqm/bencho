@@ -1,6 +1,6 @@
 // One backend (own throwaway database, real k6) and one Vite dev server per Playwright worker,
 // on ports picked by the worker's index, so workers never share runs or the backend's cap on
-// runs in progress.
+// runs in progress. POSIX only (process groups), like the stack scripts.
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -10,8 +10,8 @@ const PORT_BASE = Number(process.env.E2E_PORT_BASE ?? 10013);
 const START_TIMEOUT_MS = 120_000;
 const STOP_TIMEOUT_MS = 15_000;
 const KEPT_OUTPUT_CHUNKS = 200;
-const FRONTEND_DIR = path.resolve(import.meta.dirname, '..');
-const BACKEND_DIR = path.resolve(FRONTEND_DIR, '..', 'backend');
+export const FRONTEND_DIR = path.resolve(import.meta.dirname, '..');
+export const BACKEND_DIR = path.resolve(FRONTEND_DIR, '..', 'backend');
 
 export interface Servers {
   baseURL: string;
@@ -22,8 +22,14 @@ export interface Servers {
 export async function startServers(index: number): Promise<Servers> {
   const backendPort = PORT_BASE + 2 * index;
   const frontendPort = backendPort + 1;
+  const backendUrl = `http://localhost:${backendPort}/api/v1/health`;
+  const frontendUrl = `http://localhost:${frontendPort}`;
+  // A server left over from an earlier run would answer in place of the one started here.
+  for (const url of [backendUrl, frontendUrl]) {
+    if (await answers(url)) throw new Error(`e2e: ${url} already answers; stop that server first`);
+  }
   // The k6 bundles are built once, in global-setup.ts.
-  const backend = new Server('backend', ['exec', 'tsx', 'scripts/e2e-server.ts'], BACKEND_DIR, {
+  const backend = new Server('backend', ['e2e:server'], BACKEND_DIR, {
     PORT: String(backendPort),
   });
   const frontend = new Server('vite', ['exec', 'vite', '--strictPort'], FRONTEND_DIR, {
@@ -33,10 +39,7 @@ export async function startServers(index: number): Promise<Servers> {
   const stop = async () => {
     await Promise.all([frontend.stop(), backend.stop()]);
   };
-  const ready = [
-    backend.waitFor(`http://localhost:${backendPort}/api/v1/health`),
-    frontend.waitFor(`http://localhost:${frontendPort}`),
-  ];
+  const ready = [backend.waitFor(backendUrl), frontend.waitFor(frontendUrl)];
   try {
     await Promise.all(ready);
   } catch (error) {
@@ -45,7 +48,7 @@ export async function startServers(index: number): Promise<Servers> {
     await Promise.allSettled(ready);
     throw error;
   }
-  return { baseURL: `http://localhost:${frontendPort}`, stop };
+  return { baseURL: frontendUrl, stop };
 }
 
 class Server {
@@ -87,7 +90,7 @@ class Server {
     while (Date.now() < deadline) {
       if (this.spawnError) throw this.error(`could not start: ${this.spawnError.message}`);
       if (this.gone) throw this.error(`exited (${this.child.exitCode ?? this.child.signalCode})`);
-      if (await this.answers(url)) return;
+      if (await answers(url)) return;
       await sleep(250);
     }
     throw this.error(`did not answer at ${url} within ${START_TIMEOUT_MS / 1000} s`);
@@ -124,15 +127,15 @@ class Server {
     if (this.output.length > KEPT_OUTPUT_CHUNKS) this.output.shift();
   }
 
-  private async answers(url: string): Promise<boolean> {
-    try {
-      return (await fetch(url, { signal: AbortSignal.timeout(2000) })).ok;
-    } catch {
-      return false;
-    }
-  }
-
   private error(what: string): Error {
     return new Error(`e2e ${this.name} server ${what}\n${this.output.join('')}`);
+  }
+}
+
+async function answers(url: string): Promise<boolean> {
+  try {
+    return (await fetch(url, { signal: AbortSignal.timeout(2000) })).ok;
+  } catch {
+    return false;
   }
 }

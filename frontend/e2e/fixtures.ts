@@ -132,7 +132,8 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
       await use(servers);
       await servers.stop();
     },
-    { scope: 'worker' },
+    // Longer than the servers' own start timeout, so their output reaches the error.
+    { scope: 'worker', timeout: 130_000 },
   ],
 
   // Pages and API requests go to this worker's own frontend.

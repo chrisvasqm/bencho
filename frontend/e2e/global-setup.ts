@@ -1,24 +1,17 @@
 // Runs once before the workers start, so they share work that must not run N times at once:
-// the k6 bundles every backend spawns, and Vite's dependency pre-bundle (a cold cache in
-// several Vite servers at once reloads the page mid-test).
+// the k6 bundles every backend spawns, and Vite's dependency pre-bundle (several Vite servers
+// filling a cold cache at once reload the page mid-test).
 import { execFileSync } from 'node:child_process';
-import path from 'node:path';
-import { createServer } from 'vite';
+import { BACKEND_DIR, FRONTEND_DIR } from './servers.ts';
 
-const FRONTEND_DIR = path.resolve(import.meta.dirname, '..');
-const BACKEND_DIR = path.resolve(FRONTEND_DIR, '..', 'backend');
-
-export default async function setup(): Promise<void> {
+export default function setup(): void {
   execFileSync('pnpm', ['build:k6'], { cwd: BACKEND_DIR, stdio: ['ignore', 'ignore', 'inherit'] });
-  const vite = await createServer({
-    root: FRONTEND_DIR,
-    logLevel: 'error',
-    server: { middlewareMode: true },
-  });
+  // Vite warns that calling optimize by hand is deprecated, but it is the one entry point that
+  // writes the cache before returning. Drop this step if a Vite upgrade removes the command.
   try {
-    await vite.warmupRequest('/src/main.tsx');
-    await vite.waitForRequestsIdle();
-  } finally {
-    await vite.close();
+    execFileSync('pnpm', ['exec', 'vite', 'optimize'], { cwd: FRONTEND_DIR, stdio: 'pipe' });
+  } catch (error) {
+    const output = (error as { stderr?: Buffer }).stderr?.toString() ?? '';
+    throw new Error(`vite optimize failed\n${output}`, { cause: error });
   }
 }
