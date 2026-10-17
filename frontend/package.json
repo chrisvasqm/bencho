@@ -12,6 +12,7 @@
     "check": "tsc --noEmit && tsc -p tsconfig.node.json && eslint . && prettier --check . && vite build",
     "storybook": "storybook dev -p 10006 --no-open",
     "build:storybook": "storybook build",
+    "test:db": "docker compose -p perf-test --profile test up -d --wait postgres-test",
     "test:e2e": "playwright test"
   },
   "dependencies": {

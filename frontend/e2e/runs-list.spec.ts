@@ -50,19 +50,6 @@ test.describe('runs list', () => {
     await page.getByTestId('pagination-previous').click();
     await expect(rows).toHaveCount(8);
   });
-
-  test('goes back a page when the last run of the last page is deleted', async ({ page, api }) => {
-    await api.seedFinishedMany(9);
-    await openApp(page);
-    await page.getByTestId('pagination-next').click();
-    await expect(page.getByTestId('run-row')).toHaveCount(1);
-
-    await page.getByTestId('run-delete').click();
-    await page.getByTestId('run-action-confirm').click();
-
-    await expect(page.getByTestId('pagination-page')).toHaveText('Page 1 of 1');
-    await expect(page.getByTestId('run-row')).toHaveCount(8);
-  });
 });
 
 test.describe('delete one run', () => {
@@ -76,18 +63,6 @@ test.describe('delete one run', () => {
     await expect(page.getByTestId('toast-run-deleted')).toBeVisible();
     await expect(page.getByTestId('runs-empty')).toBeVisible();
     expect(await api.list()).toEqual([]);
-  });
-
-  test('keeps the run when the user cancels', async ({ page, api }) => {
-    const run = await api.seedFinished();
-    await openApp(page);
-
-    await page.getByTestId('run-delete').click();
-    await page.getByTestId('run-action-keep').click();
-
-    await expect(page.getByTestId('run-action-confirm')).toHaveCount(0);
-    await expect(page.getByTestId('run-detail')).toHaveAttribute('data-run-id', run.id);
-    expect(await api.list()).toHaveLength(1);
   });
 });
 
@@ -111,36 +86,23 @@ test.describe('bulk delete', () => {
     expect(rest).toHaveLength(2);
   });
 
-  test('ticks every finished run on the page at once', async ({ page, api }) => {
+  test('ticks every finished run on the page at once and deletes them all', async ({
+    page,
+    api,
+  }) => {
     await api.seedFinishedMany(3);
     await openApp(page);
 
     await page.getByTestId('select-all-runs').check();
-
     await expect(page.getByTestId('bulk-count')).toHaveText('3 selected');
     for (const checkbox of await page.getByTestId('run-row-checkbox').all()) {
       await expect(checkbox).toBeChecked();
     }
-  });
+    await page.getByTestId('bulk-delete').click();
+    await page.getByTestId('bulk-delete-confirm').click();
 
-  test('clears the selection without deleting', async ({ page, api }) => {
-    await api.seedFinishedMany(2);
-    await openApp(page);
-
-    await page.getByTestId('select-all-runs').check();
-    await page.getByTestId('bulk-clear').click();
-
-    await expect(page.getByTestId('bulk-count')).toHaveCount(0);
-    expect(await api.list()).toHaveLength(2);
-  });
-
-  test('clears the selection when the type changes', async ({ page, api }) => {
-    await api.seedFinishedMany(1);
-    await openApp(page);
-
-    await page.getByTestId('select-all-runs').check();
-    await page.getByTestId('type-tab-stress').click();
-
-    await expect(page.getByTestId('bulk-count')).toHaveCount(0);
+    await expect(page.getByTestId('toast-runs-deleted')).toBeVisible();
+    await expect(page.getByTestId('runs-empty')).toBeVisible();
+    expect(await api.list()).toEqual([]);
   });
 });

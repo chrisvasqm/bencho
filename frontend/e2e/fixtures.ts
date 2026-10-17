@@ -1,5 +1,5 @@
-// Shared fixtures: a page that fails on console errors, an API client for setup, and a clean
-// database before every test.
+// Shared fixtures: own servers per worker, a page that fails on console errors, an API client
+// for setup, and a clean database before every test.
 import {
   expect,
   test as base,
@@ -7,6 +7,7 @@ import {
   type APIResponse,
   type Page,
 } from '@playwright/test';
+import { startServers, type Servers } from './servers.ts';
 
 export { expect };
 
@@ -119,7 +120,26 @@ interface Fixtures {
   allowedConsoleErrors: RegExp[];
 }
 
-export const test = base.extend<Fixtures>({
+interface WorkerFixtures {
+  servers: Servers;
+}
+
+export const test = base.extend<Fixtures, WorkerFixtures>({
+  servers: [
+    // eslint-disable-next-line no-empty-pattern -- Playwright needs the destructuring form.
+    async ({}, use, workerInfo) => {
+      const servers = await startServers(workerInfo.parallelIndex);
+      await use(servers);
+      await servers.stop();
+    },
+    { scope: 'worker' },
+  ],
+
+  // Pages and API requests go to this worker's own frontend.
+  baseURL: async ({ servers }, use) => {
+    await use(servers.baseURL);
+  },
+
   allowedConsoleErrors: [[], { option: true }],
 
   api: async ({ request }, use) => {
