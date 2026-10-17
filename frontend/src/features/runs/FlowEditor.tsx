@@ -6,6 +6,7 @@ import {
   BUILTIN_PLACEHOLDERS,
   MAX_BODY_LENGTH,
   MAX_STEP_NAME_LENGTH,
+  MAX_WAIT_SECONDS,
   QUICKPIZZA_FLOW,
   emptyStep,
   toDraft,
@@ -211,6 +212,7 @@ function StepFields({
         <p
           ref={errorRef}
           role="alert"
+          data-testid="flow-step-error"
           className="m-0 rounded-md bg-danger-soft px-3 py-2 text-xs text-danger"
         >
           {error}
@@ -287,6 +289,38 @@ function StepFields({
           onChange={(event) => onChange({ body: event.target.value })}
         />
       </Field>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-fg">Wait after this step</span>
+        <p className="m-0 text-xs text-fg-muted">
+          Seconds, 0 to {MAX_WAIT_SECONDS}. Each time, the user waits a random time in this range,
+          like a real person reading or typing. Leave both empty to use the think time.
+        </p>
+        {/* Text, not number: a number input reads unparseable text as empty. */}
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Shortest" htmlFor={`${id}-wait-min`}>
+            <Input
+              id={`${id}-wait-min`}
+              data-testid="step-wait-min"
+              mono
+              inputMode="decimal"
+              placeholder="Think time"
+              value={step.waitMin}
+              onChange={(event) => onChange({ waitMin: event.target.value })}
+            />
+          </Field>
+          <Field label="Longest" htmlFor={`${id}-wait-max`}>
+            <Input
+              id={`${id}-wait-max`}
+              data-testid="step-wait-max"
+              mono
+              inputMode="decimal"
+              placeholder="Think time"
+              value={step.waitMax}
+              onChange={(event) => onChange({ waitMax: event.target.value })}
+            />
+          </Field>
+        </div>
+      </div>
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium text-fg">Save from response</span>
         <p className="m-0 text-xs text-fg-muted">

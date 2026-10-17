@@ -36,6 +36,7 @@ const flowStepSchema = z.object({
   body: z.string().nullable(),
   expectedStatus: z.number(),
   extract: z.array(z.object({ name: z.string(), path: z.string() })),
+  wait: z.object({ minSeconds: z.number(), maxSeconds: z.number() }).optional(),
 });
 export type FlowStep = z.infer<typeof flowStepSchema>;
 

@@ -20,6 +20,13 @@ export interface FlowStep {
   body: string | null;
   expectedStatus: number;
   extract: FlowExtract[];
+  /** Random wait after the step, picked each iteration. Without it the step waits the think time. */
+  wait?: FlowWait;
+}
+
+export interface FlowWait {
+  minSeconds: number;
+  maxSeconds: number;
 }
 
 export const MAX_STEPS = 20;
@@ -28,6 +35,8 @@ export const MAX_HEADERS = 20;
 export const MAX_BODY_LENGTH = 10_000;
 export const MAX_STEP_NAME_LENGTH = 60;
 export const MAX_HEADER_VALUE_LENGTH = 4000;
+/** One wait fits in k6's default graceful stop (30s); whole iterations can still be cut off. */
+export const MAX_WAIT_SECONDS = 30;
 
 /** Values available to placeholders: built-ins and values saved from responses, typed. */
 export type FlowValues = Record<string, unknown>;
@@ -102,6 +111,13 @@ function placeholdersIn(text: string): string[] {
   return [...text.matchAll(PLACEHOLDER_PATTERN)].map((match) => match[1] ?? '');
 }
 
+/** Seconds to wait after a step: a random value in its wait range, or the run's think time. */
+export function waitSeconds(step: FlowStep, thinkTimeSeconds: number): number {
+  if (!step.wait) return thinkTimeSeconds;
+  const { minSeconds, maxSeconds } = step.wait;
+  return minSeconds + Math.random() * (maxSeconds - minSeconds);
+}
+
 /** Puts the path before the base URL's query, and merges both queries. */
 export function stepUrl(baseUrl: string, path: string): string {
   if (path === '') return baseUrl;
@@ -124,6 +140,9 @@ export function flowProblem(steps: FlowStep[]): string | null {
     const label = `Step ${index + 1} (${step.name})`;
     if (step.path !== '' && !step.path.startsWith('/') && !/^https?:\/\//.test(step.path)) {
       return `${label}: the path must be empty, start with / or be a full URL`;
+    }
+    if (step.wait && step.wait.maxSeconds < step.wait.minSeconds) {
+      return `${label}: the longest wait must be at least the shortest wait`;
     }
     const headerNames = Object.keys(step.headers).map((name) => name.toLowerCase());
     if (new Set(headerNames).size !== headerNames.length) {

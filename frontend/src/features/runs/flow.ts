@@ -20,6 +20,9 @@ export interface StepDraft {
   body: string;
   expectedStatus: number;
   extract: Pair[];
+  /** Wait range in seconds as typed; both empty means the step waits the think time. */
+  waitMin: string;
+  waitMax: string;
 }
 
 export const BUILTIN_PLACEHOLDERS = ['vu', 'iter', 'uuid', 'shortId'] as const;
@@ -31,9 +34,18 @@ const MAX_EXTRACTS = 10;
 const MAX_PATH_LENGTH = 2000;
 const MAX_EXTRACT_PATH_LENGTH = 200;
 const MAX_HEADER_VALUE_LENGTH = 4000;
+/** Same as the backend's MAX_WAIT_SECONDS (k6's default graceful stop). */
+export const MAX_WAIT_SECONDS = 30;
 const PLACEHOLDER_PATTERN = /\{\{\s*([^}]*?)\s*\}\}/g;
 const NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const HEADER_NAME_PATTERN = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
+const SECONDS_PATTERN = /^(\d+\.?\d*|\.\d+)$/;
+
+/** Plain decimal seconds (1, .5, 1.5 or 1,5). Empty, or text such as 1e1 or 0x10, is NaN. */
+function seconds(text: string): number {
+  const value = text.trim().replace(',', '.');
+  return SECONDS_PATTERN.test(value) ? Number(value) : Number.NaN;
+}
 
 export function newPair(key = '', value = ''): Pair {
   return { id: newId('pair'), key, value };
@@ -49,6 +61,8 @@ export function toDraft(step: FlowStep): StepDraft {
     body: step.body ?? '',
     expectedStatus: step.expectedStatus,
     extract: step.extract.map(({ name, path }) => newPair(name, path)),
+    waitMin: step.wait ? String(step.wait.minSeconds) : '',
+    waitMax: step.wait ? String(step.wait.maxSeconds) : '',
   };
 }
 
@@ -65,6 +79,7 @@ export function draftProblem(steps: StepDraft[]): FlowProblem | undefined {
 
 export function fromDraft(draft: StepDraft): FlowStep {
   // Rows with only a value stay, so validation can point at the missing name.
+  const hasWait = draft.waitMin.trim() !== '' || draft.waitMax.trim() !== '';
   const filled = (pairs: Pair[]) =>
     pairs.filter((pair) => pair.key.trim() !== '' || pair.value.trim() !== '');
   return {
@@ -78,6 +93,9 @@ export function fromDraft(draft: StepDraft): FlowStep {
       name: pair.key.trim(),
       path: pair.value.trim(),
     })),
+    ...(hasWait && {
+      wait: { minSeconds: seconds(draft.waitMin), maxSeconds: seconds(draft.waitMax) },
+    }),
   };
 }
 
@@ -221,6 +239,15 @@ function stepProblem(step: FlowStep, known: Set<string>): string | undefined {
     } catch {
       return 'the body must be valid JSON';
     }
+  }
+  if (step.wait) {
+    const { minSeconds, maxSeconds } = step.wait;
+    const valid = (seconds: number) =>
+      Number.isFinite(seconds) && seconds >= 0 && seconds <= MAX_WAIT_SECONDS;
+    if (!valid(minSeconds) || !valid(maxSeconds)) {
+      return `set the shortest and longest wait as numbers from 0 to ${MAX_WAIT_SECONDS}, or leave both empty`;
+    }
+    if (maxSeconds < minSeconds) return 'the longest wait must be at least the shortest wait';
   }
   if (step.extract.length > MAX_EXTRACTS) return `save at most ${MAX_EXTRACTS} values`;
   const builtIn = new Set<string>(BUILTIN_PLACEHOLDERS);
