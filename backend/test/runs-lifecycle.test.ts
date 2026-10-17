@@ -45,7 +45,8 @@ describe('run lifecycle', () => {
     expect(points[0]).toMatchObject({ runId: run.id, second: expect.any(Number) });
   });
 
-  it('stops a live k6 run gracefully and records it as stopped', async () => {
+  // Up to 20 s until the first points, then up to k6's 10 s stop grace: more than the default.
+  it('stops a live k6 run gracefully and records it as stopped', { timeout: 45_000 }, async () => {
     const created = await app.request().post('/api/v1/runs').send(longRunPayload());
     const { id } = created.body.run;
     // Wait until k6 is sending requests (first stored points), not just spawned: a SIGINT

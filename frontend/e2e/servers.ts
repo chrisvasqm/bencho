@@ -29,17 +29,17 @@ export async function startServers(index: number): Promise<Servers> {
     if (await answers(url)) throw new Error(`e2e: ${url} already answers; stop that server first`);
   }
   // The k6 bundles are built once, in global-setup.ts.
-  const backend = new Server('backend', ['e2e:server'], BACKEND_DIR, {
+  const backend = new Server('backend', backendUrl, ['e2e:server'], BACKEND_DIR, {
     PORT: String(backendPort),
   });
-  const frontend = new Server('vite', ['exec', 'vite', '--strictPort'], FRONTEND_DIR, {
+  const frontend = new Server('vite', frontendUrl, ['exec', 'vite', '--strictPort'], FRONTEND_DIR, {
     FRONTEND_PORT: String(frontendPort),
     BACKEND_PORT: String(backendPort),
   });
   const stop = async () => {
     await Promise.all([frontend.stop(), backend.stop()]);
   };
-  const ready = [backend.waitFor(backendUrl), frontend.waitFor(frontendUrl)];
+  const ready = [backend.waitFor(), frontend.waitFor()];
   try {
     await Promise.all(ready);
   } catch (error) {
@@ -59,6 +59,7 @@ class Server {
 
   constructor(
     private readonly name: string,
+    private readonly url: string,
     args: string[],
     cwd: string,
     env: Record<string, string>,
@@ -80,31 +81,44 @@ class Server {
         resolve();
       });
     });
-    // Last resort when the worker exits without running the fixture teardown.
-    process.once('exit', () => this.signal('SIGKILL'));
+    // Last resort when the worker exits without running the fixture teardown; SIGTERM, so
+    // the backend still drops its database.
+    process.once('exit', () => this.signal('SIGTERM'));
   }
 
-  /** Resolves once `url` answers 2xx; rejects if the process exits or the timeout passes. */
-  async waitFor(url: string): Promise<void> {
+  /** Resolves once the server answers 2xx; rejects if the process exits or the timeout passes. */
+  async waitFor(): Promise<void> {
     const deadline = Date.now() + START_TIMEOUT_MS;
     while (Date.now() < deadline) {
+      // No pid: spawn failed and its 'error' event is about to say why.
+      if (this.child.pid === undefined) await this.exited;
       if (this.spawnError) throw this.error(`could not start: ${this.spawnError.message}`);
       if (this.gone) throw this.error(`exited (${this.child.exitCode ?? this.child.signalCode})`);
-      if (await answers(url)) return;
+      if (await answers(this.url)) return;
       await sleep(250);
     }
-    throw this.error(`did not answer at ${url} within ${START_TIMEOUT_MS / 1000} s`);
+    throw this.error(`did not answer at ${this.url} within ${START_TIMEOUT_MS / 1000} s`);
   }
 
-  /** SIGTERM to the process group, so the backend drops its database on the way out. */
+  /**
+   * SIGTERM to the process group, so the backend drops its database on the way out. pnpm exits
+   * before the server it runs, so the port going silent is what counts, not pnpm's exit.
+   */
   async stop(): Promise<void> {
-    if (this.gone) return;
+    if (this.child.pid === undefined) return;
     this.signal('SIGTERM');
-    const exited = await Promise.race([this.exited, sleep(STOP_TIMEOUT_MS, 'timeout')]);
-    if (exited === 'timeout') {
-      this.signal('SIGKILL');
-      await this.exited;
+    if (await this.silentWithin(STOP_TIMEOUT_MS)) return;
+    this.signal('SIGKILL');
+    await this.silentWithin(STOP_TIMEOUT_MS);
+  }
+
+  private async silentWithin(timeoutMs: number): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (!(await answers(this.url))) return true;
+      await sleep(250);
     }
+    return false;
   }
 
   private get gone(): boolean {
@@ -114,7 +128,7 @@ class Server {
   }
 
   private signal(signal: NodeJS.Signals): void {
-    if (this.gone) return;
+    if (this.child.pid === undefined) return;
     try {
       process.kill(-this.child.pid!, signal);
     } catch {

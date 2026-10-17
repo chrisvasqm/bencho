@@ -1,5 +1,5 @@
-// Shared fixtures: own servers per worker, a page that fails on console errors, an API client
-// for setup, and a clean database before every test.
+// Shared fixtures: own servers per worker, a page that fails on any console error, an API
+// client for setup, and a clean database before every test.
 import {
   expect,
   test as base,
@@ -116,8 +116,6 @@ export class RunsApi {
 
 interface Fixtures {
   api: RunsApi;
-  /** Console messages matching one of these do not fail the test (expected network errors). */
-  allowedConsoleErrors: RegExp[];
 }
 
 interface WorkerFixtures {
@@ -141,8 +139,6 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     await use(servers.baseURL);
   },
 
-  allowedConsoleErrors: [[], { option: true }],
-
   api: async ({ request }, use) => {
     const api = new RunsApi(request);
     await api.reset();
@@ -150,7 +146,7 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     await api.reset();
   },
 
-  page: async ({ page, allowedConsoleErrors, api }, use) => {
+  page: async ({ page, api }, use) => {
     // `api` first, so every test starts on an empty database.
     void api;
     const errors: string[] = [];
@@ -158,8 +154,7 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     page.on('console', (message) => {
       if (message.type() !== 'error') return;
       const { url } = message.location();
-      const text = url ? `${message.text()} (${url})` : message.text();
-      if (!allowedConsoleErrors.some((pattern) => pattern.test(text))) errors.push(text);
+      errors.push(url ? `${message.text()} (${url})` : message.text());
     });
     await use(page);
     expect(errors, 'console errors').toEqual([]);

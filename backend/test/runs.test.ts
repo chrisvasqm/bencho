@@ -5,7 +5,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_LIMITS, DEFAULT_STAGES } from '../k6/lib/defaults.ts';
 import { DEFAULT_FLOW, MAX_STEPS } from '../k6/lib/flow.ts';
 import { MAX_BULK_DELETE, MAX_STAGES, RUN_STATUSES, type Run } from '../src/modules/runs/schema.ts';
-import { flowStep, longRunPayload, runPayload, TARGET_BASE_URL } from './helpers/payloads.ts';
+import {
+  flowStep,
+  longRunPayload,
+  PASSING_LIMITS,
+  runPayload,
+  TARGET_BASE_URL,
+} from './helpers/payloads.ts';
 import { expectError, useTestApp } from './helpers/test-app.ts';
 
 const app = useTestApp();
@@ -53,8 +59,10 @@ async function seedRuns(specs: Array<Pick<Run, 'type' | 'status'>>): Promise<Run
 
 describe('a run, from creation to deletion', () => {
   it('is created, read, listed, stopped and deleted', async () => {
-    // Create: queued with the defaults filled in.
-    const created = await createRun(runPayload({ type: 'stress' }));
+    // Create: queued, with the limits and flow left out filled in. One virtual user for a
+    // minute, so k6 barely touches the target before the stop below.
+    const payload = longRunPayload({ type: 'stress' });
+    const created = await createRun(payload);
     expect(created.status).toBe(202);
     const { id } = created.body.run;
     expect(created.body.run).toMatchObject({
@@ -62,8 +70,8 @@ describe('a run, from creation to deletion', () => {
       type: 'stress',
       baseUrl: TARGET_BASE_URL,
       status: 'queued',
-      stages: DEFAULT_STAGES.stress,
-      limits: DEFAULT_LIMITS,
+      stages: payload.stages,
+      limits: { ...DEFAULT_LIMITS, ...PASSING_LIMITS, thinkTimeSeconds: 0 },
       flow: DEFAULT_FLOW,
       exitCode: null,
       summary: null,
@@ -108,16 +116,19 @@ describe('a run, from creation to deletion', () => {
 
 describe('POST /api/v1/runs', () => {
   describe('accepted runs', () => {
-    it.each(['load', 'spike'] as const)('queues a %s run with its default stages', async (type) => {
-      const response = await createRun(runPayload({ type }));
+    it.each(['load', 'stress', 'spike'] as const)(
+      'queues a %s run with its default stages',
+      async (type) => {
+        const response = await createRun(runPayload({ type }));
 
-      expect(response.status).toBe(202);
-      expect(response.body.run).toMatchObject({
-        type,
-        status: 'queued',
-        stages: DEFAULT_STAGES[type],
-      });
-    });
+        expect(response.status).toBe(202);
+        expect(response.body.run).toMatchObject({
+          type,
+          status: 'queued',
+          stages: DEFAULT_STAGES[type],
+        });
+      },
+    );
 
     it('stores custom stages, limits and flow', async () => {
       const custom = {
