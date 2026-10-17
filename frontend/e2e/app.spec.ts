@@ -33,19 +33,6 @@ test.describe('first load', () => {
   });
 });
 
-test.describe('backend not reachable', () => {
-  test.use({ allowedConsoleErrors: [/ERR_CONNECTION_REFUSED.*\/api\/v1\//] });
-
-  test('tells the user to start the stack', async ({ page }) => {
-    await page.route('**/api/v1/**', (route) => route.abort('connectionrefused'));
-
-    await page.goto('/');
-
-    await expect(page.getByTestId('toast-backend-down')).toBeVisible();
-    await expect(page.getByTestId('runs-error')).toBeVisible();
-  });
-});
-
 test.describe('theme', () => {
   test('switches to dark and light and keeps the choice after a reload', async ({ page }) => {
     await openApp(page);

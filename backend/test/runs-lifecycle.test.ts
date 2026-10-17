@@ -3,7 +3,7 @@ import supertest from 'supertest';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.ts';
 import { RunsService } from '../src/modules/runs/service.ts';
-import { flowStep, shortRunPayload } from './helpers/payloads.ts';
+import { flowStep, longRunPayload, shortRunPayload } from './helpers/payloads.ts';
 import { useTestApp } from './helpers/test-app.ts';
 
 const app = useTestApp();
@@ -43,6 +43,31 @@ describe('run lifecycle', () => {
     const { points } = (await app.request().get(`/api/v1/runs/${run.id}/points`)).body;
     expect(points.length).toBeGreaterThan(0);
     expect(points[0]).toMatchObject({ runId: run.id, second: expect.any(Number) });
+  });
+
+  // Up to 20 s until the first points, then up to k6's 10 s stop grace: more than the default.
+  it('stops a live k6 run gracefully and records it as stopped', { timeout: 45_000 }, async () => {
+    const created = await app.request().post('/api/v1/runs').send(longRunPayload());
+    const { id } = created.body.run;
+    // Wait until k6 is sending requests (first stored points), not just spawned: a SIGINT
+    // during k6 startup kills it before it can stop gracefully.
+    await expect
+      .poll(async () => (await app.repository.listPoints(id)).length, {
+        timeout: 20_000,
+        interval: 500,
+      })
+      .toBeGreaterThan(0);
+
+    const response = await app.request().post(`/api/v1/runs/${id}/stop`);
+    await app.service.waitForIdle();
+
+    expect(response.status).toBe(202);
+    const { run } = (await app.request().get(`/api/v1/runs/${id}`)).body;
+    expect(run).toMatchObject({ status: 'stopped', errorMessage: null });
+    expect(run.finishedAt).not.toBeNull();
+    // k6 got SIGINT and stopped gracefully: it ran (exit code set) and wrote its summary.
+    expect(run.exitCode).not.toBe(-1);
+    expect(run.summary).toHaveProperty('metrics');
   });
 
   it('fails with exit code 99 when a limit is broken', async () => {

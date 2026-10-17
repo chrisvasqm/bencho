@@ -50,7 +50,7 @@ export function RunCharts({ run }: { run: Run }) {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" data-testid="run-charts">
       <Tabs label="Run charts" value={tab} onChange={setTab} items={CHART_TABS} />
       {tab === 'latency' && (
         <LineChart

@@ -1,5 +1,5 @@
-// Shared fixtures: a page that fails on console errors, an API client for setup, and a clean
-// database before every test.
+// Shared fixtures: own servers per worker, a page that fails on any console error, an API
+// client for setup, and a clean database before every test.
 import {
   expect,
   test as base,
@@ -7,8 +7,9 @@ import {
   type APIResponse,
   type Page,
 } from '@playwright/test';
+import { startServers, type Servers } from './servers.ts';
 
-export { expect };
+export { expect, type Page };
 
 type RunType = 'load' | 'stress' | 'spike';
 export interface ApiRun {
@@ -115,12 +116,28 @@ export class RunsApi {
 
 interface Fixtures {
   api: RunsApi;
-  /** Console messages matching one of these do not fail the test (expected network errors). */
-  allowedConsoleErrors: RegExp[];
 }
 
-export const test = base.extend<Fixtures>({
-  allowedConsoleErrors: [[], { option: true }],
+interface WorkerFixtures {
+  servers: Servers;
+}
+
+export const test = base.extend<Fixtures, WorkerFixtures>({
+  servers: [
+    // eslint-disable-next-line no-empty-pattern -- Playwright needs the destructuring form.
+    async ({}, use, workerInfo) => {
+      const servers = await startServers(workerInfo.parallelIndex);
+      await use(servers);
+      await servers.stop();
+    },
+    // Longer than the servers' own start timeout, so their output reaches the error.
+    { scope: 'worker', timeout: 130_000 },
+  ],
+
+  // Pages and API requests go to this worker's own frontend.
+  baseURL: async ({ servers }, use) => {
+    await use(servers.baseURL);
+  },
 
   api: async ({ request }, use) => {
     const api = new RunsApi(request);
@@ -129,7 +146,7 @@ export const test = base.extend<Fixtures>({
     await api.reset();
   },
 
-  page: async ({ page, allowedConsoleErrors, api }, use) => {
+  page: async ({ page, api }, use) => {
     // `api` first, so every test starts on an empty database.
     void api;
     const errors: string[] = [];
@@ -137,8 +154,7 @@ export const test = base.extend<Fixtures>({
     page.on('console', (message) => {
       if (message.type() !== 'error') return;
       const { url } = message.location();
-      const text = url ? `${message.text()} (${url})` : message.text();
-      if (!allowedConsoleErrors.some((pattern) => pattern.test(text))) errors.push(text);
+      errors.push(url ? `${message.text()} (${url})` : message.text());
     });
     await use(page);
     expect(errors, 'console errors').toEqual([]);
