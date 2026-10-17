@@ -1,10 +1,19 @@
-import { expect, openApp, test } from './fixtures.ts';
+import { expect, openApp, test, type Page } from './fixtures.ts';
+
+/**
+ * Opens the app with the newest run shown in full. The charts load as a separate chunk; a
+ * delete before they arrive makes them fetch the points of a run that is already gone.
+ */
+async function openRuns(page: Page): Promise<void> {
+  await openApp(page);
+  await expect(page.getByTestId('run-charts')).toBeVisible();
+}
 
 test.describe('runs list', () => {
   test('shows only the runs of the selected type, newest first', async ({ page, api }) => {
     const [olderLoad, newerLoad] = await api.seedFinishedMany(2, 'load');
     const [stress] = await api.seedFinishedMany(1, 'stress');
-    await openApp(page);
+    await openRuns(page);
 
     const rows = page.getByTestId('run-row');
     await expect(rows).toHaveCount(2);
@@ -21,7 +30,7 @@ test.describe('runs list', () => {
 
   test('shows the newest run by default and the run the user selects', async ({ page, api }) => {
     const [older, newer] = await api.seedFinishedMany(2);
-    await openApp(page);
+    await openRuns(page);
     const detail = page.getByTestId('run-detail');
     await expect(detail).toHaveAttribute('data-run-id', newer!.id);
 
@@ -33,7 +42,7 @@ test.describe('runs list', () => {
 
   test('pages through more runs than fit on one page', async ({ page, api }) => {
     const seeded = await api.seedFinishedMany(9);
-    await openApp(page);
+    await openRuns(page);
     const rows = page.getByTestId('run-row');
 
     await expect(rows).toHaveCount(8);
@@ -55,7 +64,7 @@ test.describe('runs list', () => {
 test.describe('delete one run', () => {
   test('deletes the run after a confirm', async ({ page, api }) => {
     await api.seedFinished();
-    await openApp(page);
+    await openRuns(page);
 
     await page.getByTestId('run-delete').click();
     await page.getByTestId('run-action-confirm').click();
@@ -69,7 +78,7 @@ test.describe('delete one run', () => {
 test.describe('bulk delete', () => {
   test('deletes the ticked runs after a confirm', async ({ page, api }) => {
     const [kept, ...rest] = await api.seedFinishedMany(3);
-    await openApp(page);
+    await openRuns(page);
     const rows = page.getByTestId('run-row');
     await expect(rows).toHaveCount(3);
 
@@ -91,7 +100,7 @@ test.describe('bulk delete', () => {
     api,
   }) => {
     await api.seedFinishedMany(3);
-    await openApp(page);
+    await openRuns(page);
 
     await page.getByTestId('select-all-runs').check();
     await expect(page.getByTestId('bulk-count')).toHaveText('3 selected');

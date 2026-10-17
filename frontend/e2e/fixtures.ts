@@ -9,7 +9,7 @@ import {
 } from '@playwright/test';
 import { startServers, type Servers } from './servers.ts';
 
-export { expect };
+export { expect, type Page };
 
 type RunType = 'load' | 'stress' | 'spike';
 export interface ApiRun {
