@@ -64,3 +64,7 @@ All routes are under `/api/v1`.
 | POST   | `/runs/:id/stop`   | Stop a run, keep partial results             |
 | DELETE | `/runs/:id`        | Delete a finished run                        |
 | POST   | `/runs/delete`     | Delete up to 50 runs by `ids`                |
+
+## License
+
+[MIT](LICENSE)
