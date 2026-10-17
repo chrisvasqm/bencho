@@ -40,7 +40,7 @@ cd frontend && pnpm storybook              # UI kit on :10006
 
 ## Tests
 
-Keep QuickPizza running; tests start real k6 runs. Both suites use throwaway databases on `postgres-test` (:10005), so dev data is never touched, and both run in parallel: Vitest gives each test file its own database, Playwright gives each worker its own backend and Vite server (ports 10013/10014, then 10015/10016, ...).
+Keep QuickPizza running; tests start real k6 runs. Both suites use throwaway databases on `postgres-test` (:10005), so dev data is never touched, and both run in parallel: Vitest gives each test file its own database, Playwright gives each worker its own backend and Vite server (ports 10013/10014, then 10015/10016, ...; `E2E_PORT_BASE` moves them).
 
 ```sh
 cd backend && pnpm test:db && pnpm test     # integration (Vitest)
@@ -48,7 +48,7 @@ cd frontend && pnpm exec playwright install chromium   # once
 cd frontend && pnpm test:db && pnpm test:e2e # e2e (Playwright), happy paths only
 ```
 
-The integration tests cover every endpoint, including validation and errors. The e2e tests cover only what a user does on a good day; the form's validation rules are checked on the backend.
+The integration tests cover every endpoint, including validation and errors. The e2e tests cover only what a user does on a good day: the backend enforces every rule the form checks, so the form's own error messages have no e2e test.
 
 CI runs checks and both suites on every PR.
 

@@ -6,10 +6,10 @@ import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 // Slots 13 and 14 of the default range for the first worker, the next two for the second...
-const BACKEND_BASE_PORT = Number(process.env.E2E_BACKEND_PORT ?? 10013);
-const FRONTEND_BASE_PORT = Number(process.env.E2E_FRONTEND_PORT ?? 10014);
+const PORT_BASE = Number(process.env.E2E_PORT_BASE ?? 10013);
 const START_TIMEOUT_MS = 120_000;
 const STOP_TIMEOUT_MS = 15_000;
+const KEPT_OUTPUT_CHUNKS = 200;
 const FRONTEND_DIR = path.resolve(import.meta.dirname, '..');
 const BACKEND_DIR = path.resolve(FRONTEND_DIR, '..', 'backend');
 
@@ -20,9 +20,10 @@ export interface Servers {
 
 /** Starts both servers for worker `index` and waits until they answer. */
 export async function startServers(index: number): Promise<Servers> {
-  const backendPort = BACKEND_BASE_PORT + 2 * index;
-  const frontendPort = FRONTEND_BASE_PORT + 2 * index;
-  const backend = new Server('backend', ['e2e:server'], BACKEND_DIR, {
+  const backendPort = PORT_BASE + 2 * index;
+  const frontendPort = backendPort + 1;
+  // The k6 bundles are built once, in global-setup.ts.
+  const backend = new Server('backend', ['exec', 'tsx', 'scripts/e2e-server.ts'], BACKEND_DIR, {
     PORT: String(backendPort),
   });
   const frontend = new Server('vite', ['exec', 'vite', '--strictPort'], FRONTEND_DIR, {
@@ -32,13 +33,16 @@ export async function startServers(index: number): Promise<Servers> {
   const stop = async () => {
     await Promise.all([frontend.stop(), backend.stop()]);
   };
+  const ready = [
+    backend.waitFor(`http://localhost:${backendPort}/api/v1/health`),
+    frontend.waitFor(`http://localhost:${frontendPort}`),
+  ];
   try {
-    await Promise.all([
-      backend.waitFor(`http://localhost:${backendPort}/api/v1/health`),
-      frontend.waitFor(`http://localhost:${frontendPort}`),
-    ]);
+    await Promise.all(ready);
   } catch (error) {
     await stop();
+    // The other wait ends too once its server is stopped; its error is not the cause.
+    await Promise.allSettled(ready);
     throw error;
   }
   return { baseURL: `http://localhost:${frontendPort}`, stop };
@@ -47,7 +51,8 @@ export async function startServers(index: number): Promise<Servers> {
 class Server {
   private readonly child: ChildProcess;
   private readonly output: string[] = [];
-  private readonly exited: Promise<number | null>;
+  private readonly exited: Promise<void>;
+  private spawnError?: Error;
 
   constructor(
     private readonly name: string,
@@ -63,16 +68,25 @@ class Server {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     for (const stream of [this.child.stdout, this.child.stderr]) {
-      stream?.on('data', (chunk: Buffer) => this.output.push(chunk.toString()));
+      stream?.on('data', (chunk: Buffer) => this.keep(chunk.toString()));
     }
-    this.exited = new Promise((resolve) => this.child.once('exit', resolve));
+    this.exited = new Promise((resolve) => {
+      this.child.once('exit', () => resolve());
+      this.child.once('error', (error) => {
+        this.spawnError = error;
+        resolve();
+      });
+    });
+    // Last resort when the worker exits without running the fixture teardown.
+    process.once('exit', () => this.signal('SIGKILL'));
   }
 
   /** Resolves once `url` answers 2xx; rejects if the process exits or the timeout passes. */
   async waitFor(url: string): Promise<void> {
     const deadline = Date.now() + START_TIMEOUT_MS;
     while (Date.now() < deadline) {
-      if (this.child.exitCode !== null) throw this.error(`exited with code ${this.child.exitCode}`);
+      if (this.spawnError) throw this.error(`could not start: ${this.spawnError.message}`);
+      if (this.gone) throw this.error(`exited (${this.child.exitCode ?? this.child.signalCode})`);
       if (await this.answers(url)) return;
       await sleep(250);
     }
@@ -81,7 +95,7 @@ class Server {
 
   /** SIGTERM to the process group, so the backend drops its database on the way out. */
   async stop(): Promise<void> {
-    if (this.child.exitCode !== null || this.child.pid === undefined) return;
+    if (this.gone) return;
     this.signal('SIGTERM');
     const exited = await Promise.race([this.exited, sleep(STOP_TIMEOUT_MS, 'timeout')]);
     if (exited === 'timeout') {
@@ -90,12 +104,24 @@ class Server {
     }
   }
 
+  private get gone(): boolean {
+    return (
+      this.child.pid === undefined || this.child.exitCode !== null || this.child.signalCode !== null
+    );
+  }
+
   private signal(signal: NodeJS.Signals): void {
+    if (this.gone) return;
     try {
       process.kill(-this.child.pid!, signal);
     } catch {
       // Already gone.
     }
+  }
+
+  private keep(chunk: string): void {
+    this.output.push(chunk);
+    if (this.output.length > KEPT_OUTPUT_CHUNKS) this.output.shift();
   }
 
   private async answers(url: string): Promise<boolean> {
