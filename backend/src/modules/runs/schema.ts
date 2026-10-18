@@ -150,7 +150,7 @@ const flowSchema = z
 
 export const createRunSchema = z.object({
   type: z.enum(RUN_TYPES),
-  baseUrl: z.url(),
+  baseUrl: z.url({ protocol: /^https?$/ }),
   stages: z
     .array(stageSchema)
     .min(1)
