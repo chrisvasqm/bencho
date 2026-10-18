@@ -4,7 +4,7 @@ services:
   quickpizza:
     image: ghcr.io/grafana/quickpizza-local:0.15.31
     ports:
-      - "${QUICKPIZZA_PORT:-10001}:3333"
+      - "127.0.0.1:${QUICKPIZZA_PORT:-10001}:3333"
     restart: unless-stopped
 
   postgres:

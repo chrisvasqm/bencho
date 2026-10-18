@@ -279,6 +279,7 @@ describe('POST /api/v1/runs', () => {
       ['a missing base URL', { type: 'load' }],
       ['a base URL that is not a URL', runPayload({ baseUrl: 'quickpizza' })],
       ['a base URL that is not http(s)', runPayload({ baseUrl: 'ftp://quickpizza' })],
+      ['credentials in the base URL', runPayload({ baseUrl: 'http://user:secret@quickpizza' })],
       ['an empty stage list', runPayload({ stages: [] })],
       [`more than ${MAX_STAGES} stages`, runPayload({ stages: tooManyStages })],
       ['stages over 60 minutes', runPayload({ stages: tooLongStages })],
@@ -313,6 +314,8 @@ describe('POST /api/v1/runs', () => {
       ['an unknown method', [flowStep({ method: 'TRACE' as 'GET' })]],
       ['duplicate step names (any case)', [flowStep({ name: 'Home' }), flowStep({ name: 'home' })]],
       ['a relative path without /', [flowStep({ path: 'api/pizza' })]],
+      ['a full URL that does not parse', [flowStep({ path: 'http://' })]],
+      ['credentials in a full URL', [flowStep({ path: 'http://user:secret@quickpizza/x' })]],
       ['an unknown placeholder', [flowStep({ path: '/users/{{userId}}' })]],
       [
         'a placeholder saved only by a later step',

@@ -29,7 +29,7 @@ Limits: 1000 VUs, 20 stages, 60 minutes per run, 3 runs at a time. A run passes 
 
 Bencho has no accounts: anyone who can open it can start, stop and delete runs, and aim up to 1000 virtual users at any URL. Run it on a network you trust, or behind a proxy that authenticates. The local stack binds Postgres and the backend to `127.0.0.1`; only the frontend port is open to other devices.
 
-In production, targets on private, loopback and link-local addresses (`10/8`, `172.16/12`, `192.168/16`, `127/8`, `169.254/16`, `localhost`, `*.internal`, ...) are refused, both as literal hosts and after DNS resolution, so Bencho cannot be used to reach services on its own network. Set `ALLOW_PRIVATE_TARGETS=true` to allow them; the local stack does, because the demo target is on the compose network. Secret headers in a flow (`Authorization`, `Cookie`, `X-Api-Key`, ...) are stored for the run but returned as `[redacted]`.
+In production, targets on private, loopback and link-local addresses (`10/8`, `172.16/12`, `192.168/16`, `127/8`, `169.254/16`, `localhost`, `*.internal`, ...) are refused, both as literal hosts and after DNS resolution, so Bencho cannot be used to reach services on its own network. Set `ALLOW_PRIVATE_TARGETS=true` to allow them; the local stack does, because the demo target is on the compose network. Secret headers in a flow (`Authorization`, `Cookie`, `X-Api-Key`, ...) are stored for the run but returned as `[redacted]`; URLs cannot carry credentials.
 
 ## Develop
 

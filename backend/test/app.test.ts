@@ -1,6 +1,7 @@
 import supertest from 'supertest';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.ts';
+import { loadConfig } from '../src/core/config.ts';
 import { connectDatabase, pingDatabase } from '../src/core/db.ts';
 import { RunsRepository } from '../src/modules/runs/repository.ts';
 import { RunsService } from '../src/modules/runs/service.ts';
@@ -9,6 +10,21 @@ import { DEFAULT_FLOW } from '../k6/lib/flow.ts';
 import { expectError, useTestApp } from './helpers/test-app.ts';
 
 const app = useTestApp();
+
+describe('ALLOW_PRIVATE_TARGETS', () => {
+  it.each([
+    ['unset outside production', { NODE_ENV: 'development' }, true],
+    ['unset in production', { NODE_ENV: 'production' }, false],
+    ['exactly true in production', { NODE_ENV: 'production', ALLOW_PRIVATE_TARGETS: 'true' }, true],
+    ['false outside production', { NODE_ENV: 'test', ALLOW_PRIVATE_TARGETS: 'false' }, false],
+  ])('is %s → %s', (_label, env, expected) => {
+    expect(loadConfig(env).allowPrivateTargets).toBe(expected);
+  });
+
+  it('rejects any other value', () => {
+    expect(() => loadConfig({ ALLOW_PRIVATE_TARGETS: 'yes' })).toThrow('ALLOW_PRIVATE_TARGETS');
+  });
+});
 
 describe('GET /api/v1/health', () => {
   it('returns ok when the database answers', async () => {
