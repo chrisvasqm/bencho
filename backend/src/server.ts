@@ -9,7 +9,7 @@ const config = loadConfig();
 if (!config.allowPrivateTargets && privateTargetProblem(config.DEFAULT_BASE_URL)) {
   // The UI would offer a target every run refuses.
   throw new Error(
-    'DEFAULT_BASE_URL is a private address; set ALLOW_PRIVATE_TARGETS=true or change it',
+    'DEFAULT_BASE_URL is a private address; unset ALLOW_PRIVATE_TARGETS or change it',
   );
 }
 await runMigrations(config.DATABASE_URL);

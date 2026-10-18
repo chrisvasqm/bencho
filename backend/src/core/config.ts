@@ -10,16 +10,14 @@ const schema = z
     K6_BUNDLE_DIR: z.string().min(1).default('dist/k6'),
     /**
      * Lets runs target private, loopback and link-local addresses (see modules/runs/targets.ts).
-     * Only the exact string `true` turns it on in production; unset or empty means on outside
-     * production, where the target is the demo app on localhost.
+     * Allowed unless set to the exact string `false`: Bencho is a trusted-network tool whose
+     * targets are usually on the same network (owner decision, 2026-10-18).
      */
     ALLOW_PRIVATE_TARGETS: z.enum(['true', 'false', '']).optional(),
   })
   .transform((env) => ({
     ...env,
-    allowPrivateTargets:
-      env.ALLOW_PRIVATE_TARGETS === 'true' ||
-      (!env.ALLOW_PRIVATE_TARGETS && env.NODE_ENV !== 'production'),
+    allowPrivateTargets: env.ALLOW_PRIVATE_TARGETS !== 'false',
   }));
 
 export type Config = z.infer<typeof schema>;

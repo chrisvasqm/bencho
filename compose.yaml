@@ -50,9 +50,6 @@ services:
     environment:
       DATABASE_URL: postgres://perf:perf@postgres:5432/perf
       DEFAULT_BASE_URL: http://quickpizza:3333
-      # The demo target is on the private compose network. Leave this unset when people who must
-      # not load-test your own network can reach Bencho.
-      ALLOW_PRIVATE_TARGETS: "true"
     ports:
       - "127.0.0.1:${BACKEND_PORT:-10003}:3000"
     depends_on:
