@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AppError } from '../../core/errors.ts';
 import { DEFAULT_LIMITS, DEFAULT_STAGES, stagesToEnv } from '../../../k6/lib/defaults.ts';
-import { DEFAULT_FLOW, isFullUrl } from '../../../k6/lib/flow.ts';
+import { DEFAULT_FLOW, hasPlaceholderHost, isFullUrl } from '../../../k6/lib/flow.ts';
 import type { RunsRepository } from './repository.ts';
 import {
   K6_ABORTED_EXIT_CODE,
@@ -31,7 +31,8 @@ const STOP_GRACE_MS = 10_000;
 const MAX_CONCURRENT_RUNS = 3;
 const POINTS_FLUSH_INTERVAL_MS = 2000;
 /** Flow headers that carry a secret of the target, by name. Stored for the run, never returned. */
-const SECRET_HEADER_PATTERN = /auth|token|key|secret|cookie|session|password/i;
+const SECRET_HEADER_PATTERN =
+  /auth|token|key|secret|cookie|session|pass|credential|signature|bearer/i;
 const REDACTED = '[redacted]';
 
 export interface K6Settings {
@@ -107,7 +108,9 @@ export class RunsService {
    */
   private assertTargetAllowed(input: CreateRunInput): void {
     if (this.k6.allowPrivateTargets()) return;
-    const fullUrls = (input.flow ?? []).map((step) => step.path).filter(isFullUrl);
+    const fullUrls = (input.flow ?? [])
+      .map((step) => step.path)
+      .filter((path) => isFullUrl(path) && !hasPlaceholderHost(path));
     for (const url of [input.baseUrl, ...fullUrls]) {
       const problem = privateTargetProblem(url);
       if (problem) throw new AppError(400, 'TARGET_NOT_ALLOWED', problem);

@@ -123,6 +123,15 @@ export function isFullUrl(path: string): boolean {
   return /^https?:\/\//.test(path);
 }
 
+/**
+ * A full URL whose host or port is a placeholder ({{tenant}}.example.com) cannot be parsed or
+ * checked before the run; k6 fills it per iteration and refuses private addresses itself.
+ */
+export function hasPlaceholderHost(url: string): boolean {
+  const authority = url.slice(url.indexOf('//') + 2).split(/[/?#]/, 1)[0] ?? '';
+  return authority.includes('{{');
+}
+
 /** Puts the path before the base URL's query, and merges both queries. */
 export function stepUrl(baseUrl: string, path: string): string {
   if (path === '') return baseUrl;

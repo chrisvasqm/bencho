@@ -37,6 +37,7 @@ describe('POST /api/v1/runs with private targets blocked', () => {
     ['an IPv6 unique local address', 'http://[fd12:3456::1]'],
     ['an IPv6 link-local address', 'http://[fe80::1]'],
     ['an IPv4-mapped IPv6 address', 'http://[::ffff:127.0.0.1]'],
+    ['a NAT64 address of a private IPv4', 'http://[64:ff9b::a00:1]'],
     ['a decimal IPv4 address', 'http://2130706433'],
   ])('returns 400 TARGET_NOT_ALLOWED for %s as base URL', async (_label, baseUrl) => {
     const response = await createRun(runPayload({ baseUrl }));
@@ -52,6 +53,16 @@ describe('POST /api/v1/runs with private targets blocked', () => {
 
     expect(response.status).toBe(400);
     expectError(response.body, 'TARGET_NOT_ALLOWED');
+  });
+
+  it('accepts a step whose host is a placeholder: k6 checks it once filled', async () => {
+    const flow = [
+      flowStep({ name: 'Pick', extract: [{ name: 'tenant', path: 'tenant' }] }),
+      flowStep({ name: 'Tenant', path: 'https://{{tenant}}.example.com/health' }),
+    ];
+    const response = await createRun(runPayload({ baseUrl: 'http://example.com', flow }));
+
+    expect(response.status).toBe(202);
   });
 
   it('stores nothing when the target is refused', async () => {
