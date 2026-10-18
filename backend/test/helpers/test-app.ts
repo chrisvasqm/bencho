@@ -33,7 +33,7 @@ export interface TestApp {
 
 /**
  * Registers the hooks and returns the app; fields are filled once beforeAll has run.
- * The demo target is on localhost, so private targets are allowed unless a file says otherwise.
+ * Private targets follow the config default (allowed) unless a file says otherwise.
  */
 export function useTestApp(k6Overrides: Partial<K6Settings> = {}): TestApp {
   const config = loadConfig();
@@ -41,7 +41,7 @@ export function useTestApp(k6Overrides: Partial<K6Settings> = {}): TestApp {
   const k6: K6Settings = {
     bundleDir: config.K6_BUNDLE_DIR,
     defaultBaseUrl: config.DEFAULT_BASE_URL,
-    allowPrivateTargets: () => true,
+    allowPrivateTargets: () => config.allowPrivateTargets,
     ...k6Overrides,
   };
   const databaseUrl = withDatabaseName(serverUrl, `perf_test_${randomUUID().slice(0, 8)}`);

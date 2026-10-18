@@ -1,5 +1,5 @@
-// Private, loopback and link-local targets. Blocked unless ALLOW_PRIVATE_TARGETS is on, so a
-// reachable Bencho cannot be aimed at services on its own network (SSRF).
+// Private, loopback and link-local targets. Blocked only when ALLOW_PRIVATE_TARGETS=false, so a
+// Bencho exposed beyond a trusted network cannot be aimed at services on its own network (SSRF).
 // This file checks literal hosts before a run starts; k6 checks the resolved IPs of every request.
 import { isIPv4, isIPv6 } from 'node:net';
 

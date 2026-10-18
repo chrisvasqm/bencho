@@ -1,4 +1,4 @@
-// With ALLOW_PRIVATE_TARGETS off, runs cannot be aimed at this network: literal private hosts are
+// With ALLOW_PRIVATE_TARGETS=false, runs cannot be aimed at this network: literal private hosts are
 // refused before the run starts, hosts that resolve to a private address are refused by k6.
 import { lookup } from 'node:dns/promises';
 import { describe, expect, it } from 'vitest';
