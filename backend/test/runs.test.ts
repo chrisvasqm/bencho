@@ -174,11 +174,19 @@ describe('POST /api/v1/runs', () => {
     });
 
     it('stores secret headers but never returns them', async () => {
-      const headers = { Authorization: 'Bearer s3cret', 'X-Api-Key': 'k3y', 'X-Trace': 'keep' };
+      const headers = {
+        Authorization: 'Bearer s3cret',
+        'X-Api-Key': 'k3y',
+        'Private-Token': 't0k3n',
+        Cookie: 'session=abc',
+        'X-Trace': 'keep',
+      };
       const flow = [flowStep({ headers })];
       const redacted = {
         Authorization: '[redacted]',
         'X-Api-Key': '[redacted]',
+        'Private-Token': '[redacted]',
+        Cookie: '[redacted]',
         'X-Trace': 'keep',
       };
 

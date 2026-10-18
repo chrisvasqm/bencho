@@ -32,6 +32,7 @@ import {
   MAX_WAIT_SECONDS,
   PLACEHOLDER_NAME_PATTERN,
   flowProblem,
+  isFullUrl,
   type FlowStep,
 } from '../../../k6/lib/flow.ts';
 
@@ -43,7 +44,6 @@ const hasNoCredentials = (url: string) => {
   return parsed.username === '' && parsed.password === '';
 };
 const NO_CREDENTIALS_MESSAGE = 'Put credentials in a header, not in the URL';
-const FULL_URL_PATTERN = /^https?:\/\//;
 
 export const RUN_STATUSES = ['queued', 'running', 'passed', 'failed', 'error', 'stopped'] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
@@ -127,11 +127,8 @@ const flowStepSchema = z.object({
   path: z
     .string()
     .max(2000)
-    .refine((path) => !FULL_URL_PATTERN.test(path) || URL.canParse(path), 'Invalid URL')
-    .refine(
-      (path) => !FULL_URL_PATTERN.test(path) || hasNoCredentials(path),
-      NO_CREDENTIALS_MESSAGE,
-    ),
+    .refine((path) => !isFullUrl(path) || URL.canParse(path), 'Invalid URL')
+    .refine((path) => !isFullUrl(path) || hasNoCredentials(path), NO_CREDENTIALS_MESSAGE),
   headers: z
     .record(
       z.string().regex(/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/, 'Invalid header name'),

@@ -21,8 +21,8 @@ export const PRIVATE_IP_RANGES = [
 /** Hostnames k6 refuses (K6_BLOCK_HOSTNAMES). One leading * is the only wildcard k6 supports. */
 export const PRIVATE_HOSTNAMES = ['localhost', '*.localhost', '*.local', '*.internal'];
 
-/** What k6 writes to stderr for a request to a blocked target. */
-export const K6_BLOCKED_TARGET_PATTERN = /is in a (blacklisted range|blocked pattern)/;
+/** k6 exits with this code when the scenario aborts the test on a refused target. */
+export const K6_ABORTED_EXIT_CODE = 108;
 
 export const PRIVATE_TARGET_MESSAGE =
   'The target is a private or local address, which this server does not allow.';
@@ -30,7 +30,7 @@ export const PRIVATE_TARGET_MESSAGE =
 /**
  * Returns why `url` may not be a target, or null when its host is allowed. Only a literal
  * private IP or a blocked hostname is caught here; hosts that resolve to a private address
- * are refused by k6 when the run sends its first request. `url` must parse.
+ * are refused by k6 on the first request, which aborts the run. `url` must parse.
  */
 export function privateTargetProblem(url: string): string | null {
   // A trailing dot is the fully qualified form of the same name.

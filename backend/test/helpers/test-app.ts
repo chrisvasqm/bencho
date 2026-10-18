@@ -41,7 +41,7 @@ export function useTestApp(k6Overrides: Partial<K6Settings> = {}): TestApp {
   const k6: K6Settings = {
     bundleDir: config.K6_BUNDLE_DIR,
     defaultBaseUrl: config.DEFAULT_BASE_URL,
-    allowPrivateTargets: true,
+    allowPrivateTargets: () => true,
     ...k6Overrides,
   };
   const databaseUrl = withDatabaseName(serverUrl, `perf_test_${randomUUID().slice(0, 8)}`);

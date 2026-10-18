@@ -19,6 +19,22 @@ test.describe('first load', () => {
     await expect(page.getByTestId('run-detail')).toHaveCount(0);
   });
 
+  test.describe('base URL validation', () => {
+    for (const [label, value] of [
+      ['a scheme other than http(s)', 'ftp://quickpizza'],
+      ['credentials in the URL', 'http://user:secret@quickpizza'],
+    ] as const) {
+      test(`refuses ${label} without calling the backend`, async ({ page, api }) => {
+        await openApp(page);
+        await page.getByTestId('base-url').fill(value);
+        await page.getByTestId('start-run').click();
+
+        await expect(page.getByTestId('base-url-error')).toBeVisible();
+        expect(await api.list()).toEqual([]);
+      });
+    }
+  });
+
   test('shows the default stages of each test type', async ({ page, api }) => {
     const defaults = await api.defaults();
     await openApp(page);

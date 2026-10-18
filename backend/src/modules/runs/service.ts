@@ -5,10 +5,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AppError } from '../../core/errors.ts';
 import { DEFAULT_LIMITS, DEFAULT_STAGES, stagesToEnv } from '../../../k6/lib/defaults.ts';
-import { DEFAULT_FLOW } from '../../../k6/lib/flow.ts';
+import { DEFAULT_FLOW, isFullUrl } from '../../../k6/lib/flow.ts';
 import type { RunsRepository } from './repository.ts';
 import {
-  K6_BLOCKED_TARGET_PATTERN,
+  K6_ABORTED_EXIT_CODE,
   PRIVATE_HOSTNAMES,
   PRIVATE_IP_RANGES,
   PRIVATE_TARGET_MESSAGE,
@@ -30,21 +30,15 @@ const K6_THRESHOLD_FAILED_EXIT_CODE = 99;
 const STOP_GRACE_MS = 10_000;
 const MAX_CONCURRENT_RUNS = 3;
 const POINTS_FLUSH_INTERVAL_MS = 2000;
-/** Flow headers that carry a secret of the target. Stored for the run, never returned. */
-const SECRET_HEADERS = new Set([
-  'authorization',
-  'proxy-authorization',
-  'cookie',
-  'x-api-key',
-  'x-auth-token',
-]);
+/** Flow headers that carry a secret of the target, by name. Stored for the run, never returned. */
+const SECRET_HEADER_PATTERN = /auth|token|key|secret|cookie|session|password/i;
 const REDACTED = '[redacted]';
 
 export interface K6Settings {
   bundleDir: string;
   defaultBaseUrl: string;
-  /** Runs may target private, loopback and link-local addresses (SSRF when exposed). */
-  allowPrivateTargets: boolean;
+  /** Runs may target private, loopback and link-local addresses (SSRF when exposed). Read per run. */
+  allowPrivateTargets: () => boolean;
 }
 
 export class RunsService {
@@ -108,13 +102,12 @@ export class RunsService {
 
   /**
    * Literal private hosts are refused here with a clear error; a host that resolves to a private
-   * address is refused by k6 on the first request (K6_BLACKLIST_IPS, K6_BLOCK_HOSTNAMES).
+   * address is refused by k6 on the first request (K6_BLACKLIST_IPS, K6_BLOCK_HOSTNAMES), which
+   * aborts the run.
    */
   private assertTargetAllowed(input: CreateRunInput): void {
-    if (this.k6.allowPrivateTargets) return;
-    const fullUrls = (input.flow ?? [])
-      .map((step) => step.path)
-      .filter((path) => /^https?:\/\//.test(path));
+    if (this.k6.allowPrivateTargets()) return;
+    const fullUrls = (input.flow ?? []).map((step) => step.path).filter(isFullUrl);
     for (const url of [input.baseUrl, ...fullUrls]) {
       const problem = privateTargetProblem(url);
       if (problem) throw new AppError(400, 'TARGET_NOT_ALLOWED', problem);
@@ -200,8 +193,8 @@ export class RunsService {
       );
       const summary = await readSummary(summaryPath);
       const stopped = this.stopRequested.has(run.id);
-      if (!stopped && K6_BLOCKED_TARGET_PATTERN.test(stderr)) {
-        // k6 refused the resolved address: an error of the run, not a failed threshold.
+      if (!stopped && exitCode === K6_ABORTED_EXIT_CODE) {
+        // The scenario aborted on a refused target: an error of the run, not a failed threshold.
         return {
           status: 'error',
           exitCode,
@@ -319,7 +312,7 @@ export class RunsService {
       P95_MS: String(latencyLimitsMs.p95),
       P99_MS: String(latencyLimitsMs.p99),
       // k6 checks every resolved address, so DNS cannot steer a run onto this network.
-      ...(this.k6.allowPrivateTargets
+      ...(this.k6.allowPrivateTargets()
         ? {}
         : {
             K6_BLACKLIST_IPS: PRIVATE_IP_RANGES.join(','),
@@ -368,7 +361,7 @@ function redactSecrets(run: Run): Run {
     headers: Object.fromEntries(
       Object.entries(step.headers).map(([name, value]) => [
         name,
-        SECRET_HEADERS.has(name.toLowerCase()) ? REDACTED : value,
+        SECRET_HEADER_PATTERN.test(name) ? REDACTED : value,
       ]),
     ),
   }));

@@ -51,10 +51,12 @@ const FORM_ID = 'run-form';
 
 function validate(input: CreateRunInput, steps: StepDraft[]): Record<string, string> {
   const errors: Record<string, string> = {};
-  try {
-    new URL(input.baseUrl);
-  } catch {
+  const baseUrl = URL.canParse(input.baseUrl) ? new URL(input.baseUrl) : undefined;
+  if (!baseUrl || !/^https?:$/.test(baseUrl.protocol)) {
     errors.baseUrl = 'Enter a full URL, including http:// or https://';
+  } else if (baseUrl.username !== '' || baseUrl.password !== '') {
+    // Every reader of the runs list would see them; the backend refuses them too.
+    errors.baseUrl = 'Put credentials in a header, not in the URL';
   }
   const problem = draftProblem(steps) ?? flowProblem(input.flow);
   if (problem) errors.flow = problem.message;

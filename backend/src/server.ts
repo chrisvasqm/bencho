@@ -3,14 +3,21 @@ import { loadConfig } from './core/config.ts';
 import { connectDatabase, pingDatabase, runMigrations } from './core/db.ts';
 import { RunsRepository } from './modules/runs/repository.ts';
 import { RunsService } from './modules/runs/service.ts';
+import { privateTargetProblem } from './modules/runs/targets.ts';
 
 const config = loadConfig();
+if (!config.allowPrivateTargets && privateTargetProblem(config.DEFAULT_BASE_URL)) {
+  // The UI would offer a target every run refuses.
+  throw new Error(
+    'DEFAULT_BASE_URL is a private address; set ALLOW_PRIVATE_TARGETS=true or change it',
+  );
+}
 await runMigrations(config.DATABASE_URL);
 const { db } = connectDatabase(config.DATABASE_URL);
 const runsService = new RunsService(new RunsRepository(db), {
   bundleDir: config.K6_BUNDLE_DIR,
   defaultBaseUrl: config.DEFAULT_BASE_URL,
-  allowPrivateTargets: config.allowPrivateTargets,
+  allowPrivateTargets: () => config.allowPrivateTargets,
 });
 if (config.allowPrivateTargets) console.log('private and local targets are allowed');
 
