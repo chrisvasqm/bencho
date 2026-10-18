@@ -19,7 +19,7 @@ const runsService = new RunsService(new RunsRepository(db), {
   defaultBaseUrl: config.DEFAULT_BASE_URL,
   allowPrivateTargets: () => config.allowPrivateTargets,
 });
-if (config.allowPrivateTargets) console.log('private and local targets are allowed');
+if (!config.allowPrivateTargets) console.log('private and local targets are blocked');
 
 const staleRuns = await runsService.failUnfinishedRuns();
 if (staleRuns > 0)
