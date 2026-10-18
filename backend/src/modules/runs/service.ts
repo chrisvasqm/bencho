@@ -5,8 +5,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AppError } from '../../core/errors.ts';
 import { DEFAULT_LIMITS, DEFAULT_STAGES, stagesToEnv } from '../../../k6/lib/defaults.ts';
-import { DEFAULT_FLOW } from '../../../k6/lib/flow.ts';
+import { DEFAULT_FLOW, hasPlaceholderHost, isFullUrl } from '../../../k6/lib/flow.ts';
 import type { RunsRepository } from './repository.ts';
+import {
+  K6_ABORTED_EXIT_CODE,
+  PRIVATE_HOSTNAMES,
+  PRIVATE_IP_RANGES,
+  PRIVATE_TARGET_MESSAGE,
+  privateTargetProblem,
+} from './targets.ts';
 import { FileTail, TimeseriesAggregator, type RunPointValues } from './timeseries.ts';
 import {
   ACTIVE_RUN_STATUSES,
@@ -23,10 +30,16 @@ const K6_THRESHOLD_FAILED_EXIT_CODE = 99;
 const STOP_GRACE_MS = 10_000;
 const MAX_CONCURRENT_RUNS = 3;
 const POINTS_FLUSH_INTERVAL_MS = 2000;
+/** Flow headers that carry a secret of the target, by name. Stored for the run, never returned. */
+const SECRET_HEADER_PATTERN =
+  /auth|token|key|secret|cookie|session|pass|credential|signature|bearer/i;
+const REDACTED = '[redacted]';
 
 export interface K6Settings {
   bundleDir: string;
   defaultBaseUrl: string;
+  /** Runs may target private, loopback and link-local addresses (SSRF when exposed). Read per run. */
+  allowPrivateTargets: () => boolean;
 }
 
 export class RunsService {
@@ -56,6 +69,7 @@ export class RunsService {
 
   /** Stores the run as queued and starts k6 in the background. Poll getById for the outcome. */
   async start(input: CreateRunInput): Promise<Run> {
+    this.assertTargetAllowed(input);
     // Reserve the slot before the first await, so parallel requests cannot all pass the check.
     if (this.inFlight.size + this.starting >= MAX_CONCURRENT_RUNS) {
       throw new AppError(
@@ -84,13 +98,29 @@ export class RunsService {
     this.executing.add(run.id);
     const execution = this.execute(run).finally(() => this.inFlight.delete(execution));
     this.inFlight.add(execution);
-    return run;
+    return redactSecrets(run);
+  }
+
+  /**
+   * Literal private hosts are refused here with a clear error; a host that resolves to a private
+   * address is refused by k6 on the first request (K6_BLACKLIST_IPS, K6_BLOCK_HOSTNAMES), which
+   * aborts the run.
+   */
+  private assertTargetAllowed(input: CreateRunInput): void {
+    if (this.k6.allowPrivateTargets()) return;
+    const fullUrls = (input.flow ?? [])
+      .map((step) => step.path)
+      .filter((path) => isFullUrl(path) && !hasPlaceholderHost(path));
+    for (const url of [input.baseUrl, ...fullUrls]) {
+      const problem = privateTargetProblem(url);
+      if (problem) throw new AppError(400, 'TARGET_NOT_ALLOWED', problem);
+    }
   }
 
   async getById(id: string): Promise<Run> {
     const run = await this.repository.findById(id);
     if (!run) throw new AppError(404, 'RUN_NOT_FOUND', 'Run not found');
-    return run;
+    return redactSecrets(run);
   }
 
   async listPoints(id: string): Promise<RunPoint[]> {
@@ -105,7 +135,7 @@ export class RunsService {
 
   async list({ type, active, page, pageSize }: ListRunsQuery) {
     const { runs, total } = await this.repository.listPage(type, active, page, pageSize);
-    return { runs, total, page, pageSize };
+    return { runs: runs.map(redactSecrets), total, page, pageSize };
   }
 
   /** Deletes the finished runs among `ids`. Runs in progress and unknown ids are skipped. */
@@ -166,6 +196,16 @@ export class RunsService {
       );
       const summary = await readSummary(summaryPath);
       const stopped = this.stopRequested.has(run.id);
+      if (!stopped && exitCode === K6_ABORTED_EXIT_CODE) {
+        // The scenario aborted on a refused target: an error of the run, not a failed threshold.
+        return {
+          status: 'error',
+          exitCode,
+          summary,
+          errorMessage: PRIVATE_TARGET_MESSAGE,
+          finishedAt: new Date(),
+        };
+      }
       return {
         status: stopped ? 'stopped' : statusFromExitCode(exitCode),
         exitCode,
@@ -274,6 +314,13 @@ export class RunsService {
       P90_MS: String(latencyLimitsMs.p90),
       P95_MS: String(latencyLimitsMs.p95),
       P99_MS: String(latencyLimitsMs.p99),
+      // k6 checks every resolved address, so DNS cannot steer a run onto this network.
+      ...(this.k6.allowPrivateTargets()
+        ? {}
+        : {
+            K6_BLACKLIST_IPS: PRIVATE_IP_RANGES.join(','),
+            K6_BLOCK_HOSTNAMES: PRIVATE_HOSTNAMES.join(','),
+          }),
     };
     const bundle = join(this.k6.bundleDir, `${run.type}.js`);
     return new Promise((resolve, reject) => {
@@ -308,6 +355,20 @@ export class RunsService {
       });
     });
   }
+}
+
+/** Replaces the values of secret headers in the run's flow; the stored row keeps them. */
+function redactSecrets(run: Run): Run {
+  const flow = run.flow.map((step) => ({
+    ...step,
+    headers: Object.fromEntries(
+      Object.entries(step.headers).map(([name, value]) => [
+        name,
+        SECRET_HEADER_PATTERN.test(name) ? REDACTED : value,
+      ]),
+    ),
+  }));
+  return { ...run, flow };
 }
 
 function statusFromExitCode(exitCode: number): RunStatus {

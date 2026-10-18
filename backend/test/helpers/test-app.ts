@@ -31,13 +31,18 @@ export interface TestApp {
   seedRun: (overrides?: Partial<NewRun>) => Promise<Run>;
 }
 
-/** Registers the hooks and returns the app; fields are filled once beforeAll has run. */
-export function useTestApp(): TestApp {
+/**
+ * Registers the hooks and returns the app; fields are filled once beforeAll has run.
+ * The demo target is on localhost, so private targets are allowed unless a file says otherwise.
+ */
+export function useTestApp(k6Overrides: Partial<K6Settings> = {}): TestApp {
   const config = loadConfig();
   const serverUrl = testDatabaseUrl();
   const k6: K6Settings = {
     bundleDir: config.K6_BUNDLE_DIR,
     defaultBaseUrl: config.DEFAULT_BASE_URL,
+    allowPrivateTargets: () => true,
+    ...k6Overrides,
   };
   const databaseUrl = withDatabaseName(serverUrl, `perf_test_${randomUUID().slice(0, 8)}`);
   let pool: pg.Pool;

@@ -1,6 +1,7 @@
 // What one virtual user does. Shared by every test type; tests only differ in load shape (options).
 // Each iteration runs the flow's steps in order; values saved from one response feed the next.
 import http from 'k6/http';
+import exec from 'k6/execution';
 import { check, sleep } from 'k6';
 import { SharedArray } from 'k6/data';
 import { config } from './config.ts';
@@ -19,6 +20,12 @@ import {
 const flowSteps = new SharedArray<FlowStep>('flow', () =>
   __ENV.FLOW_PATH ? (JSON.parse(open(__ENV.FLOW_PATH)) as FlowStep[]) : DEFAULT_FLOW,
 );
+
+/**
+ * k6 error codes for a target refused by K6_BLACKLIST_IPS (1110) or K6_BLOCK_HOSTNAMES (1111).
+ * The backend sets both when private targets are not allowed; one such request ends the test.
+ */
+const BLOCKED_TARGET_ERROR_CODES = new Set([1110, 1111]);
 
 interface PreparedStep {
   step: FlowStep;
@@ -69,6 +76,10 @@ function runStep(
       redirects,
     },
   );
+  if (BLOCKED_TARGET_ERROR_CODES.has(response.error_code)) {
+    // Exit code 108: the backend reports the run as an error instead of letting it spin.
+    exec.test.abort(`${step.name}: the target is a private or local address`);
+  }
   const statusOk = check(response, {
     [`${step.name}: status ${step.expectedStatus}`]: (checked) =>
       checked.status === step.expectedStatus,

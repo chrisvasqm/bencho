@@ -163,13 +163,41 @@ describe('POST /api/v1/runs', () => {
       expect(response.status).toBe(202);
       expect(response.body.run).toMatchObject({
         stages: custom.stages,
-        flow: custom.flow,
+        // Authorization is a secret header: stored, returned redacted.
+        flow: [custom.flow[0], { ...custom.flow[1], headers: { Authorization: '[redacted]' } }],
         limits: {
           thinkTimeSeconds: 0.5,
           maxErrorRate: 0,
           latencyLimitsMs: custom.latencyLimitsMs,
         },
       });
+    });
+
+    it('stores secret headers but never returns them', async () => {
+      const headers = {
+        Authorization: 'Bearer s3cret',
+        'X-Api-Key': 'k3y',
+        'Private-Token': 't0k3n',
+        Cookie: 'session=abc',
+        'X-Trace': 'keep',
+      };
+      const flow = [flowStep({ headers })];
+      const redacted = {
+        Authorization: '[redacted]',
+        'X-Api-Key': '[redacted]',
+        'Private-Token': '[redacted]',
+        Cookie: '[redacted]',
+        'X-Trace': 'keep',
+      };
+
+      const created = await createRun(runPayload({ flow }));
+      const { id } = created.body.run;
+
+      expect(created.body.run.flow[0].headers).toEqual(redacted);
+      expect((await readRun(id)).body.run.flow[0].headers).toEqual(redacted);
+      expect((await listRuns()).body.runs[0].flow[0].headers).toEqual(redacted);
+      // k6 still needs the real values: the row keeps them.
+      expect((await app.repository.findById(id))?.flow[0]?.headers).toEqual(headers);
     });
 
     it('fills limits left out with the defaults', async () => {
@@ -258,6 +286,8 @@ describe('POST /api/v1/runs', () => {
       ['an unknown type', runPayload({ type: 'soak' })],
       ['a missing base URL', { type: 'load' }],
       ['a base URL that is not a URL', runPayload({ baseUrl: 'quickpizza' })],
+      ['a base URL that is not http(s)', runPayload({ baseUrl: 'ftp://quickpizza' })],
+      ['credentials in the base URL', runPayload({ baseUrl: 'http://user:secret@quickpizza' })],
       ['an empty stage list', runPayload({ stages: [] })],
       [`more than ${MAX_STAGES} stages`, runPayload({ stages: tooManyStages })],
       ['stages over 60 minutes', runPayload({ stages: tooLongStages })],
@@ -292,6 +322,8 @@ describe('POST /api/v1/runs', () => {
       ['an unknown method', [flowStep({ method: 'TRACE' as 'GET' })]],
       ['duplicate step names (any case)', [flowStep({ name: 'Home' }), flowStep({ name: 'home' })]],
       ['a relative path without /', [flowStep({ path: 'api/pizza' })]],
+      ['a full URL that does not parse', [flowStep({ path: 'http://' })]],
+      ['credentials in a full URL', [flowStep({ path: 'http://user:secret@quickpizza/x' })]],
       ['an unknown placeholder', [flowStep({ path: '/users/{{userId}}' })]],
       [
         'a placeholder saved only by a later step',

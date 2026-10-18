@@ -32,8 +32,21 @@ import {
   MAX_WAIT_SECONDS,
   PLACEHOLDER_NAME_PATTERN,
   flowProblem,
+  hasPlaceholderHost,
+  isFullUrl,
   type FlowStep,
 } from '../../../k6/lib/flow.ts';
+
+/** Credentials belong in a header (returned redacted), never in a URL that every reader sees. */
+const hasNoCredentials = (url: string) => {
+  // Zod runs every refinement: a URL that does not parse is reported by the format check.
+  if (!URL.canParse(url)) return true;
+  const parsed = new URL(url);
+  return parsed.username === '' && parsed.password === '';
+};
+const NO_CREDENTIALS_MESSAGE = 'Put credentials in a header, not in the URL';
+/** A step path that is a URL with a literal host, so it can be parsed and checked now. */
+const isCheckableUrl = (path: string) => isFullUrl(path) && !hasPlaceholderHost(path);
 
 export const RUN_STATUSES = ['queued', 'running', 'passed', 'failed', 'error', 'stopped'] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
@@ -114,7 +127,11 @@ const placeholderName = z
 const flowStepSchema = z.object({
   name: z.string().trim().min(1).max(MAX_STEP_NAME_LENGTH),
   method: z.enum(HTTP_METHODS),
-  path: z.string().max(2000),
+  path: z
+    .string()
+    .max(2000)
+    .refine((path) => !isCheckableUrl(path) || URL.canParse(path), 'Invalid URL')
+    .refine((path) => !isCheckableUrl(path) || hasNoCredentials(path), NO_CREDENTIALS_MESSAGE),
   headers: z
     .record(
       z.string().regex(/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/, 'Invalid header name'),
@@ -150,7 +167,7 @@ const flowSchema = z
 
 export const createRunSchema = z.object({
   type: z.enum(RUN_TYPES),
-  baseUrl: z.url(),
+  baseUrl: z.url({ protocol: /^https?$/ }).refine(hasNoCredentials, NO_CREDENTIALS_MESSAGE),
   stages: z
     .array(stageSchema)
     .min(1)

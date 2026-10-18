@@ -4,7 +4,7 @@ services:
   quickpizza:
     image: ghcr.io/grafana/quickpizza-local:0.15.31
     ports:
-      - "${QUICKPIZZA_PORT:-10001}:3333"
+      - "127.0.0.1:${QUICKPIZZA_PORT:-10001}:3333"
     restart: unless-stopped
 
   postgres:
@@ -14,7 +14,9 @@ services:
       POSTGRES_PASSWORD: perf
       POSTGRES_DB: perf
     ports:
-      - "${POSTGRES_PORT:-10002}:5432"
+      # Postgres and the backend have no authentication of their own: bind them to this machine.
+      # The frontend proxies /api, so other devices only need port FRONTEND_PORT.
+      - "127.0.0.1:${POSTGRES_PORT:-10002}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql
     healthcheck:
@@ -34,7 +36,7 @@ services:
       POSTGRES_PASSWORD: perf
       POSTGRES_DB: perf
     ports:
-      - "${POSTGRES_TEST_PORT:-10005}:5432"
+      - "127.0.0.1:${POSTGRES_TEST_PORT:-10005}:5432"
     tmpfs:
       - /var/lib/postgresql
     healthcheck:
@@ -48,8 +50,11 @@ services:
     environment:
       DATABASE_URL: postgres://perf:perf@postgres:5432/perf
       DEFAULT_BASE_URL: http://quickpizza:3333
+      # The demo target is on the private compose network. Leave this unset when people who must
+      # not load-test your own network can reach Bencho.
+      ALLOW_PRIVATE_TARGETS: "true"
     ports:
-      - "${BACKEND_PORT:-10003}:3000"
+      - "127.0.0.1:${BACKEND_PORT:-10003}:3000"
     depends_on:
       postgres:
         condition: service_healthy

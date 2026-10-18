@@ -118,10 +118,24 @@ export function waitSeconds(step: FlowStep, thinkTimeSeconds: number): number {
   return minSeconds + Math.random() * (maxSeconds - minSeconds);
 }
 
+/** A step path that is a URL of its own, used as is instead of being appended to the base URL. */
+export function isFullUrl(path: string): boolean {
+  return /^https?:\/\//.test(path);
+}
+
+/**
+ * A full URL whose host or port is a placeholder ({{tenant}}.example.com) cannot be parsed or
+ * checked before the run; k6 fills it per iteration and refuses private addresses itself.
+ */
+export function hasPlaceholderHost(url: string): boolean {
+  const authority = url.slice(url.indexOf('//') + 2).split(/[/?#]/, 1)[0] ?? '';
+  return authority.includes('{{');
+}
+
 /** Puts the path before the base URL's query, and merges both queries. */
 export function stepUrl(baseUrl: string, path: string): string {
   if (path === '') return baseUrl;
-  if (/^https?:\/\//.test(path)) return path;
+  if (isFullUrl(path)) return path;
   const [, base = '', query = ''] = /^([^?#]*)(?:\?([^#]*))?/.exec(baseUrl) ?? [];
   const url = base.replace(/\/+$/, '') + path;
   if (query === '') return url;
@@ -138,7 +152,7 @@ export function flowProblem(steps: FlowStep[]): string | null {
   if (new Set(names).size !== names.length) return 'Each step needs its own name';
   for (const [index, step] of steps.entries()) {
     const label = `Step ${index + 1} (${step.name})`;
-    if (step.path !== '' && !step.path.startsWith('/') && !/^https?:\/\//.test(step.path)) {
+    if (step.path !== '' && !step.path.startsWith('/') && !isFullUrl(step.path)) {
       return `${label}: the path must be empty, start with / or be a full URL`;
     }
     if (step.wait && step.wait.maxSeconds < step.wait.minSeconds) {
