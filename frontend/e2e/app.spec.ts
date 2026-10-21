@@ -53,14 +53,15 @@ test.describe('first load', () => {
     await page.getByTestId('panel-tab-shape').click();
 
     await expect(page.getByTestId('capacity-estimate')).toContainText('Rough estimate');
-    await expect(page.getByTestId('capacity-warning')).toHaveCount(0);
+    await expect(page.getByTestId('capacity-warning')).toBeEmpty();
 
     // 1 billion VUs needs petabytes of memory at 5 MB each, so it is above any estimate.
     await page.getByTestId('stage-0-target').fill('1000000000');
-    await expect(page.getByTestId('capacity-warning')).toBeVisible();
+    await expect(page.getByTestId('capacity-warning')).toContainText('more than the estimate');
+    await expect(page.getByTestId('stages-error')).toHaveCount(0);
 
     await page.getByTestId('stage-0-target').fill('1');
-    await expect(page.getByTestId('capacity-warning')).toHaveCount(0);
+    await expect(page.getByTestId('capacity-warning')).toBeEmpty();
   });
 });
 
