@@ -27,6 +27,32 @@ Limits: 20 stages, 60 minutes per run, 3 runs at a time. A run passes when error
 
 The Load shape tab shows a rough estimate of how many VUs the Bencho host can run: 80% of its free memory at 5 MB per VU, the high end of k6's guidance for simple tests (`GET /api/v1/capacity`). Long flows, other active runs and large response bodies of steps that extract values lower the real number; Bencho discards all other response bodies. On Docker Desktop, free memory comes from Docker's memory limit (Settings → Resources → Advanced → Memory limit), which all running containers share, not the host's; a `mem_limit` on the backend container lowers it too. With Docker Engine on Linux and no `mem_limit`, it is the host's free memory.
 
+## Large runs
+
+k6 runs inside the backend container, and each VU holds its own connections to the target. Past a few thousand VUs, the container can run out of sockets before the target slows down. Runs then fail with `too many open files` or `cannot assign requested address`, and those errors come from Bencho, not from the target.
+
+Check the open-file limit in the container:
+
+```sh
+docker compose exec backend sh -c 'ulimit -n'
+```
+
+It must be above the peak VU count times the steps that open new connections; 65535 covers most runs. To raise it, and to widen the range of local ports k6 can use, add a `compose.override.yaml` next to `compose.yaml`:
+
+```yaml
+services:
+  backend:
+    ulimits:
+      nofile: { soft: 65535, hard: 65535 }
+    sysctls:
+      net.ipv4.ip_local_port_range: "1024 65535"
+      net.ipv4.tcp_tw_reuse: 1
+```
+
+Then run `docker compose up -d backend`. Docker Compose reads the override file automatically. For a single target address, the local port range caps how many connections can be open at once; reusing ports in `TIME_WAIT` (`tcp_tw_reuse`) lets the next run start while the last one's connections close.
+
+Memory is the other limit: see the VU estimate on the Load shape tab. For the largest runs, run k6 on a separate machine from the target, so the two do not compete for CPU and memory.
+
 ## Security
 
 Bencho has no accounts: anyone who can open it can start, stop and delete runs, and aim any number of virtual users at any URL. k6 runs on the Bencho host, so a large run can use up its memory and CPU and stop other services on it. Run it on a network you trust, or behind a proxy that authenticates. The local stack binds Postgres and the backend to `127.0.0.1`; only the frontend port is open to other devices.
