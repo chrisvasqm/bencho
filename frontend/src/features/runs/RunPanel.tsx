@@ -1,7 +1,14 @@
 // Left-hand control panel: build a run across four tabs, start it from the pinned footer.
 import { AnimatePresence, m } from 'motion/react';
 import { Suspense, lazy, useCallback, useState, type FormEvent } from 'react';
-import { RUN_TYPES, type CreateRunInput, type RunDefaults, type RunType } from '../../api/runs.ts';
+import {
+  LOAD_MODES,
+  RUN_TYPES,
+  type CreateRunInput,
+  type LoadMode,
+  type RunDefaults,
+  type RunType,
+} from '../../api/runs.ts';
 import {
   Button,
   Card,
@@ -9,14 +16,17 @@ import {
   FieldSkeleton,
   Input,
   Note,
+  SegmentedControl,
   Select,
   Skeleton,
   Tabs,
 } from '../../components/ui/index.ts';
 import {
   EXPLAIN,
+  LOAD_MODE_LABELS,
   RUN_TYPE_DESCRIPTIONS,
   RUN_TYPE_LABELS,
+  TARGET_LABELS,
   durationToSeconds,
   peakUsers,
 } from './format.ts';
@@ -41,6 +51,7 @@ const ERROR_TAB: Record<string, PanelTab> = {
   flowStep: 'flow',
   flowStepLabel: 'flow',
   stages: 'shape',
+  maxVirtualUsers: 'shape',
   thinkTime: 'limits',
   maxErrorRate: 'limits',
   latency: 'limits',
@@ -78,11 +89,17 @@ function validate(input: CreateRunInput, steps: StepDraft[]): Record<string, str
   } else if (
     input.stages.some((stage) => !Number.isSafeInteger(stage.target) || stage.target < 0)
   ) {
-    errors.stages = 'Virtual users must be a whole number of 0 or more';
+    errors.stages = `${TARGET_LABELS[input.mode]} must be a whole number of 0 or more`;
   } else if (input.stages.length > MAX_STAGES) {
     errors.stages = `Use at most ${MAX_STAGES} stages`;
   } else if (seconds.reduce((total, value) => total + value, 0) > MAX_RUN_SECONDS) {
     errors.stages = 'All stages together must last at most 60 minutes';
+  }
+  if (
+    input.maxVirtualUsers !== undefined &&
+    (!Number.isSafeInteger(input.maxVirtualUsers) || input.maxVirtualUsers < 1)
+  ) {
+    errors.maxVirtualUsers = 'Use a whole number of 1 or more';
   }
   if (!Number.isFinite(input.thinkTimeSeconds) || input.thinkTimeSeconds < 0) {
     errors.thinkTime = 'Use a number of seconds, 0 or more';
@@ -125,6 +142,8 @@ function RunPanelForm({
   const [tab, setTab] = useState<PanelTab>('target');
   const [baseUrl, setBaseUrl] = useState(defaults.baseUrl);
   const [stages, setStages] = useState<StageRow[]>(() => defaults.stages[type].map(toStageRow));
+  const [mode, setMode] = useState<LoadMode>('users');
+  const [maxVirtualUsers, setMaxVirtualUsers] = useState(defaults.maxVirtualUsers);
   const [flowSteps, setFlowSteps] = useState<StepDraft[]>(() => defaults.flow.map(toDraft));
   // Kept here, not in FlowEditor: switching tabs remounts the editor.
   const [openStepId, setOpenStepId] = useState<string | undefined>(flowSteps[0]?.id);
@@ -153,6 +172,8 @@ function RunPanelForm({
     const input: CreateRunInput = {
       type,
       baseUrl: baseUrl.trim(),
+      mode,
+      ...(mode === 'rate' && { maxVirtualUsers }),
       stages: stages.map(({ duration, target }) => ({ duration, target })),
       flow: flowSteps.map(fromDraft),
       thinkTimeSeconds: thinkTime,
@@ -275,17 +296,57 @@ function RunPanelForm({
               {tab === 'shape' && (
                 <>
                   <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
-                    <LoadShapeChart stages={stages} />
+                    <LoadShapeChart stages={stages} mode={mode} />
                   </Suspense>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-sm font-medium text-fg">Stage targets count</span>
+                    <SegmentedControl
+                      label="Stage targets count"
+                      testId="load-mode"
+                      value={mode}
+                      onChange={setMode}
+                      options={LOAD_MODES.map((value) => ({
+                        value,
+                        label: LOAD_MODE_LABELS[value],
+                      }))}
+                    />
+                  </div>
                   <Field
                     label="Stages"
                     htmlFor="stage-0-duration"
                     error={errors.stages}
                     errorTestId="stages-error"
                   >
-                    <StagesEditor stages={stages} onChange={setStages} />
+                    <StagesEditor
+                      stages={stages}
+                      onChange={setStages}
+                      targetLabel={TARGET_LABELS[mode]}
+                    />
                   </Field>
-                  <CapacityHint peakTarget={peakUsers(stages)} />
+                  {mode === 'rate' && (
+                    <Field
+                      label="Max virtual users"
+                      htmlFor="max-virtual-users"
+                      hint="k6 adds VUs up to this number to keep the rate. Past it, flow runs are dropped."
+                      error={errors.maxVirtualUsers}
+                    >
+                      <Input
+                        id="max-virtual-users"
+                        data-testid="max-virtual-users"
+                        mono
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={maxVirtualUsers}
+                        onChange={(event) => setMaxVirtualUsers(Number(event.target.value))}
+                        invalid={Boolean(errors.maxVirtualUsers)}
+                      />
+                    </Field>
+                  )}
+                  <CapacityHint
+                    peakTarget={mode === 'rate' ? maxVirtualUsers : peakUsers(stages)}
+                    peakSource={mode === 'rate' ? 'Max virtual users is' : 'Your stages go up to'}
+                  />
                   <Note title="How the load shape works">
                     <p className="m-0">
                       A virtual user (VU) is one simulated user. It runs the steps in the Flow tab
@@ -297,6 +358,11 @@ function RunPanelForm({
                       Stages run in order. During each stage, the number of VUs changes steadily to
                       the stage's target. For example, 30s → 20 VUs, then 1m → 20 VUs adds users for
                       30 seconds, then holds 20 users for 1 minute.
+                    </p>
+                    <p className="m-0">
+                      Users counts concurrent users. Rate counts flow runs started per second, no
+                      matter how slow the server gets: use it for a goal such as 50 sign-ins per
+                      second. Each flow run sends one request per step.
                     </p>
                   </Note>
                 </>

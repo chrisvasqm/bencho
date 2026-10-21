@@ -8,12 +8,14 @@ const MEGABYTE = 1024 ** 2;
 const REFRESH_MS = 10_000;
 
 export interface CapacityHintProps {
-  /** The largest VU target across the stages. */
+  /** The most VUs the run can use: the largest stage target, or a rate run's VU cap. */
   peakTarget: number;
+  /** Names where peakTarget comes from, in the warning. */
+  peakSource: string;
 }
 
 /** Rough VU estimate for the Bencho host, with a warning when the stages go above it. */
-export function CapacityHint({ peakTarget }: CapacityHintProps) {
+export function CapacityHint({ peakTarget, peakSource }: CapacityHintProps) {
   const capacity = useQuery({
     queryKey: ['capacity'],
     queryFn: runsApi.capacity,
@@ -43,7 +45,7 @@ export function CapacityHint({ peakTarget }: CapacityHintProps) {
         data-testid="capacity-warning"
       >
         {peakTarget > estimatedVirtualUsers &&
-          `Your stages go up to ${peakTarget.toLocaleString()} VUs, more than the estimate of ${estimate}. The run can slow down or stop the server.`}
+          `${peakSource} ${peakTarget.toLocaleString()} VUs, more than the estimate of ${estimate}. The run can slow down or stop the server.`}
       </p>
     </Note>
   );

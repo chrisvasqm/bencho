@@ -4,7 +4,12 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AppError } from '../../core/errors.ts';
-import { DEFAULT_LIMITS, DEFAULT_STAGES, stagesToEnv } from '../../../k6/lib/defaults.ts';
+import {
+  DEFAULT_LIMITS,
+  DEFAULT_MAX_VIRTUAL_USERS,
+  DEFAULT_STAGES,
+  stagesToEnv,
+} from '../../../k6/lib/defaults.ts';
 import { DEFAULT_FLOW, hasPlaceholderHost, isFullUrl } from '../../../k6/lib/flow.ts';
 import type { RunsRepository } from './repository.ts';
 import {
@@ -62,6 +67,7 @@ export class RunsService {
     return {
       baseUrl: this.k6.defaultBaseUrl,
       stages: DEFAULT_STAGES,
+      maxVirtualUsers: DEFAULT_MAX_VIRTUAL_USERS,
       limits: DEFAULT_LIMITS,
       flow: DEFAULT_FLOW,
     };
@@ -84,6 +90,9 @@ export class RunsService {
       run = await this.repository.create({
         type: input.type,
         baseUrl: input.baseUrl,
+        mode: input.mode ?? 'users',
+        maxVirtualUsers:
+          input.mode === 'rate' ? (input.maxVirtualUsers ?? DEFAULT_MAX_VIRTUAL_USERS) : null,
         stages: input.stages ?? DEFAULT_STAGES[input.type],
         flow: input.flow ?? DEFAULT_FLOW,
         limits: {
@@ -307,6 +316,8 @@ export class RunsService {
       HOME: process.env.HOME,
       BASE_URL: run.baseUrl,
       STAGES: stagesToEnv(run.stages),
+      MODE: run.mode,
+      ...(run.maxVirtualUsers === null ? {} : { MAX_VUS: String(run.maxVirtualUsers) }),
       FLOW_PATH: flowPath,
       THINK_TIME_SECONDS: String(thinkTimeSeconds),
       MAX_ERROR_RATE: String(maxErrorRate),

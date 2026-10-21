@@ -5,10 +5,12 @@ import { toStageRow, type StageRow } from './stages.ts';
 export interface StagesEditorProps {
   stages: StageRow[];
   onChange: (stages: StageRow[]) => void;
+  /** What a target counts, for the column header and labels. */
+  targetLabel: string;
 }
 
 /** Rows of duration + target users. The last row usually ramps down to 0. */
-export function StagesEditor({ stages, onChange }: StagesEditorProps) {
+export function StagesEditor({ stages, onChange, targetLabel }: StagesEditorProps) {
   const update = (index: number, patch: Partial<Stage>) =>
     onChange(
       stages.map((stage, position) => (position === index ? { ...stage, ...patch } : stage)),
@@ -21,7 +23,7 @@ export function StagesEditor({ stages, onChange }: StagesEditorProps) {
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-xs text-fg-muted">
         <span>Duration</span>
-        <span>Virtual users</span>
+        <span>{targetLabel}</span>
         <span className="w-8" />
       </div>
       {stages.map((stage, index) => (
@@ -37,7 +39,7 @@ export function StagesEditor({ stages, onChange }: StagesEditorProps) {
           />
           <Input
             id={`stage-${index}-target`}
-            aria-label={`Stage ${index + 1} virtual users`}
+            aria-label={`Stage ${index + 1} ${targetLabel.toLowerCase()}`}
             data-testid={`stage-${index}-target`}
             mono
             type="number"

@@ -65,6 +65,7 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
   const duration = run.summary?.metrics.http_req_duration;
   const failed = run.summary?.metrics.http_req_failed;
   const requests = run.summary?.metrics.http_reqs;
+  const dropped = run.summary?.metrics.dropped_iterations?.count ?? 0;
   const elapsed = durationSeconds(run);
   const active = isActive(run.status);
 
@@ -117,7 +118,18 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
           <Badge tone={STATUS_TONES[run.status]} pulse={active}>
             {STATUS_LABELS[run.status]}
           </Badge>
-          <span className="text-xs text-fg-muted">{formatStages(run.stages)}</span>
+          <span className="text-xs text-fg-muted">{formatStages(run.stages, run.mode)}</span>
+          {run.mode === 'rate' && (
+            <span className="text-xs text-fg-muted" data-testid="run-rate-cap">
+              rate, up to {run.maxVirtualUsers} VUs
+              {dropped > 0 && (
+                <span className="text-warning" data-testid="run-dropped">
+                  {' '}
+                  · {dropped} flow runs dropped (all VUs busy)
+                </span>
+              )}
+            </span>
+          )}
           <span className="text-xs text-fg-muted">
             {run.flow.length === 1 ? '1 step' : `${run.flow.length} steps`}:{' '}
             {run.flow.map((step) => step.name).join(' → ')}

@@ -37,6 +37,23 @@ test('a run with a random wait after a step passes', async ({ page }) => {
   await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
 });
 
+test('a rate run sends its rate and VU cap and passes', async ({ page }) => {
+  await setSingleStage(page, '2s');
+  await page.getByTestId('load-mode-rate').click();
+  await page.getByTestId('max-virtual-users').fill('2');
+  await setLooseLimits(page);
+  const post = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith('/api/v1/runs'),
+  );
+
+  await startRun(page);
+
+  const body = (await post).postDataJSON() as { mode: string; maxVirtualUsers: number };
+  expect(body).toMatchObject({ mode: 'rate', maxVirtualUsers: 2 });
+  await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
+  await expect(page.getByTestId('run-rate-cap')).toBeVisible();
+});
+
 test('a run in progress can be stopped after a confirm', async ({ page }) => {
   await setSingleStage(page, '1m');
   await setLooseLimits(page);

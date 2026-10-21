@@ -1,6 +1,6 @@
 // Run settings from env vars (k6 __ENV). Every value has a default, so tests run with no setup.
 import type { Stage } from 'k6/options';
-import { DEFAULT_LIMITS, DURATION_PATTERN } from './defaults.ts';
+import { DEFAULT_LIMITS, DEFAULT_MAX_VIRTUAL_USERS, DURATION_PATTERN } from './defaults.ts';
 
 function numberFromEnv(name: string, fallback: number): number {
   const raw = __ENV[name];
@@ -31,6 +31,9 @@ const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs } = DEFAULT_LIMITS;
 
 export const config = {
   baseUrl: __ENV.BASE_URL || 'http://localhost:10001',
+  /** MODE=rate starts a fixed number of flow runs per second; anything else ramps VUs. */
+  mode: __ENV.MODE === 'rate' ? ('rate' as const) : ('users' as const),
+  maxVirtualUsers: numberFromEnv('MAX_VUS', DEFAULT_MAX_VIRTUAL_USERS),
   thinkTimeSeconds: numberFromEnv('THINK_TIME_SECONDS', thinkTimeSeconds),
   maxErrorRate: numberFromEnv('MAX_ERROR_RATE', maxErrorRate),
   latencyLimitsMs: {

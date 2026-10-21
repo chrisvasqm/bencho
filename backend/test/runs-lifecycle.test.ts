@@ -70,6 +70,21 @@ describe('run lifecycle', () => {
     expect(run).toMatchObject({ status: 'passed', exitCode: 0, errorMessage: null });
   });
 
+  it('passes a rate run that starts flow runs per second up to its VU cap', async () => {
+    const run = await runToEnd(
+      shortRunPayload({
+        mode: 'rate',
+        maxVirtualUsers: 2,
+        stages: [{ duration: '2s', target: 4 }],
+      }),
+    );
+
+    expect(run).toMatchObject({ status: 'passed', exitCode: 0, errorMessage: null });
+    // 0 → 4 runs per second over 2 s is about 4 flow runs.
+    expect(run.summary.metrics.iterations.count).toBeGreaterThan(0);
+    expect(run.summary.metrics.vus_max.max).toBe(2);
+  });
+
   // Up to 20 s until the first points, then up to k6's 10 s stop grace: more than the default.
   it('stops a live k6 run gracefully and records it as stopped', { timeout: 45_000 }, async () => {
     const created = await app.request().post('/api/v1/runs').send(longRunPayload());

@@ -2,7 +2,7 @@
 // the rest cover what that flow cannot: variants, limits and errors of each endpoint.
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DEFAULT_LIMITS, DEFAULT_STAGES } from '../k6/lib/defaults.ts';
+import { DEFAULT_LIMITS, DEFAULT_MAX_VIRTUAL_USERS, DEFAULT_STAGES } from '../k6/lib/defaults.ts';
 import { DEFAULT_FLOW, MAX_STEPS } from '../k6/lib/flow.ts';
 import { MAX_BULK_DELETE, MAX_STAGES, RUN_STATUSES, type Run } from '../src/modules/runs/schema.ts';
 import {
@@ -206,6 +206,23 @@ describe('POST /api/v1/runs', () => {
       expect(response.body.run.limits).toEqual({ ...DEFAULT_LIMITS, maxErrorRate: 0.2 });
     });
 
+    it('stores users mode with no VU cap by default', async () => {
+      const response = await createRun(runPayload());
+
+      expect(response.body.run).toMatchObject({ mode: 'users', maxVirtualUsers: null });
+    });
+
+    it('stores a rate run with its VU cap, or the default cap', async () => {
+      const custom = await createRun(runPayload({ mode: 'rate', maxVirtualUsers: 250 }));
+      const fallback = await createRun(runPayload({ mode: 'rate' }));
+
+      expect(custom.body.run).toMatchObject({ mode: 'rate', maxVirtualUsers: 250 });
+      expect(fallback.body.run).toMatchObject({
+        mode: 'rate',
+        maxVirtualUsers: DEFAULT_MAX_VIRTUAL_USERS,
+      });
+    });
+
     it('ignores fields the client may not set', async () => {
       const response = await createRun(
         runPayload({ status: 'passed', exitCode: 0, id: '00000000-0000-4000-8000-000000000000' }),
@@ -305,6 +322,10 @@ describe('POST /api/v1/runs', () => {
       ['a latency limit of 0', runPayload({ latencyLimitsMs: { p50: 0, p90: 1, p95: 1, p99: 1 } })],
       ['a partial latency limit set', runPayload({ latencyLimitsMs: { p50: 100 } })],
       ['a type of the wrong JSON type', runPayload({ type: 1 })],
+      ['an unknown mode', runPayload({ mode: 'open' })],
+      ['a VU cap on a users run', runPayload({ maxVirtualUsers: 10 })],
+      ['a VU cap of 0', runPayload({ mode: 'rate', maxVirtualUsers: 0 })],
+      ['a fractional VU cap', runPayload({ mode: 'rate', maxVirtualUsers: 2.5 })],
       ['a JSON array body', [runPayload()]],
     ])('returns 400 VALIDATION for %s', async (_label, body) => {
       const response = await createRun(body);

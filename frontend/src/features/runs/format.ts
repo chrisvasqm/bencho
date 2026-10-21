@@ -1,5 +1,5 @@
 import type { BadgeTone } from '../../components/ui/index.ts';
-import type { Run, RunStatus, RunType, Stage } from '../../api/runs.ts';
+import type { LoadMode, Run, RunStatus, RunType, Stage } from '../../api/runs.ts';
 
 export const RUN_TYPE_LABELS: Record<RunType, string> = {
   load: 'Load',
@@ -33,8 +33,20 @@ export const STATUS_TONES: Record<RunStatus, BadgeTone> = {
 
 export const isActive = (status: RunStatus) => status === 'queued' || status === 'running';
 
-export function formatStages(stages: Stage[]): string {
-  return stages.map((stage) => `${stage.duration} → ${stage.target} VUs`).join(', ');
+export const LOAD_MODE_LABELS: Record<LoadMode, string> = { users: 'Users', rate: 'Rate' };
+
+/** What a stage target counts in each mode, for labels and axes. */
+export const TARGET_LABELS: Record<LoadMode, string> = {
+  users: 'Virtual users',
+  rate: 'Flow runs per second',
+};
+
+const TARGET_UNITS: Record<LoadMode, string> = { users: ' VUs', rate: '/s' };
+
+export function formatStages(stages: Stage[], mode: LoadMode = 'users'): string {
+  return stages
+    .map((stage) => `${stage.duration} → ${stage.target}${TARGET_UNITS[mode]}`)
+    .join(', ');
 }
 
 export function peakUsers(stages: Stage[]): number {

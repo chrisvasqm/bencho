@@ -13,8 +13,10 @@ import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   DURATION_PATTERN,
+  LOAD_MODES,
   RUN_TYPES,
   durationToSeconds,
+  type LoadMode,
   type LoadStage,
   type RunLimits,
   type RunType,
@@ -59,7 +61,10 @@ export const runs = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     type: text('type').$type<RunType>().notNull(),
     baseUrl: text('base_url').notNull(),
+    mode: text('mode').$type<LoadMode>().notNull().default('users'),
     stages: jsonb('stages').$type<LoadStage[]>().notNull(),
+    /** Rate runs only: the most VUs k6 may use to keep the rate. */
+    maxVirtualUsers: integer('max_virtual_users'),
     limits: jsonb('limits').$type<RunLimits>().notNull(),
     flow: jsonb('flow').$type<FlowStep[]>().notNull().default(DEFAULT_FLOW),
     status: text('status').$type<RunStatus>().notNull().default('queued'),
@@ -164,27 +169,34 @@ const flowSchema = z
     if (problem) context.addIssue({ code: 'custom', message: problem });
   });
 
-export const createRunSchema = z.object({
-  type: z.enum(RUN_TYPES),
-  baseUrl: z.url({ protocol: /^https?$/ }).refine(hasNoCredentials, NO_CREDENTIALS_MESSAGE),
-  stages: z
-    .array(stageSchema)
-    .min(1)
-    .max(MAX_STAGES)
-    .refine(
-      (stages) =>
-        stages.reduce((total, stage) => total + durationToSeconds(stage.duration), 0) <=
-        MAX_RUN_SECONDS,
-      { message: `All stages together must last at most ${MAX_RUN_SECONDS / 60} minutes` },
-    )
-    .optional(),
-  flow: flowSchema.optional(),
-  thinkTimeSeconds: z.number().min(0).optional(),
-  maxErrorRate: z.number().min(0).max(1).optional(),
-  latencyLimitsMs: z
-    .object({ p50: positiveMs, p90: positiveMs, p95: positiveMs, p99: positiveMs })
-    .optional(),
-});
+export const createRunSchema = z
+  .object({
+    type: z.enum(RUN_TYPES),
+    mode: z.enum(LOAD_MODES).optional(),
+    maxVirtualUsers: z.number().int().min(1).optional(),
+    baseUrl: z.url({ protocol: /^https?$/ }).refine(hasNoCredentials, NO_CREDENTIALS_MESSAGE),
+    stages: z
+      .array(stageSchema)
+      .min(1)
+      .max(MAX_STAGES)
+      .refine(
+        (stages) =>
+          stages.reduce((total, stage) => total + durationToSeconds(stage.duration), 0) <=
+          MAX_RUN_SECONDS,
+        { message: `All stages together must last at most ${MAX_RUN_SECONDS / 60} minutes` },
+      )
+      .optional(),
+    flow: flowSchema.optional(),
+    thinkTimeSeconds: z.number().min(0).optional(),
+    maxErrorRate: z.number().min(0).max(1).optional(),
+    latencyLimitsMs: z
+      .object({ p50: positiveMs, p90: positiveMs, p95: positiveMs, p99: positiveMs })
+      .optional(),
+  })
+  .refine((input) => input.maxVirtualUsers === undefined || input.mode === 'rate', {
+    message: 'Max virtual users applies only to rate runs',
+    path: ['maxVirtualUsers'],
+  });
 export type CreateRunInput = z.infer<typeof createRunSchema>;
 
 export const listRunsQuerySchema = z.object({
