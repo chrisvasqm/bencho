@@ -38,6 +38,7 @@ import {
   isFullUrl,
   type FlowStep,
 } from '../../../k6/lib/flow.ts';
+import type { FailureSample } from '../../../k6/lib/failures.ts';
 
 /** Credentials belong in a header (returned redacted), never in a URL that every reader sees. */
 const hasNoCredentials = (url: string) => {
@@ -70,6 +71,8 @@ export const runs = pgTable(
     status: text('status').$type<RunStatus>().notNull().default('queued'),
     exitCode: integer('exit_code'),
     summary: jsonb('summary').$type<Record<string, unknown>>(),
+    /** Sampled failed responses, distinct per step (see k6/lib/failures.ts). */
+    failures: jsonb('failures').$type<FailureSample[]>().notNull().default([]),
     errorMessage: text('error_message'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     startedAt: timestamp('started_at', { withTimezone: true }),
@@ -89,6 +92,8 @@ export const runs = pgTable(
 );
 
 export type Run = typeof runs.$inferSelect;
+/** A run as lists return it: without its failure samples. */
+export type RunListItem = Omit<Run, 'failures'>;
 
 /** One point per second of a run, built from k6's CSV output. */
 export const runPoints = pgTable(

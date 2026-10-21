@@ -4,7 +4,14 @@ import http from 'k6/http';
 import exec from 'k6/execution';
 import { check, sleep } from 'k6';
 import { SharedArray } from 'k6/data';
+import encoding from 'k6/encoding';
 import { config } from './config.ts';
+import {
+  FAILURE_LOG_PREFIX,
+  FAILURE_SAMPLE_EVERY,
+  MAX_FAILURE_BODY_CHARS,
+  type FailureSample,
+} from './failures.ts';
 import {
   DEFAULT_FLOW,
   fillJsonBody,
@@ -50,6 +57,52 @@ const flow: PreparedStep[] = Array.from(flowSteps, (step) => ({
   responseType: step.extract.length > 0 ? 'text' : 'none',
 }));
 
+const MAX_SHAPE_SOURCE_CHARS = 100_000;
+
+// Per VU (module state is per VU in k6): step, reason and status already reported. One body
+// per kind of failure and VU: bodies with request ids would otherwise all count as different.
+const reportedFailures = new Set<string>();
+
+/** A JSON value with every string, number and boolean replaced by its type: keys, no values. */
+function jsonShape(value: unknown): unknown {
+  if (Array.isArray(value)) return value.length > 0 ? [jsonShape(value[0])] : [];
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, jsonShape(item)]));
+  }
+  return value === null ? null : `<${typeof value}>`;
+}
+
+/** What to store of a success response (2xx): it may hold tokens, so keys and no values. */
+function successBody(text: string): string {
+  // Parsing a huge body in every VU at once would load the load generator itself.
+  if (text.length > MAX_SHAPE_SOURCE_CHARS) return `(${text.length} characters)`;
+  try {
+    return JSON.stringify(jsonShape(JSON.parse(text)));
+  } catch {
+    return `(not JSON, ${text.length} characters)`;
+  }
+}
+
+/**
+ * Logs the first failure of each step, reason and status in this VU; network errors (status 0)
+ * also by error code, so a timeout does not hide a refused connection.
+ */
+function reportFailure(
+  stepName: string,
+  reason: FailureSample['reason'],
+  response: ReturnType<typeof http.request>,
+): void {
+  const key = `${stepName}|${reason}|${response.status}|${response.status === 0 ? response.error_code : ''}`;
+  if (reportedFailures.has(key)) return;
+  reportedFailures.add(key);
+  const text = (typeof response.body === 'string' ? response.body : response.error) || '';
+  const success = response.status >= 200 && response.status < 300;
+  const body = (success ? successBody(text) : text).slice(0, MAX_FAILURE_BODY_CHARS);
+  const sample: FailureSample = { step: stepName, reason, status: response.status, body };
+  // Base64 keeps the line free of quotes and line breaks in k6's log format.
+  console.log(FAILURE_LOG_PREFIX + encoding.b64encode(JSON.stringify(sample)));
+}
+
 function randomUuid(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
     const random = Math.floor(Math.random() * 16);
@@ -57,10 +110,15 @@ function randomUuid(): string {
   });
 }
 
-/** Sends one step. Returns false when the iteration must end (wrong status or missing value). */
+/**
+ * Sends one step. Returns false when the iteration must end (wrong status or missing value).
+ * In a sampled iteration every body is read, so status failures can be reported with their body.
+ * Steps that extract always read theirs, so their extract failures are always reported.
+ */
 function runStep(
   { step, responseCallback, urlName, hasContentType, redirects, responseType }: PreparedStep,
   values: FlowValues,
+  sampled: boolean,
 ): boolean {
   const headers: Record<string, string> = {};
   for (const [name, value] of Object.entries(step.headers)) {
@@ -78,7 +136,7 @@ function runStep(
       tags: { step: step.name, name: urlName },
       responseCallback,
       redirects,
-      responseType,
+      responseType: sampled ? 'text' : responseType,
     },
   );
   if (BLOCKED_TARGET_ERROR_CODES.has(response.error_code)) {
@@ -89,7 +147,10 @@ function runStep(
     [`${step.name}: status ${step.expectedStatus}`]: (checked) =>
       checked.status === step.expectedStatus,
   });
-  if (!statusOk) return false;
+  if (!statusOk) {
+    if (sampled) reportFailure(step.name, 'status', response);
+    return false;
+  }
   for (const extract of step.extract) {
     let value: unknown;
     try {
@@ -101,7 +162,10 @@ function runStep(
       [`${step.name}: saves ${extract.name}`]: (checked) =>
         checked !== undefined && checked !== null,
     });
-    if (!saved) return false;
+    if (!saved) {
+      reportFailure(step.name, 'extract', response);
+      return false;
+    }
     values[extract.name] = value;
   }
   return true;
@@ -115,8 +179,11 @@ export default function (): void {
     uuid,
     shortId: uuid.replace(/-/g, '').slice(0, 12),
   };
+  // Counted across all VUs, so 1 in FAILURE_SAMPLE_EVERY flow runs reads bodies in every mode
+  // (rate runs start many VUs that each run only a few times).
+  const sampled = exec.scenario.iterationInTest % FAILURE_SAMPLE_EVERY === 0;
   for (const step of flow) {
-    const ok = runStep(step, values);
+    const ok = runStep(step, values, sampled);
     sleep(waitSeconds(step.step, config.thinkTimeSeconds));
     if (!ok) return;
   }

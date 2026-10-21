@@ -134,6 +134,48 @@ describe('run lifecycle', () => {
     expect(run).toMatchObject({ status: 'failed', exitCode: 99, errorMessage: null });
   });
 
+  it('stores a sample of failed responses with their status and body', async () => {
+    const run = await runToEnd(
+      shortRunPayload({
+        flow: [flowStep({ name: 'Home', expectedStatus: 418 })],
+      }),
+    );
+
+    // Home fails every time with the same 200 page: one distinct sample.
+    const home = run.failures.filter((failure: { step: string }) => failure.step === 'Home');
+    expect(home).toHaveLength(1);
+    expect(home[0]).toMatchObject({ reason: 'status', status: 200 });
+    // A 200 may hold tokens, so its body is not stored; the home page is HTML, so no keys either.
+    expect(home[0].body).toMatch(/^\(not JSON, \d+ characters\)$/);
+  });
+
+  it('stores only the JSON keys of a step whose value to save is missing', async () => {
+    const run = await runToEnd(
+      shortRunPayload({
+        flow: [
+          flowStep({
+            name: 'Login',
+            method: 'POST',
+            path: '/api/users/token/login',
+            body: '{"username": "default", "password": "12345678"}',
+            extract: [{ name: 'missing', path: 'no.such.field' }],
+          }),
+        ],
+      }),
+    );
+
+    expect(run.failures).toEqual([
+      // The login worked: its token must not be stored, only the shape of the body.
+      { step: 'Login', reason: 'extract', status: 200, body: '{"token":"<string>"}' },
+    ]);
+  });
+
+  it('stores no failures for a run where every step passes', async () => {
+    const run = await runToEnd(shortRunPayload());
+
+    expect(run.failures).toEqual([]);
+  });
+
   describe('when k6 cannot run the test', () => {
     const originalPath = process.env.PATH;
 
