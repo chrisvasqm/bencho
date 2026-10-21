@@ -15,10 +15,6 @@ export function runsRoutes(service: RunsService): Router {
     response.json(service.defaults());
   });
 
-  router.get('/capacity', (_request, response) => {
-    response.json(service.capacity());
-  });
-
   router.get('/runs', validate('query', listRunsQuerySchema), async (_request, response) => {
     response.json(await service.list(response.locals.query));
   });

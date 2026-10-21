@@ -73,6 +73,10 @@ describe('GET /api/v1/capacity', () => {
     expect(estimatedVirtualUsers).toBe(
       Math.floor((availableMemoryBytes * 0.8) / memoryPerVirtualUserBytes),
     );
+    // The estimated VUs must fit in free memory.
+    expect(estimatedVirtualUsers * memoryPerVirtualUserBytes).toBeLessThanOrEqual(
+      availableMemoryBytes,
+    );
   });
 });
 

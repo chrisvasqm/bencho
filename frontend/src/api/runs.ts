@@ -113,10 +113,10 @@ const defaultsSchema = z.object({
 export type RunDefaults = z.infer<typeof defaultsSchema>;
 
 const capacitySchema = z.object({
-  cpuCount: z.number(),
-  availableMemoryBytes: z.number(),
-  memoryPerVirtualUserBytes: z.number(),
-  estimatedVirtualUsers: z.number(),
+  cpuCount: z.number().int().positive(),
+  availableMemoryBytes: z.number().nonnegative(),
+  memoryPerVirtualUserBytes: z.number().positive(),
+  estimatedVirtualUsers: z.number().int().nonnegative(),
 });
 export type Capacity = z.infer<typeof capacitySchema>;
 

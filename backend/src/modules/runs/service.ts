@@ -1,7 +1,7 @@
 // Starts k6 runs as child processes and records their outcome.
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { availableParallelism, tmpdir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AppError } from '../../core/errors.ts';
 import { DEFAULT_LIMITS, DEFAULT_STAGES, stagesToEnv } from '../../../k6/lib/defaults.ts';
@@ -30,8 +30,6 @@ const K6_THRESHOLD_FAILED_EXIT_CODE = 99;
 const STOP_GRACE_MS = 10_000;
 const MAX_CONCURRENT_RUNS = 3;
 const POINTS_FLUSH_INTERVAL_MS = 2000;
-const MEMORY_PER_VIRTUAL_USER_BYTES = 5 * 1024 * 1024;
-const MEMORY_HEADROOM = 0.8;
 /** Flow headers that carry a secret of the target, by name. Stored for the run, never returned. */
 const SECRET_HEADER_PATTERN =
   /auth|token|key|secret|cookie|session|pass|credential|signature|bearer/i;
@@ -66,22 +64,6 @@ export class RunsService {
       stages: DEFAULT_STAGES,
       limits: DEFAULT_LIMITS,
       flow: DEFAULT_FLOW,
-    };
-  }
-
-  /**
-   * Rough VU estimate from free memory. k6 docs: simple tests use about 1-5 MB per VU;
-   * we take 5 MB and leave 20% of free memory for everything else.
-   */
-  capacity() {
-    const availableMemoryBytes = process.availableMemory();
-    return {
-      cpuCount: availableParallelism(),
-      availableMemoryBytes,
-      memoryPerVirtualUserBytes: MEMORY_PER_VIRTUAL_USER_BYTES,
-      estimatedVirtualUsers: Math.floor(
-        (availableMemoryBytes * MEMORY_HEADROOM) / MEMORY_PER_VIRTUAL_USER_BYTES,
-      ),
     };
   }
 
