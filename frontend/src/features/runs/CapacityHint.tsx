@@ -31,6 +31,11 @@ export function CapacityHint({ peakTarget }: CapacityHintProps) {
         and k6 uses up to about {Math.round(memoryPerVirtualUserBytes / MEGABYTE)} MB per VU. Long
         flows, large bodies, short think times and other active runs lower this number.
       </p>
+      <p className="m-0" data-testid="capacity-docker">
+        On Docker Desktop, free memory comes from Docker's memory limit (Settings → Resources →
+        Advanced → Memory limit), which all running containers share, not from all of the computer's
+        memory. A <code>mem_limit</code> on the backend container lowers it too.
+      </p>
       {/* Always mounted (hidden when empty), so screen readers announce changes politely. */}
       <p
         role="status"
