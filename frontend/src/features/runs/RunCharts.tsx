@@ -6,7 +6,7 @@ import { runsApi, type Run } from '../../api/runs.ts';
 import { Note, Tabs } from '../../components/ui/index.ts';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
-import { formatMs, formatSeconds, isActive, timeTicks } from './format.ts';
+import { formatMs, formatSeconds, isActive } from './format.ts';
 import { LATENCY_SERIES } from './series.ts';
 
 type ChartTab = 'latency' | 'load' | 'errors';
@@ -45,7 +45,7 @@ export function RunCharts({ run }: { run: Run }) {
     data,
     xKey: 'second' as const,
     formatX: formatSeconds,
-    xTicks: timeTicks(data[data.length - 1]?.second ?? 0),
+    xTime: true,
     loading: points.isPending,
     empty,
   };

@@ -76,7 +76,7 @@ test.describe('load shape chart', () => {
 
     // 16m30s in total: ticks every 5 minutes, not Recharts' own 4m10s steps.
     const chart = page.getByTestId('load-shape-chart');
-    await expect(chart).toContainText('5m');
+    await expect(chart).toContainText('10m');
     await expect(chart).toContainText('15m');
     await expect(chart).not.toContainText('4m10s');
 

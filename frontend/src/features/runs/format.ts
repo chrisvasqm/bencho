@@ -112,23 +112,14 @@ export function plannedShape(stages: Stage[]): PlannedPoint[] {
   return points;
 }
 
-// Round time steps, so axis ticks read 5m, 10m, 15m and never 4m10s.
-const TIME_TICK_STEPS_SECONDS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
-const MAX_TIME_TICKS = 6;
-
-/** Ticks from 0 to `maxSeconds` on the smallest round step that keeps them to about six. */
-export function timeTicks(maxSeconds: number): number[] {
-  if (!(maxSeconds > 0)) return [0];
-  const step =
-    TIME_TICK_STEPS_SECONDS.find((candidate) => maxSeconds / candidate <= MAX_TIME_TICKS - 1) ??
-    Math.ceil(maxSeconds / (MAX_TIME_TICKS - 1) / 3600) * 3600;
-  const count = Math.floor(maxSeconds / step + 1e-9);
-  return Array.from({ length: count + 1 }, (_value, index) => index * step);
-}
-
 export function formatSeconds(value: number | string): string {
   const seconds = Number(value);
   if (seconds < 60) return `${seconds}s`;
+  if (seconds >= 3600) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.round((seconds % 3600) / 60);
+    return minutes ? `${hours}h${minutes}m` : `${hours}h`;
+  }
   const minutes = Math.floor(seconds / 60);
   const rest = Math.round(seconds % 60);
   return rest ? `${minutes}m${rest}s` : `${minutes}m`;

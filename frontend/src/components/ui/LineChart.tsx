@@ -41,8 +41,8 @@ export interface LineChartProps<Row> {
   minYStep?: number;
   /** Whole-number x values only (such as seconds). */
   integerX?: boolean;
-  /** Exact x ticks, such as round time steps; without them Recharts picks its own. */
-  xTicks?: number[];
+  /** x values are seconds: ticks fall on round time steps (10s, 1m, 5m, 1h) that fit the range. */
+  xTime?: boolean;
   /** 'linear' draws straight segments, for data that is linear between points (a plan). */
   curve?: 'monotone' | 'linear';
   loading?: boolean;
@@ -63,7 +63,7 @@ export function LineChart<Row extends object>({
   height = 220,
   integerY = false,
   integerX = false,
-  xTicks,
+  xTime = false,
   curve = 'monotone',
   minYStep = 0,
   loading,
@@ -71,6 +71,7 @@ export function LineChart<Row extends object>({
   testId,
 }: LineChartProps<Row>) {
   const showLegend = series.length > 1;
+  const xTicks = xTime ? timeTicks(data.map((row) => numberAt(row, xKey))) : undefined;
   // The y axis uses this exact scale, so label spacing can be measured in pixels.
   const yTicks = niceTicks(seriesMax(data, series), integerY, minYStep);
   const yMax = yTicks[yTicks.length - 1] ?? 1;
@@ -125,6 +126,8 @@ export function LineChart<Row extends object>({
                 height={X_AXIS_HEIGHT_PX}
                 allowDecimals={!integerX}
                 ticks={xTicks}
+                // Round time ticks are already spaced out; Recharts must not drop any of them.
+                interval={xTicks ? 0 : 'preserveEnd'}
               />
               <YAxis
                 tick={tick}
@@ -219,6 +222,29 @@ function seriesMax<Row>(data: Row[], series: ReadonlyArray<LineSeries<Row>>): nu
     for (const row of data) max = Math.max(max, numberAt(row, line.key) ?? 0);
   }
   return max;
+}
+
+// Round time steps in seconds, so a time axis reads 5m, 10m, 15m and never 4m10s.
+const TIME_STEPS_SECONDS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200];
+const MAX_TIME_TICKS = 6;
+
+/**
+ * Ticks on the smallest round time step that keeps the range to about six, inside the data's
+ * own range (rows may be unsorted and may not start at 0). Undefined, so Recharts picks its own,
+ * when the range is under 2 seconds or too long for the steps.
+ */
+function timeTicks(values: Array<number | undefined>): number[] | undefined {
+  const numbers = values.filter((value): value is number => value !== undefined);
+  const min = Math.min(...numbers);
+  const max = Math.max(...numbers);
+  if (!(max - min >= 2)) return undefined;
+  const step = TIME_STEPS_SECONDS.find(
+    (candidate) => (max - min) / candidate <= MAX_TIME_TICKS - 1,
+  );
+  if (step === undefined) return undefined;
+  const first = Math.ceil(min / step - 1e-9) * step;
+  const count = Math.floor((max - first) / step + 1e-9);
+  return Array.from({ length: count + 1 }, (_value, index) => first + index * step);
 }
 
 /**
