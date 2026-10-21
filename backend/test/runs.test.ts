@@ -4,7 +4,13 @@ import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_LIMITS, DEFAULT_STAGES } from '../k6/lib/defaults.ts';
 import { DEFAULT_FLOW, MAX_STEPS } from '../k6/lib/flow.ts';
-import { MAX_BULK_DELETE, MAX_STAGES, RUN_STATUSES, type Run } from '../src/modules/runs/schema.ts';
+import {
+  MAX_BULK_DELETE,
+  MAX_STAGES,
+  MAX_VIRTUAL_USERS,
+  RUN_STATUSES,
+  type Run,
+} from '../src/modules/runs/schema.ts';
 import {
   flowStep,
   longRunPayload,
@@ -293,6 +299,10 @@ describe('POST /api/v1/runs', () => {
       ['stages over 60 minutes', runPayload({ stages: tooLongStages })],
       ['a duration without unit', runPayload({ stages: [{ duration: '30', target: 1 }] })],
       ['a negative duration', runPayload({ stages: [{ duration: '-1s', target: 1 }] })],
+      [
+        'a target over the int4 range',
+        runPayload({ stages: [{ duration: '1s', target: MAX_VIRTUAL_USERS + 1 }] }),
+      ],
       ['a negative target', runPayload({ stages: [{ duration: '1s', target: -1 }] })],
       ['a fractional target', runPayload({ stages: [{ duration: '1s', target: 1.5 }] })],
       ['a negative think time', runPayload({ thinkTimeSeconds: -1 })],
