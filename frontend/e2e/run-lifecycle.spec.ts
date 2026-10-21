@@ -80,6 +80,19 @@ test('refuses a VU cap below 1 without starting a run', async ({ page }) => {
   await expect(page.getByTestId('run-row')).toHaveCount(0);
 });
 
+test('a failed run shows a sample of the failed responses', async ({ page }) => {
+  await page.getByTestId('panel-tab-flow').click();
+  await page.getByTestId('step-expected-status').fill('418');
+  await setSingleStage(page, '1s');
+  await setLooseLimits(page);
+
+  await startRun(page);
+
+  await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'failed');
+  await expect(page.getByTestId('run-failure')).toHaveCount(1);
+  await expect(page.getByTestId('run-failure')).toContainText('status 200, expected 418');
+});
+
 test('a run in progress can be stopped after a confirm', async ({ page }) => {
   await setSingleStage(page, '1m');
   await setLooseLimits(page);

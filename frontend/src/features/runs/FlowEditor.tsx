@@ -230,6 +230,7 @@ function StepFields({
         <Field label="Status" htmlFor={`${id}-status`}>
           <Input
             id={`${id}-status`}
+            data-testid="step-expected-status"
             mono
             type="number"
             min={100}

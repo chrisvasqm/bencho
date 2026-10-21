@@ -20,6 +20,7 @@ import {
   privateTargetProblem,
 } from './targets.ts';
 import { FileTail, TimeseriesAggregator, type RunPointValues } from './timeseries.ts';
+import { readFailures } from './failures.ts';
 import {
   ACTIVE_RUN_STATUSES,
   type CreateRunInput,
@@ -197,13 +198,15 @@ export class RunsService {
     try {
       const summaryPath = join(workDir, 'summary.json');
       const pointsPath = join(workDir, 'points.csv');
+      const consolePath = join(workDir, 'console.log');
       // A file, not an env var: large flows would pass the OS limit for one env string.
       const flowPath = join(workDir, 'flow.json');
       await writeFile(flowPath, JSON.stringify(run.flow));
       const { exitCode, stderr } = await this.withLivePoints(run.id, pointsPath, () =>
-        this.spawnK6(run, { summaryPath, pointsPath, flowPath }),
+        this.spawnK6(run, { summaryPath, pointsPath, flowPath, consolePath }),
       );
       const summary = await readSummary(summaryPath);
+      const failures = await readFailures(consolePath);
       const stopped = this.stopRequested.has(run.id);
       if (!stopped && exitCode === K6_ABORTED_EXIT_CODE) {
         // The scenario aborted on a refused target: an error of the run, not a failed threshold.
@@ -211,6 +214,7 @@ export class RunsService {
           status: 'error',
           exitCode,
           summary,
+          failures,
           errorMessage: PRIVATE_TARGET_MESSAGE,
           finishedAt: new Date(),
         };
@@ -219,6 +223,7 @@ export class RunsService {
         status: stopped ? 'stopped' : statusFromExitCode(exitCode),
         exitCode,
         summary,
+        failures,
         errorMessage:
           stopped || exitCode === 0 || exitCode === K6_THRESHOLD_FAILED_EXIT_CODE ? null : stderr,
         finishedAt: new Date(),
@@ -307,7 +312,8 @@ export class RunsService {
       summaryPath,
       pointsPath,
       flowPath,
-    }: { summaryPath: string; pointsPath: string; flowPath: string },
+      consolePath,
+    }: { summaryPath: string; pointsPath: string; flowPath: string; consolePath: string },
   ): Promise<{ exitCode: number; stderr: string }> {
     const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs } = run.limits;
     // Only what k6 needs: the child must not inherit DATABASE_URL or other secrets.
@@ -343,6 +349,9 @@ export class RunsService {
         '--out',
         `csv=${pointsPath}`,
         '--system-tags=',
+        // Failure samples (console.log in the scenario) go to a file, not to stderr.
+        '--console-output',
+        consolePath,
         // Own REST API port per run (0 = any free one), so parallel runs never collide on 6565.
         '--address',
         'localhost:0',

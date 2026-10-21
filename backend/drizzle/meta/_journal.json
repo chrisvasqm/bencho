@@ -36,6 +36,13 @@
       "when": 1792622392669,
       "tag": "0004_panoramic_the_order",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792624253684,
+      "tag": "0005_chemical_black_bird",
+      "breakpoints": true
     }
   ]
 }

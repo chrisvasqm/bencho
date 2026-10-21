@@ -72,6 +72,14 @@ const summarySchema = z
   .loose();
 export type RunSummary = z.infer<typeof summarySchema>;
 
+const failureSchema = z.object({
+  step: z.string(),
+  reason: z.enum(['status', 'extract']),
+  status: z.number(),
+  body: z.string(),
+});
+export type FailureSample = z.infer<typeof failureSchema>;
+
 const runSchema = z.object({
   id: z.string(),
   type: z.enum(RUN_TYPES),
@@ -84,6 +92,7 @@ const runSchema = z.object({
   status: z.enum(RUN_STATUSES),
   exitCode: z.number().nullable(),
   summary: summarySchema.nullable(),
+  failures: z.array(failureSchema),
   errorMessage: z.string().nullable(),
   createdAt: z.string(),
   startedAt: z.string().nullable(),

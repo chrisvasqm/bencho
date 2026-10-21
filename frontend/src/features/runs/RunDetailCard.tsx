@@ -187,6 +187,8 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
           </p>
         )}
 
+        {run.failures.length > 0 && <FailureList run={run} />}
+
         <Suspense fallback={<Skeleton className="h-72 w-full" />}>
           <RunCharts run={run} />
         </Suspense>
@@ -201,5 +203,48 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
         )}
       </div>
     </Card>
+  );
+}
+
+/** Sampled failed responses: what the target answered when a step failed. */
+function FailureList({ run }: { run: Run }) {
+  return (
+    <section className="flex flex-col gap-3" data-testid="run-failures">
+      <div className="flex flex-col gap-1">
+        <h3 className="m-0 text-sm font-medium text-fg">Failed responses (sample)</h3>
+        <p className="m-0 text-xs text-fg-muted">
+          Bodies are read in 1 of every 20 flow runs per virtual user, so these are examples, not
+          every failure. Each step shows up to 10 different responses.
+        </p>
+      </div>
+      <ul className="m-0 flex list-none flex-col gap-3 p-0">
+        {run.failures.map((failure, index) => {
+          const expected = run.flow.find((step) => step.name === failure.step)?.expectedStatus;
+          return (
+            <li
+              // Failures are a fixed list per run; step, status and body together are unique.
+              key={`${failure.step}-${failure.status}-${index}`}
+              className="flex flex-col gap-1.5"
+              data-testid="run-failure"
+            >
+              <p className="m-0 text-xs text-fg">
+                <span className="font-medium">{failure.step}</span>
+                <span className="text-fg-muted">
+                  {' · '}
+                  {failure.reason === 'extract'
+                    ? `status ${failure.status}, a value to save was missing`
+                    : failure.status === 0
+                      ? 'no response (network error)'
+                      : `status ${failure.status}${expected === undefined ? '' : `, expected ${expected}`}`}
+                </span>
+              </p>
+              <pre className="m-0 max-h-40 overflow-auto rounded-md bg-surface-sunken p-3 font-mono text-xs whitespace-pre-wrap break-all text-fg-muted">
+                {failure.body || '(empty body)'}
+              </pre>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
