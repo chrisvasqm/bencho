@@ -45,6 +45,31 @@ describe('run lifecycle', () => {
     expect(points[0]).toMatchObject({ runId: run.id, second: expect.any(Number) });
   });
 
+  it('reads bodies of steps that extract values and discards the rest', async () => {
+    const run = await runToEnd(
+      shortRunPayload({
+        flow: [
+          flowStep(),
+          flowStep({
+            name: 'Login',
+            method: 'POST',
+            path: '/api/users/token/login',
+            body: '{"username": "default", "password": "12345678"}',
+            extract: [{ name: 'token', path: 'token' }],
+          }),
+          flowStep({
+            name: 'Ratings',
+            path: '/api/ratings',
+            headers: { Authorization: 'Token {{token}}' },
+          }),
+        ],
+      }),
+    );
+
+    // A missing token fails the extract check, so the checks limit (rate>0.99) fails: exit code 99.
+    expect(run).toMatchObject({ status: 'passed', exitCode: 0, errorMessage: null });
+  });
+
   // Up to 20 s until the first points, then up to k6's 10 s stop grace: more than the default.
   it('stops a live k6 run gracefully and records it as stopped', { timeout: 45_000 }, async () => {
     const created = await app.request().post('/api/v1/runs').send(longRunPayload());

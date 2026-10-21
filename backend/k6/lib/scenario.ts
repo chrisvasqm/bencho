@@ -36,6 +36,8 @@ interface PreparedStep {
   hasContentType: boolean;
   // A step that expects a redirect must see it, not the page it points to.
   redirects: number | undefined;
+  // Only steps that extract values read the body; the rest discard it to save VU memory.
+  responseType: 'text' | 'none';
 }
 
 const flow: PreparedStep[] = Array.from(flowSteps, (step) => ({
@@ -44,6 +46,7 @@ const flow: PreparedStep[] = Array.from(flowSteps, (step) => ({
   urlName: stepUrl(config.baseUrl, step.path),
   hasContentType: Object.keys(step.headers).some((name) => name.toLowerCase() === 'content-type'),
   redirects: step.expectedStatus >= 300 && step.expectedStatus < 400 ? 0 : undefined,
+  responseType: step.extract.length > 0 ? 'text' : 'none',
 }));
 
 function randomUuid(): string {
@@ -55,7 +58,7 @@ function randomUuid(): string {
 
 /** Sends one step. Returns false when the iteration must end (wrong status or missing value). */
 function runStep(
-  { step, responseCallback, urlName, hasContentType, redirects }: PreparedStep,
+  { step, responseCallback, urlName, hasContentType, redirects, responseType }: PreparedStep,
   values: FlowValues,
 ): boolean {
   const headers: Record<string, string> = {};
@@ -74,6 +77,7 @@ function runStep(
       tags: { step: step.name, name: urlName },
       responseCallback,
       redirects,
+      responseType,
     },
   );
   if (BLOCKED_TARGET_ERROR_CODES.has(response.error_code)) {
