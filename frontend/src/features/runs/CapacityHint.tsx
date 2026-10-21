@@ -31,8 +31,12 @@ export function CapacityHint({ peakTarget }: CapacityHintProps) {
         and k6 uses up to about {Math.round(memoryPerVirtualUserBytes / MEGABYTE)} MB per VU. Long
         flows, large bodies, short think times and other active runs lower this number.
       </p>
-      {/* Always mounted, so screen readers announce changes politely while the user types. */}
-      <p role="status" className="m-0 font-medium text-warning" data-testid="capacity-warning">
+      {/* Always mounted (hidden when empty), so screen readers announce changes politely. */}
+      <p
+        role="status"
+        className="m-0 font-medium text-warning empty:sr-only"
+        data-testid="capacity-warning"
+      >
         {peakTarget > estimatedVirtualUsers &&
           `Your stages go up to ${peakTarget.toLocaleString()} VUs, more than the estimate of ${estimate}. The run can slow down or stop the server.`}
       </p>
