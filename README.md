@@ -25,7 +25,7 @@ Stop with `docker compose down` (add `-v` to delete stored runs).
 
 Limits: 20 stages, 60 minutes per run, 3 runs at a time. A run passes when error rate, p50/p90/p95/p99 latency and check pass rate (above 99%) all hold.
 
-The Load shape tab shows a rough estimate of how many VUs the Bencho host can run: 80% of its free memory at 5 MB per VU, the high end of k6's guidance for simple tests (`GET /api/v1/capacity`). Long flows, large bodies and other active runs lower the real number.
+The Load shape tab shows a rough estimate of how many VUs the Bencho host can run: 80% of its free memory at 5 MB per VU, the high end of k6's guidance for simple tests (`GET /api/v1/capacity`). Long flows, large bodies and other active runs lower the real number. In Docker, free memory is what Docker gives the backend container: the Docker Desktop VM's memory (Settings → Resources) or a `mem_limit`, not the host's.
 
 ## Security
 
