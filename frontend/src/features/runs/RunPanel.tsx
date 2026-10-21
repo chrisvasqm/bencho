@@ -45,7 +45,6 @@ const PERCENTILES = ['p50', 'p90', 'p95', 'p99'] as const;
 const LoadShapeChart = lazy(() => import('./LoadShapeChart.tsx'));
 // Mirrors the backend limits so the user sees which field to fix.
 const MAX_RUN_SECONDS = 3600;
-const MAX_VIRTUAL_USERS = 1000;
 const MAX_STAGES = 20;
 const FORM_ID = 'run-form';
 
@@ -69,10 +68,10 @@ function validate(input: CreateRunInput, steps: StepDraft[]): Record<string, str
   const seconds = input.stages.map((stage) => durationToSeconds(stage.duration));
   if (seconds.some((value) => !Number.isFinite(value))) {
     errors.stages = 'Durations use k6 units: 10s, 1m, 1h30m';
-  } else if (input.stages.some((stage) => !Number.isInteger(stage.target) || stage.target < 0)) {
+  } else if (
+    input.stages.some((stage) => !Number.isSafeInteger(stage.target) || stage.target < 0)
+  ) {
     errors.stages = 'Virtual users must be a whole number of 0 or more';
-  } else if (input.stages.some((stage) => stage.target > MAX_VIRTUAL_USERS)) {
-    errors.stages = `Use at most ${MAX_VIRTUAL_USERS} virtual users per stage`;
   } else if (input.stages.length > MAX_STAGES) {
     errors.stages = `Use at most ${MAX_STAGES} stages`;
   } else if (seconds.reduce((total, value) => total + value, 0) > MAX_RUN_SECONDS) {
