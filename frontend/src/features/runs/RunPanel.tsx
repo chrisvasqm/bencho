@@ -13,7 +13,14 @@ import {
   Skeleton,
   Tabs,
 } from '../../components/ui/index.ts';
-import { EXPLAIN, RUN_TYPE_DESCRIPTIONS, RUN_TYPE_LABELS, durationToSeconds } from './format.ts';
+import {
+  EXPLAIN,
+  RUN_TYPE_DESCRIPTIONS,
+  RUN_TYPE_LABELS,
+  durationToSeconds,
+  peakUsers,
+} from './format.ts';
+import { CapacityHint } from './CapacityHint.tsx';
 import { StagesEditor } from './StagesEditor.tsx';
 import { toStageRow, type StageRow } from './stages.ts';
 import { FlowEditor } from './FlowEditor.tsx';
@@ -278,6 +285,7 @@ function RunPanelForm({
                   >
                     <StagesEditor stages={stages} onChange={setStages} />
                   </Field>
+                  <CapacityHint peakTarget={peakUsers(stages)} />
                   <Note title="How the load shape works">
                     <p className="m-0">
                       A virtual user (VU) is one simulated user. It runs the steps in the Flow tab

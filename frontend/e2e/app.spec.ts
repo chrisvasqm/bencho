@@ -47,6 +47,21 @@ test.describe('first load', () => {
       await expect(page.getByTestId(`stage-${count}-duration`)).toHaveCount(0);
     }
   });
+
+  test('shows a rough VU estimate and warns when the stages go above it', async ({ page }) => {
+    await openApp(page);
+    await page.getByTestId('panel-tab-shape').click();
+
+    await expect(page.getByTestId('capacity-estimate')).toContainText('Rough estimate');
+    await expect(page.getByTestId('capacity-warning')).toHaveCount(0);
+
+    // 1 billion VUs needs petabytes of memory at 5 MB each, so it is above any estimate.
+    await page.getByTestId('stage-0-target').fill('1000000000');
+    await expect(page.getByTestId('capacity-warning')).toBeVisible();
+
+    await page.getByTestId('stage-0-target').fill('1');
+    await expect(page.getByTestId('capacity-warning')).toHaveCount(0);
+  });
 });
 
 test.describe('theme', () => {

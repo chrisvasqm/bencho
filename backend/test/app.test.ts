@@ -60,6 +60,22 @@ describe('GET /api/v1/defaults', () => {
   });
 });
 
+describe('GET /api/v1/capacity', () => {
+  it('estimates virtual users from free memory at 5 MB each with 20% headroom', async () => {
+    const response = await app.request().get('/api/v1/capacity');
+
+    expect(response.status).toBe(200);
+    const { cpuCount, availableMemoryBytes, memoryPerVirtualUserBytes, estimatedVirtualUsers } =
+      response.body;
+    expect(cpuCount).toBeGreaterThan(0);
+    expect(availableMemoryBytes).toBeGreaterThan(0);
+    expect(memoryPerVirtualUserBytes).toBe(5 * 1024 * 1024);
+    expect(estimatedVirtualUsers).toBe(
+      Math.floor((availableMemoryBytes * 0.8) / memoryPerVirtualUserBytes),
+    );
+  });
+});
+
 describe('unknown routes and unreadable bodies', () => {
   it.each([
     ['GET', '/api/v1/nope'],
