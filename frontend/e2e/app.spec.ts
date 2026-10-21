@@ -66,6 +66,27 @@ test.describe('first load', () => {
   });
 });
 
+test.describe('load shape chart', () => {
+  test('puts time ticks on round steps that fit the stages', async ({ page }) => {
+    await openApp(page);
+    await page.getByTestId('panel-tab-shape').click();
+    await page.getByTestId('stage-0-duration').fill('2m');
+    await page.getByTestId('stage-1-duration').fill('13m');
+    await page.getByTestId('stage-2-duration').fill('1m30s');
+
+    // 16m30s in total: ticks every 5 minutes, not Recharts' own 4m10s steps.
+    const chart = page.getByTestId('load-shape-chart');
+    await expect(chart).toContainText('10m');
+    await expect(chart).toContainText('15m');
+    await expect(chart).not.toContainText('4m10s');
+
+    await page.getByTestId('stage-1-duration').fill('30s');
+    // 4m in total: ticks every minute.
+    await expect(chart).toContainText('3m');
+    await expect(chart).not.toContainText('5m');
+  });
+});
+
 test.describe('theme', () => {
   test('switches to dark and light and keeps the choice after a reload', async ({ page }) => {
     await openApp(page);

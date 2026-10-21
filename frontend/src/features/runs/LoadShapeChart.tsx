@@ -10,6 +10,9 @@ export default function LoadShapeChart({ stages, mode }: { stages: Stage[]; mode
     <LineChart
       title={`Planned ${label.toLowerCase()}`}
       data={plannedShape(stages)}
+      xTime
+      curve="linear"
+      testId="load-shape-chart"
       xKey="second"
       series={[{ key: 'virtualUsers', label, color: 'var(--series-1)' }]}
       formatX={formatSeconds}

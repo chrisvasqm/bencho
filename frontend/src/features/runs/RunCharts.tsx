@@ -45,6 +45,7 @@ export function RunCharts({ run }: { run: Run }) {
     data,
     xKey: 'second' as const,
     formatX: formatSeconds,
+    xTime: true,
     loading: points.isPending,
     empty,
   };

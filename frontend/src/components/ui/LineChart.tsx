@@ -41,8 +41,16 @@ export interface LineChartProps<Row> {
   minYStep?: number;
   /** Whole-number x values only (such as seconds). */
   integerX?: boolean;
+  /**
+   * x values are seconds, rows sorted by them: ticks fall on round time steps (10s, 1m, 5m, 1h)
+   * that fit the range.
+   */
+  xTime?: boolean;
+  /** 'linear' draws straight segments, for data that is linear between points (a plan). */
+  curve?: 'monotone' | 'linear';
   loading?: boolean;
   empty?: string;
+  testId?: string;
 }
 
 const tick = { fill: 'var(--fg-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' };
@@ -58,11 +66,18 @@ export function LineChart<Row extends object>({
   height = 220,
   integerY = false,
   integerX = false,
+  xTime = false,
+  curve = 'monotone',
   minYStep = 0,
   loading,
   empty = 'No data yet.',
+  testId,
 }: LineChartProps<Row>) {
   const showLegend = series.length > 1;
+  const xTicks =
+    xTime && xType === 'number'
+      ? timeTicks(numberAt(data[0], xKey), numberAt(data[data.length - 1], xKey))
+      : undefined;
   // The y axis uses this exact scale, so label spacing can be measured in pixels.
   const yTicks = niceTicks(seriesMax(data, series), integerY, minYStep);
   const yMax = yTicks[yTicks.length - 1] ?? 1;
@@ -84,7 +99,7 @@ export function LineChart<Row extends object>({
       .map((item) => item.label.length * 7 + 10),
   );
   return (
-    <figure className="m-0 flex min-w-0 flex-col gap-2">
+    <figure className="m-0 flex min-w-0 flex-col gap-2" data-testid={testId}>
       <figcaption className="text-sm font-medium text-fg">{title}</figcaption>
       {loading ? (
         <div style={{ height }}>
@@ -116,6 +131,9 @@ export function LineChart<Row extends object>({
                 minTickGap={24}
                 height={X_AXIS_HEIGHT_PX}
                 allowDecimals={!integerX}
+                // On a narrow chart Recharts still drops ticks that would overlap (minTickGap);
+                // the ones left stay round.
+                ticks={xTicks}
               />
               <YAxis
                 tick={tick}
@@ -152,7 +170,7 @@ export function LineChart<Row extends object>({
               {series.map((line) => (
                 <Line
                   key={line.key}
-                  type="monotone"
+                  type={curve}
                   dataKey={line.key}
                   name={line.label}
                   stroke={line.color}
@@ -210,6 +228,25 @@ function seriesMax<Row>(data: Row[], series: ReadonlyArray<LineSeries<Row>>): nu
     for (const row of data) max = Math.max(max, numberAt(row, line.key) ?? 0);
   }
   return max;
+}
+
+// Round time steps in seconds, so a time axis reads 5m, 10m, 15m and never 4m10s.
+const TIME_STEPS_SECONDS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200];
+const MAX_TIME_TICKS = 6;
+
+/**
+ * Ticks on the smallest round time step that keeps the range to about six, inside the range from
+ * the first to the last row (rows are sorted by time; a run's first point may come after 0).
+ * Undefined, so Recharts picks its own, when the range is under 2 seconds or too long for the steps.
+ */
+function timeTicks(min: number | undefined, max: number | undefined): number[] | undefined {
+  if (min === undefined || max === undefined || !(max - min >= 2)) return undefined;
+  // Up to MAX_TIME_TICKS intervals, so a range just past a round number keeps its finer step.
+  const step = TIME_STEPS_SECONDS.find((candidate) => (max - min) / candidate <= MAX_TIME_TICKS);
+  if (step === undefined) return undefined;
+  const first = Math.ceil(min / step - 1e-9) * step;
+  const count = Math.floor((max - first) / step + 1e-9);
+  return Array.from({ length: count + 1 }, (_value, index) => first + index * step);
 }
 
 /**
