@@ -329,6 +329,7 @@ function RunPanelForm({
                       htmlFor="max-virtual-users"
                       hint="k6 adds VUs up to this number to keep the rate. Past it, flow runs are dropped."
                       error={errors.maxVirtualUsers}
+                      errorTestId="max-virtual-users-error"
                     >
                       <Input
                         id="max-virtual-users"

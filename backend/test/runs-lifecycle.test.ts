@@ -85,6 +85,21 @@ describe('run lifecycle', () => {
     expect(run.summary.metrics.vus_max.max).toBe(2);
   });
 
+  it('fails a rate run that drops more flow runs than the error limit allows', async () => {
+    // 0 → 20 runs per second plans 20 runs; 1 VU with 1 s think time manages about 2.
+    const run = await runToEnd(
+      shortRunPayload({
+        mode: 'rate',
+        maxVirtualUsers: 1,
+        thinkTimeSeconds: 1,
+        stages: [{ duration: '2s', target: 20 }],
+      }),
+    );
+
+    expect(run).toMatchObject({ status: 'failed', exitCode: 99, errorMessage: null });
+    expect(run.summary.metrics.dropped_iterations.count).toBeGreaterThan(10);
+  });
+
   // Up to 20 s until the first points, then up to k6's 10 s stop grace: more than the default.
   it('stops a live k6 run gracefully and records it as stopped', { timeout: 45_000 }, async () => {
     const created = await app.request().post('/api/v1/runs').send(longRunPayload());

@@ -21,6 +21,14 @@ function parseStage(entry: string): Stage {
   return { duration, target: virtualUsers };
 }
 
+function maxVirtualUsersFromEnv(): number {
+  const value = numberFromEnv('MAX_VUS', DEFAULT_MAX_VIRTUAL_USERS);
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`MAX_VUS must be a whole number of 1 or more, got "${__ENV.MAX_VUS}"`);
+  }
+  return value;
+}
+
 /** STAGES="30s:10,1m:10,30s:0" replaces the test's default load shape. */
 export function stagesFromEnv(defaultStages: Stage[]): Stage[] {
   const raw = __ENV.STAGES;
@@ -33,7 +41,7 @@ export const config = {
   baseUrl: __ENV.BASE_URL || 'http://localhost:10001',
   /** MODE=rate starts a fixed number of flow runs per second; anything else ramps VUs. */
   mode: __ENV.MODE === 'rate' ? ('rate' as const) : ('users' as const),
-  maxVirtualUsers: numberFromEnv('MAX_VUS', DEFAULT_MAX_VIRTUAL_USERS),
+  maxVirtualUsers: maxVirtualUsersFromEnv(),
   thinkTimeSeconds: numberFromEnv('THINK_TIME_SECONDS', thinkTimeSeconds),
   maxErrorRate: numberFromEnv('MAX_ERROR_RATE', maxErrorRate),
   latencyLimitsMs: {

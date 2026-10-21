@@ -43,7 +43,7 @@ export const TARGET_LABELS: Record<LoadMode, string> = {
 
 const TARGET_UNITS: Record<LoadMode, string> = { users: ' VUs', rate: '/s' };
 
-export function formatStages(stages: Stage[], mode: LoadMode = 'users'): string {
+export function formatStages(stages: Stage[], mode: LoadMode): string {
   return stages
     .map((stage) => `${stage.duration} → ${stage.target}${TARGET_UNITS[mode]}`)
     .join(', ');
@@ -51,6 +51,11 @@ export function formatStages(stages: Stage[], mode: LoadMode = 'users'): string 
 
 export function peakUsers(stages: Stage[]): number {
   return Math.max(0, ...stages.map((stage) => stage.target));
+}
+
+/** The largest stage target with its unit: "20 VUs", or "50/s" for a rate run. */
+export function formatPeak(run: Pick<Run, 'stages' | 'mode'>): string {
+  return `${peakUsers(run.stages)}${TARGET_UNITS[run.mode]}`;
 }
 
 export function formatMs(value: number | undefined): string {
@@ -121,5 +126,5 @@ export const EXPLAIN = {
     'A percentile of the response time. A p95 of 300 ms means 95 of every 100 requests took 300 ms or less; the slowest 5 took longer.',
   errorRate: 'Error rate is the share of requests that did not get the status their step expects.',
   failRule:
-    'A run fails when any latency value reaches its limit (each must stay below it), when the error rate reaches the maximum, or when 99% or fewer of the checks pass. Checks confirm that each step got its expected status and saved its values, so a run can fail with a 0% error rate.',
+    'A run fails when any latency value reaches its limit (each must stay below it), when the error rate reaches the maximum, or when 99% or fewer of the checks pass. Checks confirm that each step got its expected status and saved its values, so a run can fail with a 0% error rate. A rate run also fails when it drops more of its planned flow runs than the max error rate allows.',
 } as const;

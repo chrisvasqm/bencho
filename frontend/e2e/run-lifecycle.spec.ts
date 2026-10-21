@@ -54,6 +54,31 @@ test('a rate run sends its rate and VU cap and passes', async ({ page }) => {
   await expect(page.getByTestId('run-rate-cap')).toBeVisible();
 });
 
+test('a rate run that cannot keep its rate fails and shows the dropped runs', async ({ page }) => {
+  await setSingleStage(page, '2s');
+  await page.getByTestId('stage-0-target').fill('20');
+  await page.getByTestId('load-mode-rate').click();
+  await page.getByTestId('max-virtual-users').fill('1');
+  await setLooseLimits(page);
+  await page.getByTestId('think-time').fill('1');
+
+  await startRun(page);
+
+  await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'failed');
+  await expect(page.getByTestId('run-dropped')).toBeVisible();
+});
+
+test('refuses a VU cap below 1 without starting a run', async ({ page }) => {
+  await page.getByTestId('panel-tab-shape').click();
+  await page.getByTestId('load-mode-rate').click();
+  await page.getByTestId('max-virtual-users').fill('0');
+
+  await page.getByTestId('start-run').click();
+
+  await expect(page.getByTestId('max-virtual-users-error')).toBeVisible();
+  await expect(page.getByTestId('run-row')).toHaveCount(0);
+});
+
 test('a run in progress can be stopped after a confirm', async ({ page }) => {
   await setSingleStage(page, '1m');
   await setLooseLimits(page);
