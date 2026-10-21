@@ -25,6 +25,8 @@ Stop with `docker compose down` (add `-v` to delete stored runs).
 
 Each run counts its stage targets as virtual users (k6 `ramping-vus`) or as a rate of flow runs started per second (k6 `ramping-arrival-rate`, with a max VUs cap; default 100). A rate run keeps its rate as the server slows down, and reports the flow runs it dropped when every allowed VU was busy.
 
+When the load shape removes a VU, or the last stage ends, a VU may finish its flow run during the grace period (Limits tab, default 30 s, 0–300 s; k6 `gracefulRampDown` and `gracefulStop`). After that, k6 cuts it off.
+
 Limits: 20 stages, 60 minutes per run, 3 runs at a time. A run passes when error rate, p50/p90/p95/p99 latency and check pass rate (above 99%) all hold.
 
 The Load shape tab shows a rough estimate of how many VUs the Bencho host can run: 80% of its free memory at 5 MB per VU, the high end of k6's guidance for simple tests (`GET /api/v1/capacity`). Long flows, other active runs and large response bodies of steps that extract values lower the real number; Bencho discards all other response bodies. On Docker Desktop, free memory comes from Docker's memory limit (Settings → Resources → Advanced → Memory limit), which all running containers share, not the host's; a `mem_limit` on the backend container lowers it too. With Docker Engine on Linux and no `mem_limit`, it is the host's free memory.

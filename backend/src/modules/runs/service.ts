@@ -98,6 +98,7 @@ export class RunsService {
         flow: input.flow ?? DEFAULT_FLOW,
         limits: {
           thinkTimeSeconds: input.thinkTimeSeconds ?? DEFAULT_LIMITS.thinkTimeSeconds,
+          gracePeriodSeconds: input.gracePeriodSeconds ?? DEFAULT_LIMITS.gracePeriodSeconds,
           maxErrorRate: input.maxErrorRate ?? DEFAULT_LIMITS.maxErrorRate,
           latencyLimitsMs: input.latencyLimitsMs ?? DEFAULT_LIMITS.latencyLimitsMs,
         },
@@ -317,7 +318,7 @@ export class RunsService {
       consolePath,
     }: { summaryPath: string; pointsPath: string; flowPath: string; consolePath: string },
   ): Promise<{ exitCode: number; stderr: string }> {
-    const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs } = run.limits;
+    const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs, gracePeriodSeconds } = run.limits;
     // Only what k6 needs: the child must not inherit DATABASE_URL or other secrets.
     const env = {
       PATH: process.env.PATH,
@@ -328,6 +329,10 @@ export class RunsService {
       ...(run.maxVirtualUsers === null ? {} : { MAX_VUS: String(run.maxVirtualUsers) }),
       FLOW_PATH: flowPath,
       THINK_TIME_SECONDS: String(thinkTimeSeconds),
+      // Runs stored before the setting existed use k6's default (config.ts).
+      ...(gracePeriodSeconds === undefined
+        ? {}
+        : { GRACE_PERIOD_SECONDS: String(gracePeriodSeconds) }),
       MAX_ERROR_RATE: String(maxErrorRate),
       P50_MS: String(latencyLimitsMs.p50),
       P90_MS: String(latencyLimitsMs.p90),

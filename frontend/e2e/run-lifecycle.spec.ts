@@ -93,6 +93,31 @@ test('a failed run shows a sample of the failed responses', async ({ page }) => 
   await expect(page.getByTestId('run-failure')).toContainText('status 200, expected 418');
 });
 
+test('a run sends the grace period from the Limits tab', async ({ page }) => {
+  await setSingleStage(page, '1s');
+  await setLooseLimits(page);
+  await page.getByTestId('grace-period').fill('0');
+  const post = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith('/api/v1/runs'),
+  );
+
+  await startRun(page);
+
+  const body = (await post).postDataJSON() as { gracePeriodSeconds: number };
+  expect(body.gracePeriodSeconds).toBe(0);
+  await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
+});
+
+test('refuses a grace period over 5 minutes without starting a run', async ({ page }) => {
+  await page.getByTestId('panel-tab-limits').click();
+  await page.getByTestId('grace-period').fill('301');
+
+  await page.getByTestId('start-run').click();
+
+  await expect(page.getByTestId('grace-period-error')).toBeVisible();
+  await expect(page.getByTestId('run-row')).toHaveCount(0);
+});
+
 test('a run in progress can be stopped after a confirm', async ({ page }) => {
   await setSingleStage(page, '1m');
   await setLooseLimits(page);

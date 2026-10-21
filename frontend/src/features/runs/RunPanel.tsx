@@ -53,6 +53,7 @@ const ERROR_TAB: Record<string, PanelTab> = {
   stages: 'shape',
   maxVirtualUsers: 'shape',
   thinkTime: 'limits',
+  gracePeriod: 'limits',
   maxErrorRate: 'limits',
   latency: 'limits',
 };
@@ -64,6 +65,7 @@ const LoadShapeChart = lazy(() => import('./LoadShapeChart.tsx'));
 // Mirrors the backend limits so the user sees which field to fix.
 const MAX_RUN_SECONDS = 3600;
 const MAX_STAGES = 20;
+const MAX_GRACE_PERIOD_SECONDS = 300;
 const FORM_ID = 'run-form';
 
 function validate(input: CreateRunInput, steps: StepDraft[]): Record<string, string> {
@@ -103,6 +105,13 @@ function validate(input: CreateRunInput, steps: StepDraft[]): Record<string, str
   }
   if (!Number.isFinite(input.thinkTimeSeconds) || input.thinkTimeSeconds < 0) {
     errors.thinkTime = 'Use a number of seconds, 0 or more';
+  }
+  if (
+    !Number.isSafeInteger(input.gracePeriodSeconds) ||
+    input.gracePeriodSeconds < 0 ||
+    input.gracePeriodSeconds > MAX_GRACE_PERIOD_SECONDS
+  ) {
+    errors.gracePeriod = `Use a whole number of seconds from 0 to ${MAX_GRACE_PERIOD_SECONDS}`;
   }
   if (!Number.isFinite(input.maxErrorRate) || input.maxErrorRate < 0 || input.maxErrorRate > 1) {
     errors.maxErrorRate = 'Use a percentage between 0 and 100';
@@ -152,6 +161,7 @@ function RunPanelForm({
   const [shownErrorRevision, setShownErrorRevision] = useState(0);
   const markErrorShown = useCallback(() => setShownErrorRevision(submitCount), [submitCount]);
   const [thinkTime, setThinkTime] = useState(defaults.limits.thinkTimeSeconds);
+  const [gracePeriod, setGracePeriod] = useState(defaults.limits.gracePeriodSeconds);
   const [maxErrorPercent, setMaxErrorPercent] = useState(defaults.limits.maxErrorRate * 100);
   const [latency, setLatency] = useState(defaults.limits.latencyLimitsMs);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -179,6 +189,7 @@ function RunPanelForm({
       stages: stages.map(({ duration, target }) => ({ duration, target })),
       flow: flowSteps.map(fromDraft),
       thinkTimeSeconds: thinkTime,
+      gracePeriodSeconds: gracePeriod,
       maxErrorRate: maxErrorPercent / 100,
       latencyLimitsMs: latency,
     };
@@ -410,6 +421,26 @@ function RunPanelForm({
                       />
                     </Field>
                   </div>
+                  <Field
+                    label="Grace period"
+                    htmlFor="grace-period"
+                    hint="Seconds a user may finish its flow run after the load shape removes it, and after the last stage. Past this, k6 cuts the flow run off."
+                    error={errors.gracePeriod}
+                    errorTestId="grace-period-error"
+                  >
+                    <Input
+                      id="grace-period"
+                      data-testid="grace-period"
+                      mono
+                      type="number"
+                      min={0}
+                      max={MAX_GRACE_PERIOD_SECONDS}
+                      step={1}
+                      value={gracePeriod}
+                      onChange={(event) => setGracePeriod(Number(event.target.value))}
+                      invalid={Boolean(errors.gracePeriod)}
+                    />
+                  </Field>
                   <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
                     <legend className="mb-1.5 text-sm font-medium text-fg">
                       Latency limits (ms)

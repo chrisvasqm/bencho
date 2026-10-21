@@ -100,6 +100,25 @@ describe('run lifecycle', () => {
     expect(run.summary.metrics.dropped_iterations.count).toBeGreaterThan(10);
   });
 
+  it('cuts flow runs off after the grace period once the stages end', async () => {
+    // Each flow run waits 8 s after its request; with no grace k6 stops when the 3 s of stages
+    // end, where the default 30 s grace would wait for the flow run to finish.
+    const run = await runToEnd(
+      shortRunPayload({
+        stages: [
+          { duration: '1s', target: 1 },
+          { duration: '2s', target: 1 },
+        ],
+        thinkTimeSeconds: 8,
+        gracePeriodSeconds: 0,
+      }),
+    );
+
+    const seconds = (Date.parse(run.finishedAt) - Date.parse(run.startedAt)) / 1000;
+    expect(run.limits.gracePeriodSeconds).toBe(0);
+    expect(seconds).toBeLessThan(7);
+  });
+
   // Up to 20 s until the first points, then up to k6's 10 s stop grace: more than the default.
   it('stops a live k6 run gracefully and records it as stopped', { timeout: 45_000 }, async () => {
     const created = await app.request().post('/api/v1/runs').send(longRunPayload());
