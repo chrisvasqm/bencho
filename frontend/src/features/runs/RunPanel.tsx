@@ -68,7 +68,9 @@ function validate(input: CreateRunInput, steps: StepDraft[]): Record<string, str
   const seconds = input.stages.map((stage) => durationToSeconds(stage.duration));
   if (seconds.some((value) => !Number.isFinite(value))) {
     errors.stages = 'Durations use k6 units: 10s, 1m, 1h30m';
-  } else if (input.stages.some((stage) => !Number.isSafeInteger(stage.target) || stage.target < 0)) {
+  } else if (
+    input.stages.some((stage) => !Number.isSafeInteger(stage.target) || stage.target < 0)
+  ) {
     errors.stages = 'Virtual users must be a whole number of 0 or more';
   } else if (input.stages.length > MAX_STAGES) {
     errors.stages = `Use at most ${MAX_STAGES} stages`;
