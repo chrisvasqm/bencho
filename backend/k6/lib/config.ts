@@ -44,13 +44,24 @@ function maxVirtualUsersFromEnv(): number {
   return value;
 }
 
+/** Whole seconds, so k6 gets a duration such as 30s, as the API allows. */
+function gracePeriodFromEnv(): number {
+  const value = numberFromEnv('GRACE_PERIOD_SECONDS', gracePeriodSeconds);
+  if (!Number.isInteger(value)) {
+    throw new Error(
+      `GRACE_PERIOD_SECONDS must be whole seconds, got "${__ENV.GRACE_PERIOD_SECONDS}"`,
+    );
+  }
+  return value;
+}
+
 /** STAGES="30s:10,1m:10,30s:0" replaces the test's default load shape. */
 export function stagesFromEnv(defaultStages: Stage[]): Stage[] {
   const raw = __ENV.STAGES;
   return raw ? raw.split(',').map(parseStage) : defaultStages;
 }
 
-const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs } = DEFAULT_LIMITS;
+const { thinkTimeSeconds, gracePeriodSeconds, maxErrorRate, latencyLimitsMs } = DEFAULT_LIMITS;
 
 export const config = {
   baseUrl: __ENV.BASE_URL || 'http://localhost:10001',
@@ -58,6 +69,7 @@ export const config = {
   /** Read only in rate mode, so a stray MAX_VUS never breaks a users run. */
   maxVirtualUsers: modeFromEnv() === 'rate' ? maxVirtualUsersFromEnv() : DEFAULT_MAX_VIRTUAL_USERS,
   thinkTimeSeconds: numberFromEnv('THINK_TIME_SECONDS', thinkTimeSeconds),
+  gracePeriodSeconds: gracePeriodFromEnv(),
   maxErrorRate: numberFromEnv('MAX_ERROR_RATE', maxErrorRate),
   latencyLimitsMs: {
     p50: numberFromEnv('P50_MS', latencyLimitsMs.p50),

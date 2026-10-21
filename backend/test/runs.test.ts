@@ -200,6 +200,12 @@ describe('POST /api/v1/runs', () => {
       expect((await app.repository.findById(id))?.flow[0]?.headers).toEqual(headers);
     });
 
+    it('stores the grace period', async () => {
+      const response = await createRun(runPayload({ gracePeriodSeconds: 0 }));
+
+      expect(response.body.run.limits.gracePeriodSeconds).toBe(0);
+    });
+
     it('fills limits left out with the defaults', async () => {
       const response = await createRun(runPayload({ maxErrorRate: 0.2 }));
 
@@ -317,6 +323,9 @@ describe('POST /api/v1/runs', () => {
       ['a negative target', runPayload({ stages: [{ duration: '1s', target: -1 }] })],
       ['a fractional target', runPayload({ stages: [{ duration: '1s', target: 1.5 }] })],
       ['a negative think time', runPayload({ thinkTimeSeconds: -1 })],
+      ['a negative grace period', runPayload({ gracePeriodSeconds: -1 })],
+      ['a grace period over 5 minutes', runPayload({ gracePeriodSeconds: 301 })],
+      ['a fractional grace period', runPayload({ gracePeriodSeconds: 1.5 })],
       ['an error rate over 1', runPayload({ maxErrorRate: 1.1 })],
       ['a negative error rate', runPayload({ maxErrorRate: -0.1 })],
       ['a latency limit of 0', runPayload({ latencyLimitsMs: { p50: 0, p90: 1, p95: 1, p99: 1 } })],

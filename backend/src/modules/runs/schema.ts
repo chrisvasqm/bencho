@@ -118,6 +118,7 @@ export type NewRun = typeof runs.$inferInsert;
 
 export const MAX_STAGES = 20;
 export const MAX_RUN_SECONDS = 3600;
+export const MAX_GRACE_PERIOD_SECONDS = 300;
 
 const stageSchema = z.object({
   duration: z.string().regex(DURATION_PATTERN, 'Use a k6 duration such as 30s or 1m'),
@@ -193,6 +194,7 @@ export const createRunSchema = z
       .optional(),
     flow: flowSchema.optional(),
     thinkTimeSeconds: z.number().min(0).optional(),
+    gracePeriodSeconds: z.number().int().min(0).max(MAX_GRACE_PERIOD_SECONDS).optional(),
     maxErrorRate: z.number().min(0).max(1).optional(),
     latencyLimitsMs: z
       .object({ p50: positiveMs, p90: positiveMs, p95: positiveMs, p99: positiveMs })

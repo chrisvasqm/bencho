@@ -27,7 +27,23 @@ export function buildOptions(defaultStages: Stage[]): Options {
     // Saves VU memory. Default for any request; scenario.ts sets responseType per step (text to extract).
     discardResponseBodies: true,
   };
-  if (config.mode === 'users') return { ...common, stages };
+  // How long a VU may finish its flow run once the shape removes it, or once the stages end.
+  const grace = `${config.gracePeriodSeconds}s`;
+  if (config.mode === 'users') {
+    return {
+      ...common,
+      scenarios: {
+        users: {
+          executor: 'ramping-vus',
+          // Same start as k6's `stages` shortcut this scenario replaces (its default vus is 1).
+          startVUs: 1,
+          stages,
+          gracefulRampDown: grace,
+          gracefulStop: grace,
+        },
+      },
+    };
+  }
   const { maxVirtualUsers } = config;
   // A rate run that cannot keep its rate fails: the share of planned runs dropped must stay
   // below the max error rate, like the share of failed requests. No drops always passes.
@@ -44,6 +60,7 @@ export function buildOptions(defaultStages: Stage[]): Options {
         // All VUs up front, like users mode: VUs added mid-run start late and cause drops.
         preAllocatedVUs: maxVirtualUsers,
         maxVUs: maxVirtualUsers,
+        gracefulStop: grace,
       },
     },
   };

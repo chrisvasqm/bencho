@@ -23,6 +23,8 @@ export type LatencyLimitsMs = z.infer<typeof latencyLimitsSchema>;
 
 const limitsSchema = z.object({
   thinkTimeSeconds: z.number(),
+  // Runs stored before the setting existed ran with k6's default of 30 s.
+  gracePeriodSeconds: z.number().default(30),
   maxErrorRate: z.number(),
   latencyLimitsMs: latencyLimitsSchema,
 });
@@ -147,6 +149,7 @@ export interface CreateRunInput {
   maxVirtualUsers?: number;
   flow: FlowStep[];
   thinkTimeSeconds: number;
+  gracePeriodSeconds: number;
   maxErrorRate: number;
   latencyLimitsMs: LatencyLimitsMs;
 }

@@ -135,7 +135,7 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
             {run.flow.map((step) => step.name).join(' → ')}
           </span>
           <span className="text-xs text-fg-muted">
-            think time {run.limits.thinkTimeSeconds}s
+            think time {run.limits.thinkTimeSeconds}s, grace {run.limits.gracePeriodSeconds}s
             {run.flow.some((step) => step.wait) && ', some steps wait their own range'}
           </span>
           {elapsed !== undefined && (

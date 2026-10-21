@@ -26,14 +26,21 @@ export interface LatencyLimitsMs {
 
 export interface RunLimits {
   thinkTimeSeconds: number;
+  /**
+   * Seconds a VU may finish its flow run after the shape removes it, and after the last stage.
+   * Optional: runs stored before this setting existed do not have it.
+   */
+  gracePeriodSeconds?: number;
   maxErrorRate: number;
   latencyLimitsMs: LatencyLimitsMs;
 }
 
 export const DURATION_PATTERN = /^(\d+(ms|s|m|h))+$/;
 
-export const DEFAULT_LIMITS: RunLimits = {
+export const DEFAULT_LIMITS: Required<RunLimits> = {
   thinkTimeSeconds: 1,
+  // k6's own default for gracefulRampDown and gracefulStop.
+  gracePeriodSeconds: 30,
   maxErrorRate: 0.01,
   latencyLimitsMs: { p50: 200, p90: 400, p95: 500, p99: 1000 },
 };
