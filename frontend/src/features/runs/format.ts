@@ -113,17 +113,15 @@ export function plannedShape(stages: Stage[]): PlannedPoint[] {
 }
 
 export function formatSeconds(value: number | string): string {
-  const seconds = Number(value);
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds >= 3600) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const rest = Math.round(seconds % 60);
-    return `${hours}h${minutes ? `${minutes}m` : ''}${rest ? `${rest}s` : ''}`;
-  }
-  const minutes = Math.floor(seconds / 60);
-  const rest = Math.round(seconds % 60);
-  return rest ? `${minutes}m${rest}s` : `${minutes}m`;
+  if (Number(value) < 60) return `${Number(value)}s`;
+  // Round once, so 3599.6 s reads 1h and never 59m60s.
+  const seconds = Math.round(Number(value));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const rest = seconds % 60;
+  if (hours === 0) return rest ? `${minutes}m${rest}s` : `${minutes}m`;
+  if (rest) return `${hours}h${minutes}m${rest}s`;
+  return minutes ? `${hours}h${minutes}m` : `${hours}h`;
 }
 
 // Plain-language explanations shared by the inline notes, so the wording stays the same everywhere.

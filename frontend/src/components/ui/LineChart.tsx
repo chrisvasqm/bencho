@@ -74,9 +74,10 @@ export function LineChart<Row extends object>({
   testId,
 }: LineChartProps<Row>) {
   const showLegend = series.length > 1;
-  const xTicks = xTime
-    ? timeTicks(numberAt(data[0], xKey), numberAt(data[data.length - 1], xKey))
-    : undefined;
+  const xTicks =
+    xTime && xType === 'number'
+      ? timeTicks(numberAt(data[0], xKey), numberAt(data[data.length - 1], xKey))
+      : undefined;
   // The y axis uses this exact scale, so label spacing can be measured in pixels.
   const yTicks = niceTicks(seriesMax(data, series), integerY, minYStep);
   const yMax = yTicks[yTicks.length - 1] ?? 1;
@@ -240,9 +241,8 @@ const MAX_TIME_TICKS = 6;
  */
 function timeTicks(min: number | undefined, max: number | undefined): number[] | undefined {
   if (min === undefined || max === undefined || !(max - min >= 2)) return undefined;
-  const step = TIME_STEPS_SECONDS.find(
-    (candidate) => (max - min) / candidate <= MAX_TIME_TICKS - 1,
-  );
+  // Up to MAX_TIME_TICKS intervals, so a range just past a round number keeps its finer step.
+  const step = TIME_STEPS_SECONDS.find((candidate) => (max - min) / candidate <= MAX_TIME_TICKS);
   if (step === undefined) return undefined;
   const first = Math.ceil(min / step - 1e-9) * step;
   const count = Math.floor((max - first) / step + 1e-9);
