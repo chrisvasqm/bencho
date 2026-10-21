@@ -106,13 +106,12 @@ export const runPoints = pgTable(
 export type RunPoint = typeof runPoints.$inferSelect;
 export type NewRun = typeof runs.$inferInsert;
 
-export const MAX_VIRTUAL_USERS = 1000;
 export const MAX_STAGES = 20;
 export const MAX_RUN_SECONDS = 3600;
 
 const stageSchema = z.object({
   duration: z.string().regex(DURATION_PATTERN, 'Use a k6 duration such as 30s or 1m'),
-  target: z.number().int().min(0).max(MAX_VIRTUAL_USERS),
+  target: z.number().int().min(0),
 });
 
 const positiveMs = z.number().int().positive();
