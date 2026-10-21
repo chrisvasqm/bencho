@@ -4,7 +4,7 @@ import { createApp } from '../src/app.ts';
 import { connectDatabase, pingDatabase } from '../src/core/db.ts';
 import { RunsRepository } from '../src/modules/runs/repository.ts';
 import { RunsService } from '../src/modules/runs/service.ts';
-import { DEFAULT_LIMITS, DEFAULT_STAGES } from '../k6/lib/defaults.ts';
+import { DEFAULT_LIMITS, DEFAULT_MAX_VIRTUAL_USERS, DEFAULT_STAGES } from '../k6/lib/defaults.ts';
 import { DEFAULT_FLOW } from '../k6/lib/flow.ts';
 import { expectError, useTestApp } from './helpers/test-app.ts';
 
@@ -41,13 +41,14 @@ describe('GET /api/v1/health', () => {
 });
 
 describe('GET /api/v1/defaults', () => {
-  it('returns the configured target and the default stages, limits and flow', async () => {
+  it('returns the configured target and the default stages, VU cap, limits and flow', async () => {
     const response = await app.request().get('/api/v1/defaults');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       baseUrl: app.k6.defaultBaseUrl,
       stages: DEFAULT_STAGES,
+      maxVirtualUsers: DEFAULT_MAX_VIRTUAL_USERS,
       limits: DEFAULT_LIMITS,
       flow: DEFAULT_FLOW,
     });

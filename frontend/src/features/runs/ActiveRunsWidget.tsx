@@ -9,7 +9,7 @@ import {
   STATUS_LABELS,
   STATUS_TONES,
   durationToSeconds,
-  peakUsers,
+  formatPeak,
 } from './format.ts';
 
 const ACTIVE_POLL_MS = 2000;
@@ -97,9 +97,7 @@ export function ActiveRunsWidget({ anchorRef, onOpen }: ActiveRunsWidgetProps) {
                         {STATUS_LABELS[run.status]}
                       </Badge>
                       <span className="font-medium text-fg">{RUN_TYPE_LABELS[run.type]}</span>
-                      <span className="text-fg-muted tabular-nums">
-                        {peakUsers(run.stages)} VUs
-                      </span>
+                      <span className="text-fg-muted tabular-nums">{formatPeak(run)}</span>
                       <span className="ml-auto text-xs text-fg-muted tabular-nums">
                         {formatClock(elapsed)} / {formatClock(planned)}
                       </span>

@@ -1,18 +1,50 @@
 // Builds k6 options for a test: its load shape plus the shared pass/fail limits from config.
 import type { Options, Stage } from 'k6/options';
 import { config, stagesFromEnv } from './config.ts';
+import { durationToSeconds } from './defaults.ts';
+
+/** Flow runs a rate shape plans in total: the area under its straight-line ramps, from 0. */
+function plannedRuns(stages: Stage[]): number {
+  let previous = 0;
+  let total = 0;
+  for (const stage of stages) {
+    total += ((previous + stage.target) / 2) * durationToSeconds(stage.duration);
+    previous = stage.target;
+  }
+  return total;
+}
 
 export function buildOptions(defaultStages: Stage[]): Options {
   const { p50, p90, p95, p99 } = config.latencyLimitsMs;
-  return {
-    stages: stagesFromEnv(defaultStages),
-    // Saves VU memory. Default for any request; scenario.ts sets responseType per step (text to extract).
-    discardResponseBodies: true,
+  const stages = stagesFromEnv(defaultStages);
+  const common: Options = {
     thresholds: {
       http_req_failed: [`rate<${config.maxErrorRate}`],
       http_req_duration: [`p(50)<${p50}`, `p(90)<${p90}`, `p(95)<${p95}`, `p(99)<${p99}`],
       checks: ['rate>0.99'],
     },
     summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
+    // Saves VU memory. Default for any request; scenario.ts sets responseType per step (text to extract).
+    discardResponseBodies: true,
+  };
+  if (config.mode === 'users') return { ...common, stages };
+  const { maxVirtualUsers } = config;
+  // A rate run that cannot keep its rate fails: the share of planned runs dropped must stay
+  // below the max error rate, like the share of failed requests. No drops always passes.
+  const allowedDrops = Math.max(1, plannedRuns(stages) * config.maxErrorRate);
+  return {
+    ...common,
+    thresholds: { ...common.thresholds, dropped_iterations: [`count<${allowedDrops}`] },
+    scenarios: {
+      rate: {
+        executor: 'ramping-arrival-rate',
+        startRate: 0,
+        timeUnit: '1s',
+        stages,
+        // All VUs up front, like users mode: VUs added mid-run start late and cause drops.
+        preAllocatedVUs: maxVirtualUsers,
+        maxVUs: maxVirtualUsers,
+      },
+    },
   };
 }

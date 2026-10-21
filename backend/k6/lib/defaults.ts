@@ -2,6 +2,16 @@
 export const RUN_TYPES = ['load', 'stress', 'spike'] as const;
 export type RunType = (typeof RUN_TYPES)[number];
 
+/**
+ * users: stage targets are virtual users (k6 ramping-vus).
+ * rate: stage targets are flow runs (iterations) started per second (k6 ramping-arrival-rate).
+ */
+export const LOAD_MODES = ['users', 'rate'] as const;
+export type LoadMode = (typeof LOAD_MODES)[number];
+
+/** Most VUs a rate run may add to keep its rate, when the run does not set its own. */
+export const DEFAULT_MAX_VIRTUAL_USERS = 100;
+
 export interface LoadStage {
   duration: string;
   target: number;

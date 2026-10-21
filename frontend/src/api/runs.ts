@@ -7,6 +7,9 @@ export type RunType = (typeof RUN_TYPES)[number];
 export const RUN_STATUSES = ['queued', 'running', 'passed', 'failed', 'error', 'stopped'] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
 
+export const LOAD_MODES = ['users', 'rate'] as const;
+export type LoadMode = (typeof LOAD_MODES)[number];
+
 const stageSchema = z.object({ duration: z.string(), target: z.number() });
 export type Stage = z.infer<typeof stageSchema>;
 
@@ -61,6 +64,8 @@ const summarySchema = z
           .object({ value: z.number(), passes: z.number(), fails: z.number() })
           .optional(),
         http_reqs: z.object({ count: z.number(), rate: z.number() }).optional(),
+        // Rate runs only: flow runs k6 skipped because every allowed VU was busy.
+        dropped_iterations: z.object({ count: z.number() }).optional(),
       })
       .loose(),
   })
@@ -71,7 +76,9 @@ const runSchema = z.object({
   id: z.string(),
   type: z.enum(RUN_TYPES),
   baseUrl: z.string(),
+  mode: z.enum(LOAD_MODES),
   stages: z.array(stageSchema),
+  maxVirtualUsers: z.number().nullable(),
   limits: limitsSchema,
   flow: z.array(flowStepSchema),
   status: z.enum(RUN_STATUSES),
@@ -107,6 +114,7 @@ export type RunsPage = z.infer<typeof runsPageSchema>;
 const defaultsSchema = z.object({
   baseUrl: z.string(),
   stages: z.record(z.enum(RUN_TYPES), z.array(stageSchema)),
+  maxVirtualUsers: z.number(),
   limits: limitsSchema,
   flow: z.array(flowStepSchema),
 });
@@ -123,7 +131,10 @@ export type Capacity = z.infer<typeof capacitySchema>;
 export interface CreateRunInput {
   type: RunType;
   baseUrl: string;
+  mode: LoadMode;
   stages: Stage[];
+  /** Rate runs only. */
+  maxVirtualUsers?: number;
   flow: FlowStep[];
   thinkTimeSeconds: number;
   maxErrorRate: number;

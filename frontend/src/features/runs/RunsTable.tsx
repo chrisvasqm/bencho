@@ -8,7 +8,7 @@ import {
   formatPercent,
   formatTime,
   isActive,
-  peakUsers,
+  formatPeak,
 } from './format.ts';
 
 export interface RunsTableProps {
@@ -32,7 +32,7 @@ const HEAD_HEIGHT_PX = 36;
 const HEADERS = [
   { label: 'Status' },
   { label: 'Target', wide: true },
-  { label: 'Peak VUs', right: true },
+  { label: 'Peak', right: true },
   { label: 'p95', right: true },
   { label: 'Errors', right: true },
   { label: 'Started', wide: true },
@@ -178,7 +178,9 @@ export function RunsTable({
                     <td className="hidden max-w-56 truncate px-3 py-0 sm:table-cell text-xs">
                       {run.baseUrl}
                     </td>
-                    <td className="px-3 py-0 text-right tabular-nums">{peakUsers(run.stages)}</td>
+                    <td className="px-3 py-0 text-right tabular-nums" data-testid="run-peak">
+                      {formatPeak(run)}
+                    </td>
                     <td className="px-3 py-0 text-right tabular-nums whitespace-nowrap">
                       {formatMs(run.summary?.metrics.http_req_duration?.['p(95)'])}
                     </td>
