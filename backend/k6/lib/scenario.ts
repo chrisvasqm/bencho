@@ -57,6 +57,8 @@ const flow: PreparedStep[] = Array.from(flowSteps, (step) => ({
   responseType: step.extract.length > 0 ? 'text' : 'none',
 }));
 
+const MAX_SHAPE_SOURCE_CHARS = 100_000;
+
 // Per VU (module state is per VU in k6): step, reason and status already reported. One body
 // per kind of failure and VU: bodies with request ids would otherwise all count as different.
 const reportedFailures = new Set<string>();
@@ -72,6 +74,8 @@ function jsonShape(value: unknown): unknown {
 
 /** What to store of a success response (2xx): it may hold tokens, so keys and no values. */
 function successBody(text: string): string {
+  // Parsing a huge body in every VU at once would load the load generator itself.
+  if (text.length > MAX_SHAPE_SOURCE_CHARS) return `(${text.length} characters)`;
   try {
     return JSON.stringify(jsonShape(JSON.parse(text)));
   } catch {

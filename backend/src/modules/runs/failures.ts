@@ -1,5 +1,6 @@
 // Reads the failure samples k6 writes to its console output (see k6/lib/failures.ts).
-import { open } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { createInterface } from 'node:readline';
 import {
   FAILURE_LOG_PREFIX,
   MAX_BODIES_PER_STATUS,
@@ -7,8 +8,6 @@ import {
   type FailureSample,
 } from '../../../k6/lib/failures.ts';
 
-/** Each VU logs at most one sample per step, reason and status; this caps huge runs. */
-const MAX_READ_BYTES = 2 * 1024 * 1024;
 const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
 const SAMPLE_PATTERN = new RegExp(`${FAILURE_LOG_PREFIX}([A-Za-z0-9+/=]+)`);
 
@@ -30,55 +29,40 @@ function decode(line: string): FailureSample | undefined {
   }
 }
 
-/** The start of the file, or '' when k6 never created it (it did not start). */
-async function readStart(path: string): Promise<string> {
-  let file;
-  try {
-    file = await open(path, 'r');
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return '';
-    throw error;
-  }
-  try {
-    const size = Math.min((await file.stat()).size, MAX_READ_BYTES);
-    const buffer = Buffer.alloc(size);
-    const { bytesRead } = await file.read(buffer, 0, size, 0);
-    // A line cut at the limit fails to decode and is skipped.
-    return buffer.subarray(0, bytesRead).toString('utf8');
-  } finally {
-    await file.close();
-  }
-}
-
 /**
  * Distinct failures across all VUs, in the order k6 logged them: at most MAX_BODIES_PER_STATUS
  * bodies per step, reason and status, and MAX_FAILURES_PER_STEP per step.
  */
 export async function readFailures(path: string): Promise<FailureSample[]> {
-  let text: string;
-  try {
-    text = await readStart(path);
-  } catch (error) {
-    // Samples only explain a run; failing to read them must not lose its outcome.
-    console.error('could not read k6 failure samples', error);
-    return [];
-  }
   const seen = new Set<string>();
   const perStatus = new Map<string, number>();
   const perStep = new Map<string, number>();
   const failures: FailureSample[] = [];
-  for (const sample of text.split('\n').map(decode)) {
-    if (!sample) continue;
+  const add = (sample: FailureSample) => {
     const statusKey = JSON.stringify([sample.step, sample.reason, sample.status]);
     const key = JSON.stringify([sample.step, sample.reason, sample.status, sample.body]);
     const statusCount = perStatus.get(statusKey) ?? 0;
     const stepCount = perStep.get(sample.step) ?? 0;
-    if (seen.has(key) || statusCount >= MAX_BODIES_PER_STATUS) continue;
-    if (stepCount >= MAX_FAILURES_PER_STEP) continue;
+    if (seen.has(key) || statusCount >= MAX_BODIES_PER_STATUS) return;
+    if (stepCount >= MAX_FAILURES_PER_STEP) return;
     seen.add(key);
     perStatus.set(statusKey, statusCount + 1);
     perStep.set(sample.step, stepCount + 1);
     failures.push(sample);
+  };
+  try {
+    // Line by line: a run with thousands of VUs can log many samples, and the later lines may be
+    // the only ones for some steps.
+    const lines = createInterface({ input: createReadStream(path), crlfDelay: Infinity });
+    for await (const line of lines) {
+      const sample = decode(line);
+      if (sample) add(sample);
+    }
+  } catch (error) {
+    // No file means k6 never started. Samples only explain a run; a read error must not lose it.
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      console.error('could not read k6 failure samples', error);
+    }
   }
   return failures;
 }

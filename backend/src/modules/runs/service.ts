@@ -205,8 +205,10 @@ export class RunsService {
       const { exitCode, stderr } = await this.withLivePoints(run.id, pointsPath, () =>
         this.spawnK6(run, { summaryPath, pointsPath, flowPath, consolePath }),
       );
-      const summary = await readSummary(summaryPath);
-      const failures = await readFailures(consolePath);
+      const [summary, failures] = await Promise.all([
+        readSummary(summaryPath),
+        readFailures(consolePath),
+      ]);
       const stopped = this.stopRequested.has(run.id);
       if (!stopped && exitCode === K6_ABORTED_EXIT_CODE) {
         // The scenario aborted on a refused target: an error of the run, not a failed threshold.
