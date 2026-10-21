@@ -37,7 +37,7 @@ export interface RunLimits {
 
 export const DURATION_PATTERN = /^(\d+(ms|s|m|h))+$/;
 
-export const DEFAULT_LIMITS: RunLimits = {
+export const DEFAULT_LIMITS: Required<RunLimits> = {
   thinkTimeSeconds: 1,
   // k6's own default for gracefulRampDown and gracefulStop.
   gracePeriodSeconds: 30,

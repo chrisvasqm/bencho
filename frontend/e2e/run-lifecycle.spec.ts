@@ -108,9 +108,9 @@ test('a run sends the grace period from the Limits tab', async ({ page }) => {
   await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
 });
 
-test('refuses a grace period over 5 minutes without starting a run', async ({ page }) => {
+test('refuses an empty grace period without starting a run', async ({ page }) => {
   await page.getByTestId('panel-tab-limits').click();
-  await page.getByTestId('grace-period').fill('301');
+  await page.getByTestId('grace-period').fill('');
 
   await page.getByTestId('start-run').click();
 

@@ -424,7 +424,7 @@ function RunPanelForm({
                   <Field
                     label="Grace period"
                     htmlFor="grace-period"
-                    hint="Seconds a user may finish its flow run after the load shape removes it, and after the last stage. Past this, k6 cuts the flow run off."
+                    hint="Seconds a user may finish its flow run after the last stage (and, with Users, when the load shape removes it). Past this, k6 cuts the flow run off."
                     error={errors.gracePeriod}
                     errorTestId="grace-period-error"
                   >
@@ -436,8 +436,13 @@ function RunPanelForm({
                       min={0}
                       max={MAX_GRACE_PERIOD_SECONDS}
                       step={1}
-                      value={gracePeriod}
-                      onChange={(event) => setGracePeriod(Number(event.target.value))}
+                      value={Number.isNaN(gracePeriod) ? '' : gracePeriod}
+                      // An empty field is not 0 seconds: NaN fails validation.
+                      onChange={(event) =>
+                        setGracePeriod(
+                          event.target.value === '' ? Number.NaN : Number(event.target.value),
+                        )
+                      }
                       invalid={Boolean(errors.gracePeriod)}
                     />
                   </Field>

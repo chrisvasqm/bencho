@@ -101,22 +101,22 @@ describe('run lifecycle', () => {
   });
 
   it('cuts flow runs off after the grace period once the stages end', async () => {
-    // Each flow run waits 8 s after its request; with no grace k6 stops when the 3 s of stages
-    // end, where the default 30 s grace would wait for the flow run to finish.
+    // Each flow run waits 20 s after its request; with no grace k6 stops when the 3 s of stages
+    // end, where the default 30 s grace would wait about 20 s for the flow run to finish.
     const run = await runToEnd(
       shortRunPayload({
         stages: [
           { duration: '1s', target: 1 },
           { duration: '2s', target: 1 },
         ],
-        thinkTimeSeconds: 8,
+        thinkTimeSeconds: 20,
         gracePeriodSeconds: 0,
       }),
     );
 
     const seconds = (Date.parse(run.finishedAt) - Date.parse(run.startedAt)) / 1000;
     expect(run.limits.gracePeriodSeconds).toBe(0);
-    expect(seconds).toBeLessThan(7);
+    expect(seconds).toBeLessThan(12);
   });
 
   // Up to 20 s until the first points, then up to k6's 10 s stop grace: more than the default.

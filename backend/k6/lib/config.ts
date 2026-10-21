@@ -50,8 +50,7 @@ export function stagesFromEnv(defaultStages: Stage[]): Stage[] {
   return raw ? raw.split(',').map(parseStage) : defaultStages;
 }
 
-const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs } = DEFAULT_LIMITS;
-const DEFAULT_GRACE_PERIOD_SECONDS = DEFAULT_LIMITS.gracePeriodSeconds ?? 30;
+const { thinkTimeSeconds, gracePeriodSeconds, maxErrorRate, latencyLimitsMs } = DEFAULT_LIMITS;
 
 export const config = {
   baseUrl: __ENV.BASE_URL || 'http://localhost:10001',
@@ -59,7 +58,7 @@ export const config = {
   /** Read only in rate mode, so a stray MAX_VUS never breaks a users run. */
   maxVirtualUsers: modeFromEnv() === 'rate' ? maxVirtualUsersFromEnv() : DEFAULT_MAX_VIRTUAL_USERS,
   thinkTimeSeconds: numberFromEnv('THINK_TIME_SECONDS', thinkTimeSeconds),
-  gracePeriodSeconds: numberFromEnv('GRACE_PERIOD_SECONDS', DEFAULT_GRACE_PERIOD_SECONDS),
+  gracePeriodSeconds: numberFromEnv('GRACE_PERIOD_SECONDS', gracePeriodSeconds),
   maxErrorRate: numberFromEnv('MAX_ERROR_RATE', maxErrorRate),
   latencyLimitsMs: {
     p50: numberFromEnv('P50_MS', latencyLimitsMs.p50),
