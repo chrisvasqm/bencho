@@ -125,7 +125,7 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
               {dropped > 0 && (
                 <span className="text-warning" data-testid="run-dropped">
                   {' '}
-                  · {dropped} flow runs dropped (all VUs busy)
+                  · {dropped} flow {dropped === 1 ? 'run' : 'runs'} dropped (all VUs busy)
                 </span>
               )}
             </span>

@@ -49,13 +49,13 @@ export function formatStages(stages: Stage[], mode: LoadMode): string {
     .join(', ');
 }
 
-export function peakUsers(stages: Stage[]): number {
+export function peakTarget(stages: Stage[]): number {
   return Math.max(0, ...stages.map((stage) => stage.target));
 }
 
 /** The largest stage target with its unit: "20 VUs", or "50/s" for a rate run. */
 export function formatPeak(run: Pick<Run, 'stages' | 'mode'>): string {
-  return `${peakUsers(run.stages)}${TARGET_UNITS[run.mode]}`;
+  return `${peakTarget(run.stages)}${TARGET_UNITS[run.mode]}`;
 }
 
 export function formatMs(value: number | undefined): string {

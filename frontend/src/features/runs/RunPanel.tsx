@@ -28,7 +28,7 @@ import {
   RUN_TYPE_LABELS,
   TARGET_LABELS,
   durationToSeconds,
-  peakUsers,
+  peakTarget,
 } from './format.ts';
 import { CapacityHint } from './CapacityHint.tsx';
 import { StagesEditor } from './StagesEditor.tsx';
@@ -345,7 +345,7 @@ function RunPanelForm({
                     </Field>
                   )}
                   <CapacityHint
-                    peakTarget={mode === 'rate' ? maxVirtualUsers : peakUsers(stages)}
+                    peakTarget={mode === 'rate' ? maxVirtualUsers : peakTarget(stages)}
                     peakSource={mode === 'rate' ? 'Max virtual users is' : 'Your stages go up to'}
                   />
                   <Note title="How the load shape works">

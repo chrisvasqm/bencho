@@ -29,21 +29,20 @@ export function buildOptions(defaultStages: Stage[]): Options {
   };
   if (config.mode === 'users') return { ...common, stages };
   const { maxVirtualUsers } = config;
-  const peakRate = Math.max(0, ...stages.map((stage) => stage.target));
-  // A rate run that cannot keep its rate fails: dropped runs count against the error budget.
-  const allowedDrops = Math.floor(plannedRuns(stages) * config.maxErrorRate);
+  // A rate run that cannot keep its rate fails: the share of planned runs dropped must stay
+  // below the max error rate, like the share of failed requests.
+  const allowedDrops = plannedRuns(stages) * config.maxErrorRate;
   return {
     ...common,
-    thresholds: { ...common.thresholds, dropped_iterations: [`count<=${allowedDrops}`] },
+    thresholds: { ...common.thresholds, dropped_iterations: [`count<${allowedDrops}`] },
     scenarios: {
       rate: {
         executor: 'ramping-arrival-rate',
         startRate: 0,
         timeUnit: '1s',
         stages,
-        // A flow run takes at least about a second (think time), so the peak rate is a fair first
-        // guess; k6 adds VUs up to maxVUs when runs take longer, and drops runs past that.
-        preAllocatedVUs: Math.max(1, Math.min(maxVirtualUsers, peakRate)),
+        // All VUs up front, like users mode: VUs added mid-run start late and cause drops.
+        preAllocatedVUs: maxVirtualUsers,
         maxVUs: maxVirtualUsers,
       },
     },

@@ -1,6 +1,12 @@
 // Run settings from env vars (k6 __ENV). Every value has a default, so tests run with no setup.
 import type { Stage } from 'k6/options';
-import { DEFAULT_LIMITS, DEFAULT_MAX_VIRTUAL_USERS, DURATION_PATTERN } from './defaults.ts';
+import {
+  DEFAULT_LIMITS,
+  DEFAULT_MAX_VIRTUAL_USERS,
+  DURATION_PATTERN,
+  LOAD_MODES,
+  type LoadMode,
+} from './defaults.ts';
 
 function numberFromEnv(name: string, fallback: number): number {
   const raw = __ENV[name];
@@ -21,6 +27,15 @@ function parseStage(entry: string): Stage {
   return { duration, target: virtualUsers };
 }
 
+/** MODE=rate starts a set number of flow runs per second; MODE=users (default) ramps VUs. */
+function modeFromEnv(): LoadMode {
+  const raw = __ENV.MODE || 'users';
+  if (!(LOAD_MODES as readonly string[]).includes(raw)) {
+    throw new Error(`MODE must be one of ${LOAD_MODES.join(', ')}, got "${raw}"`);
+  }
+  return raw as LoadMode;
+}
+
 function maxVirtualUsersFromEnv(): number {
   const value = numberFromEnv('MAX_VUS', DEFAULT_MAX_VIRTUAL_USERS);
   if (!Number.isInteger(value) || value < 1) {
@@ -39,8 +54,7 @@ const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs } = DEFAULT_LIMITS;
 
 export const config = {
   baseUrl: __ENV.BASE_URL || 'http://localhost:10001',
-  /** MODE=rate starts a fixed number of flow runs per second; anything else ramps VUs. */
-  mode: __ENV.MODE === 'rate' ? ('rate' as const) : ('users' as const),
+  mode: modeFromEnv(),
   maxVirtualUsers: maxVirtualUsersFromEnv(),
   thinkTimeSeconds: numberFromEnv('THINK_TIME_SECONDS', thinkTimeSeconds),
   maxErrorRate: numberFromEnv('MAX_ERROR_RATE', maxErrorRate),
