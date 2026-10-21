@@ -96,7 +96,7 @@ test('a failed run shows a sample of the failed responses', async ({ page }) => 
 test('a run sends the grace period from the Limits tab', async ({ page }) => {
   await setSingleStage(page, '1s');
   await setLooseLimits(page);
-  await page.getByTestId('grace-period').fill('0');
+  await page.getByTestId('grace-period').fill('5');
   const post = page.waitForRequest(
     (request) => request.method() === 'POST' && request.url().endsWith('/api/v1/runs'),
   );
@@ -104,7 +104,7 @@ test('a run sends the grace period from the Limits tab', async ({ page }) => {
   await startRun(page);
 
   const body = (await post).postDataJSON() as { gracePeriodSeconds: number };
-  expect(body.gracePeriodSeconds).toBe(0);
+  expect(body.gracePeriodSeconds).toBe(5);
   await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
 });
 

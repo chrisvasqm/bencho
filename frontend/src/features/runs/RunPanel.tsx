@@ -426,7 +426,6 @@ function RunPanelForm({
                     htmlFor="grace-period"
                     hint="Seconds a user may finish its flow run after the last stage (and, with Users, when the load shape removes it). Past this, k6 cuts the flow run off."
                     error={errors.gracePeriod}
-                    errorTestId="grace-period-error"
                   >
                     <Input
                       id="grace-period"
