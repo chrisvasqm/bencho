@@ -45,7 +45,7 @@ describe('run lifecycle', () => {
     expect(points[0]).toMatchObject({ runId: run.id, second: expect.any(Number) });
   });
 
-  it('reads bodies of steps that extract values and discards the rest', async () => {
+  it('still extracts values when response bodies are discarded by default', async () => {
     const run = await runToEnd(
       shortRunPayload({
         flow: [

@@ -36,7 +36,8 @@ interface PreparedStep {
   hasContentType: boolean;
   // A step that expects a redirect must see it, not the page it points to.
   redirects: number | undefined;
-  // Only steps that extract values read the body; the rest discard it to save VU memory.
+  // Bodies are discarded by default (options.ts); steps that extract values read theirs.
+  // Always set: k6 rejects an undefined responseType.
   responseType: 'text' | 'none';
 }
 
