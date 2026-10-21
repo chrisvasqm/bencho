@@ -106,6 +106,9 @@ export type Run = z.infer<typeof runSchema>;
 const pointSchema = z.object({
   second: z.number(),
   virtualUsers: z.number(),
+  // Points stored before these existed have none.
+  iterationsPerSecond: z.number().default(0),
+  droppedPerSecond: z.number().default(0),
   requestsPerSecond: z.number(),
   errorRate: z.number(),
   p50: z.number().nullable(),

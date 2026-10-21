@@ -112,6 +112,20 @@ export function plannedShape(stages: Stage[]): PlannedPoint[] {
   return points;
 }
 
+/** The planned stage target at a second: k6 ramps in straight lines between stage targets. */
+export function targetAt(stages: Stage[], second: number): number {
+  const points = plannedShape(stages);
+  for (const [index, point] of points.entries()) {
+    const previous = points[index - 1];
+    if (!previous || second > point.second) continue;
+    const span = point.second - previous.second;
+    if (span <= 0) return point.virtualUsers;
+    const share = (second - previous.second) / span;
+    return previous.virtualUsers + (point.virtualUsers - previous.virtualUsers) * share;
+  }
+  return points[points.length - 1]?.virtualUsers ?? 0;
+}
+
 export function formatSeconds(value: number | string): string {
   if (Number(value) < 60) return `${Number(value)}s`;
   // Round once, so 3599.6 s reads 1h and never 59m60s.

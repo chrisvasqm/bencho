@@ -98,6 +98,12 @@ describe('run lifecycle', () => {
 
     expect(run).toMatchObject({ status: 'failed', exitCode: 99, errorMessage: null });
     expect(run.summary.metrics.dropped_iterations.count).toBeGreaterThan(10);
+    // The per-second points show the finished and the dropped flow runs too.
+    const { points } = (await app.request().get(`/api/v1/runs/${run.id}/points`)).body;
+    const total = (key: string) =>
+      points.reduce((sum: number, point: Record<string, number>) => sum + (point[key] ?? 0), 0);
+    expect(total('iterationsPerSecond')).toBeGreaterThan(0);
+    expect(total('droppedPerSecond')).toBe(run.summary.metrics.dropped_iterations.count);
   });
 
   it('cuts flow runs off after the grace period once the stages end', async () => {

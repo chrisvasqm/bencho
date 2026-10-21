@@ -43,6 +43,13 @@
       "when": 1792624253684,
       "tag": "0005_chemical_black_bird",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792626943330,
+      "tag": "0006_worried_human_robot",
+      "breakpoints": true
     }
   ]
 }

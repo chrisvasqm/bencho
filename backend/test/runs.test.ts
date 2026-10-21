@@ -38,6 +38,8 @@ const point = (second: number) => ({
   second,
   virtualUsers: second + 1,
   requestsPerSecond: 10,
+  iterationsPerSecond: 5,
+  droppedPerSecond: 0,
   errorRate: 0,
   p50: 1.5,
   p90: null,

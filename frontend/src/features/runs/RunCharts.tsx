@@ -6,7 +6,7 @@ import { runsApi, type Run } from '../../api/runs.ts';
 import { Note, Tabs } from '../../components/ui/index.ts';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
-import { formatMs, formatSeconds, isActive } from './format.ts';
+import { formatMs, formatSeconds, isActive, targetAt } from './format.ts';
 import { LATENCY_SERIES } from './series.ts';
 
 type ChartTab = 'latency' | 'load' | 'errors';
@@ -20,7 +20,7 @@ const CHART_TABS: ReadonlyArray<{ value: ChartTab; label: string }> = [
 const CHART_NOTES: Record<ChartTab, string> = {
   latency:
     'Each point is one second of the run. Each line shows one percentile (p50, p90, p95, p99) of the requests that ended in that second: p95 is the time 95 of every 100 of them stayed at or under. With only a few requests in a second, p90, p95 and p99 often equal the slowest one. Lines that climb as users are added mean the API is slowing down.',
-  load: 'Virtual users is how many simulated users were running. Requests per second is how many requests they sent. When users keep rising but requests per second stops rising, the API has reached its limit.',
+  load: 'Virtual users is how many simulated users were running. Requests per second is how many requests they sent. When users keep rising but requests per second stops rising, the API has reached its limit. For a rate run, flow runs per second compares the planned rate with the flow runs that finished and the ones k6 dropped because every allowed VU was busy.',
   errors:
     'The share of requests in each second that did not get the status their step expects. Errors that start when the load peaks mean the API cannot handle that load.',
 };
@@ -52,7 +52,13 @@ export function RunCharts({ run }: { run: Run }) {
 
   return (
     <div className="flex flex-col gap-4" data-testid="run-charts">
-      <Tabs label="Run charts" value={tab} onChange={setTab} items={CHART_TABS} />
+      <Tabs
+        label="Run charts"
+        testId="chart-tab"
+        value={tab}
+        onChange={setTab}
+        items={CHART_TABS}
+      />
       {tab === 'latency' && (
         <LineChart
           integerX
@@ -66,6 +72,25 @@ export function RunCharts({ run }: { run: Run }) {
       )}
       {tab === 'load' && (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          {run.mode === 'rate' && (
+            <div className="xl:col-span-2">
+              <LineChart
+                integerX
+                {...shared}
+                data={data.map((point) => ({
+                  ...point,
+                  target: targetAt(run.stages, point.second),
+                }))}
+                title="Flow runs per second"
+                testId="rate-chart"
+                series={[
+                  { key: 'target', label: 'Planned', color: 'var(--series-2)', dash: '4 3' },
+                  { key: 'iterationsPerSecond', label: 'Finished', color: 'var(--series-1)' },
+                  { key: 'droppedPerSecond', label: 'Dropped', color: 'var(--danger)' },
+                ]}
+              />
+            </div>
+          )}
           <LineChart
             integerX
             {...shared}

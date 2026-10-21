@@ -7,6 +7,10 @@ export interface RunPointValues {
   second: number;
   virtualUsers: number;
   requestsPerSecond: number;
+  /** Flow runs (k6 iterations) that finished in this second. */
+  iterationsPerSecond: number;
+  /** Rate runs only: flow runs k6 skipped in this second because every allowed VU was busy. */
+  droppedPerSecond: number;
   errorRate: number;
   p50: number | null;
   p90: number | null;
@@ -17,6 +21,8 @@ export interface RunPointValues {
 interface Bucket {
   durations: number[];
   requests: number;
+  iterations: number;
+  dropped: number;
   failed: number;
   failedSamples: number;
   virtualUsers: number;
@@ -72,6 +78,8 @@ export class TimeseriesAggregator {
         second: Math.max(0, second - this.startSecond),
         virtualUsers: this.lastVirtualUsers,
         requestsPerSecond: bucket.requests,
+        iterationsPerSecond: bucket.iterations,
+        droppedPerSecond: bucket.dropped,
         errorRate: bucket.failedSamples ? bucket.failed / bucket.failedSamples : 0,
         p50: percentile(sorted, 0.5),
         p90: percentile(sorted, 0.9),
@@ -91,6 +99,8 @@ export class TimeseriesAggregator {
     const bucket = this.bucketFor(second);
     if (metric === 'http_req_duration') bucket.durations.push(value);
     else if (metric === 'http_reqs') bucket.requests += value;
+    else if (metric === 'iterations') bucket.iterations += value;
+    else if (metric === 'dropped_iterations') bucket.dropped += value;
     else if (metric === 'vus') {
       bucket.virtualUsers = bucket.sawVirtualUsers ? Math.max(bucket.virtualUsers, value) : value;
       bucket.sawVirtualUsers = true;
@@ -106,6 +116,8 @@ export class TimeseriesAggregator {
       bucket = {
         durations: [],
         requests: 0,
+        iterations: 0,
+        dropped: 0,
         failed: 0,
         failedSamples: 0,
         virtualUsers: 0,
