@@ -32,8 +32,8 @@ export function CapacityHint({ peakTarget }: CapacityHintProps) {
         flows, large bodies, short think times and other active runs lower this number.
       </p>
       <p className="m-0" data-testid="capacity-docker">
-        In Docker, free memory is what Docker gives Bencho, not all of the computer's memory. On
-        Docker Desktop, raise it in Settings → Resources → Memory.
+        On Docker Desktop, free memory comes from Docker's own memory setting (Settings → Resources
+        → Memory), not all of the computer's memory. A memory limit on the container lowers it too.
       </p>
       {/* Always mounted (hidden when empty), so screen readers announce changes politely. */}
       <p

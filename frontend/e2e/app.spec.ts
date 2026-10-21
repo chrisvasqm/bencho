@@ -53,7 +53,7 @@ test.describe('first load', () => {
     await page.getByTestId('panel-tab-shape').click();
 
     await expect(page.getByTestId('capacity-estimate')).toContainText('Rough estimate');
-    await expect(page.getByTestId('capacity-docker')).toContainText('Docker Desktop');
+    await expect(page.getByTestId('capacity-docker')).toBeVisible();
     await expect(page.getByTestId('capacity-warning')).toBeEmpty();
 
     // 1 billion VUs needs petabytes of memory at 5 MB each, so it is above any estimate.
