@@ -178,7 +178,9 @@ export function RunsTable({
                     <td className="hidden max-w-56 truncate px-3 py-0 sm:table-cell text-xs">
                       {run.baseUrl}
                     </td>
-                    <td className="px-3 py-0 text-right tabular-nums">{formatPeak(run)}</td>
+                    <td className="px-3 py-0 text-right tabular-nums" data-testid="run-peak">
+                      {formatPeak(run)}
+                    </td>
                     <td className="px-3 py-0 text-right tabular-nums whitespace-nowrap">
                       {formatMs(run.summary?.metrics.http_req_duration?.['p(95)'])}
                     </td>

@@ -52,6 +52,7 @@ test('a rate run sends its rate and VU cap and passes', async ({ page }) => {
   expect(body).toMatchObject({ mode: 'rate', maxVirtualUsers: 2 });
   await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
   await expect(page.getByTestId('run-rate-cap')).toBeVisible();
+  await expect(page.getByTestId('run-peak')).toHaveText('1/s');
 });
 
 test('a rate run that cannot keep its rate fails and shows the dropped runs', async ({ page }) => {

@@ -55,7 +55,8 @@ const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs } = DEFAULT_LIMITS;
 export const config = {
   baseUrl: __ENV.BASE_URL || 'http://localhost:10001',
   mode: modeFromEnv(),
-  maxVirtualUsers: maxVirtualUsersFromEnv(),
+  /** Read only in rate mode, so a stray MAX_VUS never breaks a users run. */
+  maxVirtualUsers: modeFromEnv() === 'rate' ? maxVirtualUsersFromEnv() : DEFAULT_MAX_VIRTUAL_USERS,
   thinkTimeSeconds: numberFromEnv('THINK_TIME_SECONDS', thinkTimeSeconds),
   maxErrorRate: numberFromEnv('MAX_ERROR_RATE', maxErrorRate),
   latencyLimitsMs: {

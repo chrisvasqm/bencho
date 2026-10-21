@@ -30,8 +30,8 @@ export function buildOptions(defaultStages: Stage[]): Options {
   if (config.mode === 'users') return { ...common, stages };
   const { maxVirtualUsers } = config;
   // A rate run that cannot keep its rate fails: the share of planned runs dropped must stay
-  // below the max error rate, like the share of failed requests.
-  const allowedDrops = plannedRuns(stages) * config.maxErrorRate;
+  // below the max error rate, like the share of failed requests. No drops always passes.
+  const allowedDrops = Math.max(1, plannedRuns(stages) * config.maxErrorRate);
   return {
     ...common,
     thresholds: { ...common.thresholds, dropped_iterations: [`count<${allowedDrops}`] },

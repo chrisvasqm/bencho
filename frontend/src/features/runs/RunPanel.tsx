@@ -161,6 +161,8 @@ function RunPanelForm({
   if (stagesType !== type) {
     setStagesType(type);
     setStages(defaults.stages[type].map(toStageRow));
+    // The new stages are VU targets; keeping Rate would reread them as runs per second.
+    setMode('users');
   }
 
   // Edits clear flow errors, so the marked step always still exists.
