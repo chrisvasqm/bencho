@@ -6,7 +6,7 @@ export function buildOptions(defaultStages: Stage[]): Options {
   const { p50, p90, p95, p99 } = config.latencyLimitsMs;
   return {
     stages: stagesFromEnv(defaultStages),
-    // Saves VU memory: only requests that set responseType 'text' (steps that extract) keep bodies.
+    // Saves VU memory. Default for any request; scenario.ts sets responseType per step (text to extract).
     discardResponseBodies: true,
     thresholds: {
       http_req_failed: [`rate<${config.maxErrorRate}`],
