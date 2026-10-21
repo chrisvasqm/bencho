@@ -92,6 +92,8 @@ export const runs = pgTable(
 );
 
 export type Run = typeof runs.$inferSelect;
+/** A run as lists return it: without its failure samples. */
+export type RunListItem = Omit<Run, 'failures'>;
 
 /** One point per second of a run, built from k6's CSV output. */
 export const runPoints = pgTable(

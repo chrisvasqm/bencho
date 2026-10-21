@@ -378,7 +378,7 @@ export class RunsService {
 }
 
 /** Replaces the values of secret headers in the run's flow; the stored row keeps them. */
-function redactSecrets(run: Run): Run {
+function redactSecrets<Item extends Pick<Run, 'flow'>>(run: Item): Item {
   const flow = run.flow.map((step) => ({
     ...step,
     headers: Object.fromEntries(

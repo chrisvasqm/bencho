@@ -9,7 +9,6 @@ import { config } from './config.ts';
 import {
   FAILURE_LOG_PREFIX,
   FAILURE_SAMPLE_EVERY,
-  MAX_FAILURES_PER_STEP,
   MAX_FAILURE_BODY_CHARS,
   type FailureSample,
 } from './failures.ts';
@@ -58,22 +57,42 @@ const flow: PreparedStep[] = Array.from(flowSteps, (step) => ({
   responseType: step.extract.length > 0 ? 'text' : 'none',
 }));
 
-// Per VU (module state is per VU in k6): failures already reported, by step.
-const reportedFailures = new Map<string, Set<string>>();
+// Per VU (module state is per VU in k6): step, reason and status already reported. One body
+// per kind of failure and VU: bodies with request ids would otherwise all count as different.
+const reportedFailures = new Set<string>();
 
-/** Logs a failure once per step, status and body, up to MAX_FAILURES_PER_STEP per step. */
+/** A JSON value with every string, number and boolean replaced by its type: keys, no values. */
+function jsonShape(value: unknown): unknown {
+  if (Array.isArray(value)) return value.length > 0 ? [jsonShape(value[0])] : [];
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, jsonShape(item)]));
+  }
+  return value === null ? null : `<${typeof value}>`;
+}
+
+/** What to store of an extract failure: a success response may hold tokens, so no values. */
+function extractFailureBody(text: string): string {
+  try {
+    return JSON.stringify(jsonShape(JSON.parse(text)));
+  } catch {
+    return `(not JSON, ${text.length} characters)`;
+  }
+}
+
+/** Logs the first failure of each step, reason and status in this VU. */
 function reportFailure(
   stepName: string,
   reason: FailureSample['reason'],
   response: ReturnType<typeof http.request>,
 ): void {
-  const text = typeof response.body === 'string' ? response.body : response.error;
-  const body = (text || '').slice(0, MAX_FAILURE_BODY_CHARS);
-  const seen = reportedFailures.get(stepName) ?? new Set<string>();
-  reportedFailures.set(stepName, seen);
-  const key = `${reason}|${response.status}|${body}`;
-  if (seen.has(key) || seen.size >= MAX_FAILURES_PER_STEP) return;
-  seen.add(key);
+  const key = `${stepName}|${reason}|${response.status}`;
+  if (reportedFailures.has(key)) return;
+  reportedFailures.add(key);
+  const text = (typeof response.body === 'string' ? response.body : response.error) || '';
+  const body = (reason === 'extract' ? extractFailureBody(text) : text).slice(
+    0,
+    MAX_FAILURE_BODY_CHARS,
+  );
   const sample: FailureSample = { step: stepName, reason, status: response.status, body };
   // Base64 keeps the line free of quotes and line breaks in k6's log format.
   console.log(FAILURE_LOG_PREFIX + encoding.b64encode(JSON.stringify(sample)));

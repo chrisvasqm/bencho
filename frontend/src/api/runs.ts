@@ -92,7 +92,8 @@ const runSchema = z.object({
   status: z.enum(RUN_STATUSES),
   exitCode: z.number().nullable(),
   summary: summarySchema.nullable(),
-  failures: z.array(failureSchema),
+  // Only GET /runs/:id returns failures; list items do not carry them.
+  failures: z.array(failureSchema).default([]),
   errorMessage: z.string().nullable(),
   createdAt: z.string(),
   startedAt: z.string().nullable(),

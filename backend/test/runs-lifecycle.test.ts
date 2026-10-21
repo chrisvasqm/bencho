@@ -149,7 +149,7 @@ describe('run lifecycle', () => {
     expect(home[0].body.length).toBeLessThanOrEqual(500);
   });
 
-  it('stores the body of a step whose value to save is missing', async () => {
+  it('stores only the JSON keys of a step whose value to save is missing', async () => {
     const run = await runToEnd(
       shortRunPayload({
         flow: [
@@ -165,7 +165,8 @@ describe('run lifecycle', () => {
     );
 
     expect(run.failures).toEqual([
-      { step: 'Login', reason: 'extract', status: 200, body: expect.stringContaining('token') },
+      // The login worked: its token must not be stored, only the shape of the body.
+      { step: 'Login', reason: 'extract', status: 200, body: '{"token":"<string>"}' },
     ]);
   });
 

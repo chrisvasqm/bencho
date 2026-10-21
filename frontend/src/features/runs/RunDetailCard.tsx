@@ -214,7 +214,7 @@ function FailureList({ run }: { run: Run }) {
         <h3 className="m-0 text-sm font-medium text-fg">Failed responses (sample)</h3>
         <p className="m-0 text-xs text-fg-muted">
           Bodies are read in 1 of every 20 flow runs per virtual user, so these are examples, not
-          every failure. Each step shows up to 10 different responses.
+          every failure. Each step shows up to 10 different responses, at most 3 per status.
         </p>
       </div>
       <ul className="m-0 flex list-none flex-col gap-3 p-0">
@@ -222,8 +222,8 @@ function FailureList({ run }: { run: Run }) {
           const expected = run.flow.find((step) => step.name === failure.step)?.expectedStatus;
           return (
             <li
-              // Failures are a fixed list per run; step, status and body together are unique.
-              key={`${failure.step}-${failure.status}-${index}`}
+              // A run's failures never change once stored, so the position is a stable key.
+              key={index}
               className="flex flex-col gap-1.5"
               data-testid="run-failure"
             >
@@ -232,7 +232,7 @@ function FailureList({ run }: { run: Run }) {
                 <span className="text-fg-muted">
                   {' · '}
                   {failure.reason === 'extract'
-                    ? `status ${failure.status}, a value to save was missing`
+                    ? `status ${failure.status}, a value to save was missing (body shows its keys only)`
                     : failure.status === 0
                       ? 'no response (network error)'
                       : `status ${failure.status}${expected === undefined ? '' : `, expected ${expected}`}`}

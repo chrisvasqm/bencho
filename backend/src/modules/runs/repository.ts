@@ -7,6 +7,7 @@ import {
   type NewRun,
   type Run,
   type RunPoint,
+  type RunListItem,
 } from './schema.ts';
 import type { RunPointValues } from './timeseries.ts';
 import type { RunType } from '../../../k6/lib/defaults.ts';
@@ -29,7 +30,7 @@ export class RunsRepository {
     active: boolean,
     page: number,
     pageSize: number,
-  ): Promise<{ runs: Run[]; total: number }> {
+  ): Promise<{ runs: RunListItem[]; total: number }> {
     const where = and(
       type ? eq(runs.type, type) : undefined,
       active ? inArray(runs.status, [...ACTIVE_RUN_STATUSES]) : undefined,
@@ -37,6 +38,8 @@ export class RunsRepository {
     const [rows, [totals]] = await Promise.all([
       this.db.query.runs.findMany({
         where,
+        // Failure samples are for the run detail only; lists stay small.
+        columns: { failures: false },
         orderBy: desc(runs.createdAt),
         limit: pageSize,
         offset: (page - 1) * pageSize,
