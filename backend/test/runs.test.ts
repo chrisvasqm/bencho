@@ -7,7 +7,6 @@ import { DEFAULT_FLOW, MAX_STEPS } from '../k6/lib/flow.ts';
 import {
   MAX_BULK_DELETE,
   MAX_STAGES,
-  MAX_VIRTUAL_USERS,
   RUN_STATUSES,
   type Run,
 } from '../src/modules/runs/schema.ts';
@@ -300,8 +299,8 @@ describe('POST /api/v1/runs', () => {
       ['a duration without unit', runPayload({ stages: [{ duration: '30', target: 1 }] })],
       ['a negative duration', runPayload({ stages: [{ duration: '-1s', target: 1 }] })],
       [
-        'a target over the int4 range',
-        runPayload({ stages: [{ duration: '1s', target: MAX_VIRTUAL_USERS + 1 }] }),
+        'an unsafe integer target',
+        runPayload({ stages: [{ duration: '1s', target: Number.MAX_SAFE_INTEGER + 1 }] }),
       ],
       ['a negative target', runPayload({ stages: [{ duration: '1s', target: -1 }] })],
       ['a fractional target', runPayload({ stages: [{ duration: '1s', target: 1.5 }] })],

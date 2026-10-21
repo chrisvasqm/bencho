@@ -10,7 +10,7 @@ Stages were limited to 1000 virtual users. Bencho runs k6 on the host that serve
 
 1. Keep a fixed cap (1000 or higher).
 2. Optional `MAX_VIRTUAL_USERS` env setting, no cap when unset.
-3. No product cap; reject only targets the database cannot store (above 2,147,483,647, the `run_points.virtual_users` int4 range).
+3. No product cap; reject only targets that are not safe integers.
 
 ## Decision
 

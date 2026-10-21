@@ -27,7 +27,7 @@ Limits: 20 stages, 60 minutes per run, 3 runs at a time. A run passes when error
 
 ## Security
 
-Bencho has no accounts: anyone who can open it can start, stop and delete runs, and aim any number of virtual users at any URL. Run it on a network you trust, or behind a proxy that authenticates. The local stack binds Postgres and the backend to `127.0.0.1`; only the frontend port is open to other devices.
+Bencho has no accounts: anyone who can open it can start, stop and delete runs, and aim any number of virtual users at any URL. k6 runs on the Bencho host, so a large run can use up its memory and CPU and stop other services on it. Run it on a network you trust, or behind a proxy that authenticates. The local stack binds Postgres and the backend to `127.0.0.1`; only the frontend port is open to other devices.
 
 Set `ALLOW_PRIVATE_TARGETS=false` (exactly; `true` or empty allows, anything else stops startup) to refuse targets on private, loopback and link-local addresses (`10/8`, `172.16/12`, `192.168/16`, `127/8`, `169.254/16`, `localhost`, `*.internal`, ...), both as literal hosts and after DNS resolution, so Bencho cannot be used to reach services on its own network. They are allowed by default: the demo target is on the compose network. Flow headers whose name contains `auth`, `token`, `key`, `secret`, `cookie`, `session` or `password` are stored for the run but returned as `[redacted]`; request bodies and query strings are returned as sent. URLs cannot carry `user:password@` credentials.
 
