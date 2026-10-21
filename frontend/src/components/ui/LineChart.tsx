@@ -41,8 +41,13 @@ export interface LineChartProps<Row> {
   minYStep?: number;
   /** Whole-number x values only (such as seconds). */
   integerX?: boolean;
+  /** Exact x ticks, such as round time steps; without them Recharts picks its own. */
+  xTicks?: number[];
+  /** 'linear' draws straight segments, for data that is linear between points (a plan). */
+  curve?: 'monotone' | 'linear';
   loading?: boolean;
   empty?: string;
+  testId?: string;
 }
 
 const tick = { fill: 'var(--fg-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' };
@@ -58,9 +63,12 @@ export function LineChart<Row extends object>({
   height = 220,
   integerY = false,
   integerX = false,
+  xTicks,
+  curve = 'monotone',
   minYStep = 0,
   loading,
   empty = 'No data yet.',
+  testId,
 }: LineChartProps<Row>) {
   const showLegend = series.length > 1;
   // The y axis uses this exact scale, so label spacing can be measured in pixels.
@@ -84,7 +92,7 @@ export function LineChart<Row extends object>({
       .map((item) => item.label.length * 7 + 10),
   );
   return (
-    <figure className="m-0 flex min-w-0 flex-col gap-2">
+    <figure className="m-0 flex min-w-0 flex-col gap-2" data-testid={testId}>
       <figcaption className="text-sm font-medium text-fg">{title}</figcaption>
       {loading ? (
         <div style={{ height }}>
@@ -116,6 +124,7 @@ export function LineChart<Row extends object>({
                 minTickGap={24}
                 height={X_AXIS_HEIGHT_PX}
                 allowDecimals={!integerX}
+                ticks={xTicks}
               />
               <YAxis
                 tick={tick}
@@ -152,7 +161,7 @@ export function LineChart<Row extends object>({
               {series.map((line) => (
                 <Line
                   key={line.key}
-                  type="monotone"
+                  type={curve}
                   dataKey={line.key}
                   name={line.label}
                   stroke={line.color}
