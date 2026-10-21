@@ -117,8 +117,9 @@ export function formatSeconds(value: number | string): string {
   if (seconds < 60) return `${seconds}s`;
   if (seconds >= 3600) {
     const hours = Math.floor(seconds / 3600);
-    const minutes = Math.round((seconds % 3600) / 60);
-    return minutes ? `${hours}h${minutes}m` : `${hours}h`;
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const rest = Math.round(seconds % 60);
+    return `${hours}h${minutes ? `${minutes}m` : ''}${rest ? `${rest}s` : ''}`;
   }
   const minutes = Math.floor(seconds / 60);
   const rest = Math.round(seconds % 60);
