@@ -329,10 +329,8 @@ export class RunsService {
       ...(run.maxVirtualUsers === null ? {} : { MAX_VUS: String(run.maxVirtualUsers) }),
       FLOW_PATH: flowPath,
       THINK_TIME_SECONDS: String(thinkTimeSeconds),
-      // Runs stored before the setting existed use k6's default (config.ts).
-      ...(gracePeriodSeconds === undefined
-        ? {}
-        : { GRACE_PERIOD_SECONDS: String(gracePeriodSeconds) }),
+      // Runs stored before the setting existed ran with the default.
+      GRACE_PERIOD_SECONDS: String(gracePeriodSeconds ?? DEFAULT_LIMITS.gracePeriodSeconds),
       MAX_ERROR_RATE: String(maxErrorRate),
       P50_MS: String(latencyLimitsMs.p50),
       P90_MS: String(latencyLimitsMs.p90),

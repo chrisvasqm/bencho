@@ -99,7 +99,10 @@ export function ActiveRunsWidget({ anchorRef, onOpen }: ActiveRunsWidgetProps) {
                       <span className="font-medium text-fg">{RUN_TYPE_LABELS[run.type]}</span>
                       <span className="text-fg-muted tabular-nums">{formatPeak(run)}</span>
                       <span className="ml-auto text-xs text-fg-muted tabular-nums">
-                        {formatClock(elapsed)} / {formatClock(planned)}
+                        {/* Past the stages, k6 is letting flow runs finish (the grace period). */}
+                        {planned > 0 && elapsed > planned
+                          ? `finishing, up to ${run.limits.gracePeriodSeconds}s`
+                          : `${formatClock(elapsed)} / ${formatClock(planned)}`}
                       </span>
                     </span>
                     <span
