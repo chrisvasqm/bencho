@@ -112,6 +112,14 @@ const defaultsSchema = z.object({
 });
 export type RunDefaults = z.infer<typeof defaultsSchema>;
 
+const capacitySchema = z.object({
+  cpuCount: z.number().int().positive(),
+  availableMemoryBytes: z.number().nonnegative(),
+  memoryPerVirtualUserBytes: z.number().positive(),
+  estimatedVirtualUsers: z.number().int().nonnegative(),
+});
+export type Capacity = z.infer<typeof capacitySchema>;
+
 export interface CreateRunInput {
   type: RunType;
   baseUrl: string;
@@ -156,6 +164,7 @@ async function request<Output>(path: string, schema: z.ZodType<Output>, init?: R
 
 export const runsApi = {
   defaults: () => request('/defaults', defaultsSchema),
+  capacity: () => request('/capacity', capacitySchema),
   list: (type: RunType, page: number, pageSize: number) =>
     request(`/runs?type=${type}&page=${page}&pageSize=${pageSize}`, runsPageSchema),
   active: () => request('/runs?active=true&pageSize=10', runsPageSchema),

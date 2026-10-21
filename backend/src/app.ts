@@ -1,4 +1,5 @@
 import express from 'express';
+import { hostCapacity } from './core/capacity.ts';
 import { AppError, errorHandler, notFoundHandler } from './core/errors.ts';
 import { runsRoutes } from './modules/runs/routes.ts';
 import type { RunsService } from './modules/runs/service.ts';
@@ -23,6 +24,9 @@ export function createApp({ runsService, checkDatabase }: AppDependencies): expr
       throw new AppError(503, 'DATABASE_UNAVAILABLE', 'The database is not reachable.');
     }
     response.json({ ok: true });
+  });
+  app.get('/api/v1/capacity', (_request, response) => {
+    response.json(hostCapacity());
   });
   app.use('/api/v1', runsRoutes(runsService));
   app.use(notFoundHandler);

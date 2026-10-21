@@ -25,6 +25,8 @@ Stop with `docker compose down` (add `-v` to delete stored runs).
 
 Limits: 20 stages, 60 minutes per run, 3 runs at a time. A run passes when error rate, p50/p90/p95/p99 latency and check pass rate (above 99%) all hold.
 
+The Load shape tab shows a rough estimate of how many VUs the Bencho host can run: 80% of its free memory at 5 MB per VU, the high end of k6's guidance for simple tests (`GET /api/v1/capacity`). Long flows, large bodies and other active runs lower the real number.
+
 ## Security
 
 Bencho has no accounts: anyone who can open it can start, stop and delete runs, and aim any number of virtual users at any URL. k6 runs on the Bencho host, so a large run can use up its memory and CPU and stop other services on it. Run it on a network you trust, or behind a proxy that authenticates. The local stack binds Postgres and the backend to `127.0.0.1`; only the frontend port is open to other devices.
