@@ -141,12 +141,12 @@ describe('run lifecycle', () => {
       }),
     );
 
-    // Home fails every time with the same 200 page: one distinct sample, cut to 500 characters.
+    // Home fails every time with the same 200 page: one distinct sample.
     const home = run.failures.filter((failure: { step: string }) => failure.step === 'Home');
     expect(home).toHaveLength(1);
     expect(home[0]).toMatchObject({ reason: 'status', status: 200 });
-    expect(home[0].body.length).toBeGreaterThan(0);
-    expect(home[0].body.length).toBeLessThanOrEqual(500);
+    // A 200 may hold tokens, so its body is not stored; the home page is HTML, so no keys either.
+    expect(home[0].body).toMatch(/^\(not JSON, \d+ characters\)$/);
   });
 
   it('stores only the JSON keys of a step whose value to save is missing', async () => {

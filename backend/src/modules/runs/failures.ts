@@ -17,7 +17,12 @@ function decode(line: string): FailureSample | undefined {
   if (!encoded) return undefined;
   try {
     const sample = JSON.parse(Buffer.from(encoded, 'base64').toString('utf8')) as FailureSample;
-    if (typeof sample.step !== 'string' || typeof sample.body !== 'string') return undefined;
+    const valid =
+      typeof sample.step === 'string' &&
+      typeof sample.body === 'string' &&
+      typeof sample.status === 'number' &&
+      (sample.reason === 'status' || sample.reason === 'extract');
+    if (!valid) return undefined;
     // Postgres jsonb refuses NUL and unpaired surrogates (a body cut inside an emoji).
     return { ...sample, body: sample.body.replaceAll('\0', '').replace(LONE_SURROGATE, '\uFFFD') };
   } catch {
@@ -35,8 +40,9 @@ async function readStart(path: string): Promise<string> {
     throw error;
   }
   try {
-    const buffer = Buffer.alloc(MAX_READ_BYTES);
-    const { bytesRead } = await file.read(buffer, 0, MAX_READ_BYTES, 0);
+    const size = Math.min((await file.stat()).size, MAX_READ_BYTES);
+    const buffer = Buffer.alloc(size);
+    const { bytesRead } = await file.read(buffer, 0, size, 0);
     // A line cut at the limit fails to decode and is skipped.
     return buffer.subarray(0, bytesRead).toString('utf8');
   } finally {
@@ -49,11 +55,19 @@ async function readStart(path: string): Promise<string> {
  * bodies per step, reason and status, and MAX_FAILURES_PER_STEP per step.
  */
 export async function readFailures(path: string): Promise<FailureSample[]> {
+  let text: string;
+  try {
+    text = await readStart(path);
+  } catch (error) {
+    // Samples only explain a run; failing to read them must not lose its outcome.
+    console.error('could not read k6 failure samples', error);
+    return [];
+  }
   const seen = new Set<string>();
   const perStatus = new Map<string, number>();
   const perStep = new Map<string, number>();
   const failures: FailureSample[] = [];
-  for (const sample of (await readStart(path)).split('\n').map(decode)) {
+  for (const sample of text.split('\n').map(decode)) {
     if (!sample) continue;
     const statusKey = JSON.stringify([sample.step, sample.reason, sample.status]);
     const key = JSON.stringify([sample.step, sample.reason, sample.status, sample.body]);

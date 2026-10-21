@@ -213,8 +213,9 @@ function FailureList({ run }: { run: Run }) {
       <div className="flex flex-col gap-1">
         <h3 className="m-0 text-sm font-medium text-fg">Failed responses (sample)</h3>
         <p className="m-0 text-xs text-fg-muted">
-          Bodies are read in 1 of every 20 flow runs per virtual user, so these are examples, not
-          every failure. Each step shows up to 10 different responses, at most 3 per status.
+          Bodies are read in 1 of every 20 flow runs, so these are examples, not every failure. A
+          success response (2xx) shows its JSON keys only, since it may hold tokens. Each step shows
+          up to 10 different responses, at most 3 per status.
         </p>
       </div>
       <ul className="m-0 flex list-none flex-col gap-3 p-0">

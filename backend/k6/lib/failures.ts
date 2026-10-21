@@ -2,8 +2,8 @@
 // No k6 imports: the backend reads the same constants when it parses the samples.
 
 /**
- * One failed step: its status and the start of the response body (or the network error). For an
- * extract failure the response was a success and may hold tokens, so `body` is only its JSON shape.
+ * One failed step: its status and the start of the response body (or the network error). For a
+ * success status (2xx) the body may hold tokens, so `body` is only its JSON keys.
  */
 export interface FailureSample {
   step: string;
@@ -13,7 +13,7 @@ export interface FailureSample {
   body: string;
 }
 
-/** Bodies are read in one of this many flow runs per VU (and in each VU's first run). */
+/** Bodies are read in one of this many flow runs, counted across all VUs. */
 export const FAILURE_SAMPLE_EVERY = 20;
 export const MAX_FAILURE_BODY_CHARS = 500;
 /** Distinct failures kept per step in a run. */

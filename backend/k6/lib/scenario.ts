@@ -70,8 +70,8 @@ function jsonShape(value: unknown): unknown {
   return value === null ? null : `<${typeof value}>`;
 }
 
-/** What to store of an extract failure: a success response may hold tokens, so no values. */
-function extractFailureBody(text: string): string {
+/** What to store of a success response (2xx): it may hold tokens, so keys and no values. */
+function successBody(text: string): string {
   try {
     return JSON.stringify(jsonShape(JSON.parse(text)));
   } catch {
@@ -79,20 +79,21 @@ function extractFailureBody(text: string): string {
   }
 }
 
-/** Logs the first failure of each step, reason and status in this VU. */
+/**
+ * Logs the first failure of each step, reason and status in this VU; network errors (status 0)
+ * also by error code, so a timeout does not hide a refused connection.
+ */
 function reportFailure(
   stepName: string,
   reason: FailureSample['reason'],
   response: ReturnType<typeof http.request>,
 ): void {
-  const key = `${stepName}|${reason}|${response.status}`;
+  const key = `${stepName}|${reason}|${response.status}|${response.status === 0 ? response.error_code : ''}`;
   if (reportedFailures.has(key)) return;
   reportedFailures.add(key);
   const text = (typeof response.body === 'string' ? response.body : response.error) || '';
-  const body = (reason === 'extract' ? extractFailureBody(text) : text).slice(
-    0,
-    MAX_FAILURE_BODY_CHARS,
-  );
+  const success = response.status >= 200 && response.status < 300;
+  const body = (success ? successBody(text) : text).slice(0, MAX_FAILURE_BODY_CHARS);
   const sample: FailureSample = { step: stepName, reason, status: response.status, body };
   // Base64 keeps the line free of quotes and line breaks in k6's log format.
   console.log(FAILURE_LOG_PREFIX + encoding.b64encode(JSON.stringify(sample)));
@@ -107,7 +108,8 @@ function randomUuid(): string {
 
 /**
  * Sends one step. Returns false when the iteration must end (wrong status or missing value).
- * In a sampled iteration every body is read, so failures can be reported with their body.
+ * In a sampled iteration every body is read, so status failures can be reported with their body.
+ * Steps that extract always read theirs, so their extract failures are always reported.
  */
 function runStep(
   { step, responseCallback, urlName, hasContentType, redirects, responseType }: PreparedStep,
@@ -157,7 +159,7 @@ function runStep(
         checked !== undefined && checked !== null,
     });
     if (!saved) {
-      if (sampled) reportFailure(step.name, 'extract', response);
+      reportFailure(step.name, 'extract', response);
       return false;
     }
     values[extract.name] = value;
@@ -173,7 +175,9 @@ export default function (): void {
     uuid,
     shortId: uuid.replace(/-/g, '').slice(0, 12),
   };
-  const sampled = __ITER % FAILURE_SAMPLE_EVERY === 0;
+  // Counted across all VUs, so 1 in FAILURE_SAMPLE_EVERY flow runs reads bodies in every mode
+  // (rate runs start many VUs that each run only a few times).
+  const sampled = exec.scenario.iterationInTest % FAILURE_SAMPLE_EVERY === 0;
   for (const step of flow) {
     const ok = runStep(step, values, sampled);
     sleep(waitSeconds(step.step, config.thinkTimeSeconds));
