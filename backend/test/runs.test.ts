@@ -4,12 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_LIMITS, DEFAULT_STAGES } from '../k6/lib/defaults.ts';
 import { DEFAULT_FLOW, MAX_STEPS } from '../k6/lib/flow.ts';
-import {
-  MAX_BULK_DELETE,
-  MAX_STAGES,
-  RUN_STATUSES,
-  type Run,
-} from '../src/modules/runs/schema.ts';
+import { MAX_BULK_DELETE, MAX_STAGES, RUN_STATUSES, type Run } from '../src/modules/runs/schema.ts';
 import {
   flowStep,
   longRunPayload,
