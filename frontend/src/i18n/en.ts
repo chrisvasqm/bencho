@@ -15,16 +15,6 @@ export const en = {
     runsTitle: 'Runs',
     runsDescription: 'Newest first. Select a run to see its results.',
     runsLoadError: 'Could not load the runs. Bencho tries again in a moment.',
-    trendTitle: 'Trend',
-    trendDescription_one: 'Response time of the last {{count}} {{typeLower}} run, oldest first',
-    trendDescription_other: 'Response time of the last {{count}} {{typeLower}} runs, oldest first',
-    trendDescription_many: 'Response time of the last {{count}} {{typeLower}} runs, oldest first',
-    trendChart: 'Response time per run',
-    trendEmpty: 'Finish a run of this type to start the trend.',
-    trendNote:
-      'Each point is one finished run. Lines that go up from left to right mean the site got slower between runs, for example after a new release.',
-    trendNote_advanced:
-      'Each point is one finished run. Lines that go up from left to right mean the API got slower between runs, for example after a code change.',
   },
   prefs: {
     language: 'Language',

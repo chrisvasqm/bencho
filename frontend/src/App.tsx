@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { m } from 'motion/react';
-import { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   ApiError,
@@ -25,9 +25,6 @@ import { ThemeSwitch } from './features/theme/ThemeSwitch.tsx';
 
 const POLL_INTERVAL_MS = 2000;
 
-const TrendCard = lazy(() =>
-  import('./features/runs/TrendCard.tsx').then((module) => ({ default: module.TrendCard })),
-);
 const PAGE_SIZE = 8;
 
 export function App() {
@@ -141,7 +138,6 @@ export function App() {
       });
       forgetRuns(new Set([run.id]));
       void queryClient.invalidateQueries({ queryKey: ['runs', run.type] });
-      void queryClient.invalidateQueries({ queryKey: ['trend', run.type] });
       toast.success(t('toast.deleted'), { testId: 'toast-run-deleted' });
     },
     onError: (error) => {
@@ -170,7 +166,6 @@ export function App() {
       setCheckedIds(new Set());
       forgetRuns(gone);
       void queryClient.invalidateQueries({ queryKey: ['runs', type] });
-      void queryClient.invalidateQueries({ queryKey: ['trend', type] });
       const label = t('toast.bulkDeleted', { count: deleted.length });
       if (skipped.length === 0) toast.success(label, { testId: 'toast-runs-deleted' });
       else {
@@ -274,7 +269,7 @@ export function App() {
             )}
           </Card>
 
-          {/* Swap in place: no exit phase, so the trend card below never jumps up and back. */}
+          {/* Swap in place: no exit phase, so the layout never jumps up and back. */}
           {shownRun ? (
             <m.div
               key={shownRun.id}
@@ -295,16 +290,6 @@ export function App() {
               <Skeleton className="h-64 w-full" />
             </Card>
           ) : null}
-
-          <Suspense
-            fallback={
-              <Card title={t('app.trendTitle')}>
-                <Skeleton className="h-56 w-full" />
-              </Card>
-            }
-          >
-            <TrendCard type={type} />
-          </Suspense>
         </div>
       </main>
 
