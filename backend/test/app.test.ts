@@ -4,7 +4,13 @@ import { createApp } from '../src/app.ts';
 import { connectDatabase, pingDatabase } from '../src/core/db.ts';
 import { RunsRepository } from '../src/modules/runs/repository.ts';
 import { RunsService } from '../src/modules/runs/service.ts';
-import { DEFAULT_LIMITS, DEFAULT_MAX_VIRTUAL_USERS, DEFAULT_STAGES } from '../k6/lib/defaults.ts';
+import {
+  DEFAULT_LIMITS,
+  DEFAULT_MAX_VIRTUAL_USERS,
+  DEFAULT_STAGES,
+  DEFAULT_STOP_ON_LIMIT,
+  STOP_ON_LIMIT_DELAY_SECONDS,
+} from '../k6/lib/defaults.ts';
 import { DEFAULT_FLOW } from '../k6/lib/flow.ts';
 import { expectError, useTestApp } from './helpers/test-app.ts';
 
@@ -51,6 +57,8 @@ describe('GET /api/v1/defaults', () => {
       stages: DEFAULT_STAGES,
       maxVirtualUsers: DEFAULT_MAX_VIRTUAL_USERS,
       limits: DEFAULT_LIMITS,
+      stopOnLimit: DEFAULT_STOP_ON_LIMIT,
+      stopOnLimitDelaySeconds: STOP_ON_LIMIT_DELAY_SECONDS,
       flow: DEFAULT_FLOW,
     });
   });

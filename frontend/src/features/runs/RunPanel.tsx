@@ -21,6 +21,7 @@ import {
 import {
   Button,
   Card,
+  Checkbox,
   Field,
   FieldSkeleton,
   Input,
@@ -184,6 +185,9 @@ function RunPanelForm({
     Math.round(limits.maxErrorRate * 10000) / 100,
   );
   const [latency, setLatency] = useState(limits.latencyLimitsMs);
+  const [stopOnLimit, setStopOnLimit] = useState(
+    initial ? initial.limits.stopOnLimit : defaults.stopOnLimit[type],
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const currentInput = (): CreateRunInput => ({
     type,
@@ -196,6 +200,7 @@ function RunPanelForm({
     gracePeriodSeconds: gracePeriod,
     maxErrorRate: maxErrorPercent / 100,
     latencyLimitsMs: latency,
+    stopOnLimit,
   });
   // Problems on screen are text: a language switch checks the form again and shows the same
   // fields' problems in the new language.
@@ -228,6 +233,7 @@ function RunPanelForm({
     // Each type has its own default stages, as VU targets.
     setStages(defaults.stages[next].map(toStageRow));
     setMode('users');
+    setStopOnLimit(defaults.stopOnLimit[next]);
     setErrors(({ stages: _stale, ...rest }) => rest);
   };
 
@@ -520,6 +526,20 @@ function RunPanelForm({
                 invalid={Boolean(errors.gracePeriod)}
               />
             </Field>
+            <label className="flex cursor-pointer items-start gap-2.5 text-sm text-fg">
+              <Checkbox
+                className="mt-0.5"
+                data-testid="stop-on-limit"
+                checked={stopOnLimit}
+                onChange={(event) => setStopOnLimit(event.target.checked)}
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className="font-medium">{t('panel.stopOnLimit')}</span>
+                <span className="text-xs text-fg-muted">
+                  {t('panel.stopOnLimitHint', { seconds: defaults.stopOnLimitDelaySeconds })}
+                </span>
+              </span>
+            </label>
             <fieldset
               // Named by the legend text only, not the Learn link inside it.
               aria-label={t('panel.latencyLimits')}

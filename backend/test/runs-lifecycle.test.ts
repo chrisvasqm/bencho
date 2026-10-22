@@ -37,7 +37,12 @@ describe('run lifecycle', () => {
   it('passes when every limit holds, and stores the summary and points', async () => {
     const run = await runToEnd(shortRunPayload());
 
-    expect(run).toMatchObject({ status: 'passed', exitCode: 0, errorMessage: null });
+    expect(run).toMatchObject({
+      status: 'passed',
+      exitCode: 0,
+      errorMessage: null,
+      stoppedEarly: false,
+    });
     expect(run.summary).toHaveProperty('metrics');
     expect(new Date(run.startedAt).getTime()).toBeLessThanOrEqual(
       new Date(run.finishedAt).getTime(),
@@ -46,6 +51,29 @@ describe('run lifecycle', () => {
     expect(points.length).toBeGreaterThan(0);
     expect(points[0]).toMatchObject({ runId: run.id, second: expect.any(Number) });
   });
+
+  it('stops a run early once a limit breaks, with stop on limit on', async () => {
+    const plannedSeconds = 60;
+    const run = await runToEnd(
+      shortRunPayload({
+        stages: [{ duration: `${plannedSeconds}s`, target: 1 }],
+        // Every request gets a 404 where 200 is expected, so limits break from the start.
+        flow: [flowStep({ path: '/no-such-page' })],
+        stopOnLimit: true,
+      }),
+    );
+
+    expect(run).toMatchObject({
+      status: 'failed',
+      exitCode: 99,
+      errorMessage: null,
+      stoppedEarly: true,
+    });
+    expect(run.summary.metrics.checks.value).toBe(0);
+    const elapsedSeconds =
+      (new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000;
+    expect(elapsedSeconds).toBeLessThan(plannedSeconds - 10);
+  }, 90_000);
 
   it('still extracts values when response bodies are discarded by default', async () => {
     const run = await runToEnd(
@@ -69,7 +97,12 @@ describe('run lifecycle', () => {
     );
 
     // A missing token fails the extract check, so the checks limit (rate>0.99) fails: exit code 99.
-    expect(run).toMatchObject({ status: 'passed', exitCode: 0, errorMessage: null });
+    expect(run).toMatchObject({
+      status: 'passed',
+      exitCode: 0,
+      errorMessage: null,
+      stoppedEarly: false,
+    });
   });
 
   it('passes a rate run that starts flow runs per second up to its VU cap', async () => {
@@ -81,7 +114,12 @@ describe('run lifecycle', () => {
       }),
     );
 
-    expect(run).toMatchObject({ status: 'passed', exitCode: 0, errorMessage: null });
+    expect(run).toMatchObject({
+      status: 'passed',
+      exitCode: 0,
+      errorMessage: null,
+      stoppedEarly: false,
+    });
     // 0 → 4 runs per second over 2 s is about 4 flow runs.
     expect(run.summary.metrics.iterations.count).toBeGreaterThan(0);
     expect(run.summary.metrics.vus_max.max).toBe(2);
@@ -288,7 +326,12 @@ describe('run lifecycle', () => {
       );
 
       // A wrong token or content type gets a 500, which fails the status check: exit code 99.
-      expect(run).toMatchObject({ status: 'passed', exitCode: 0, errorMessage: null });
+      expect(run).toMatchObject({
+        status: 'passed',
+        exitCode: 0,
+        errorMessage: null,
+        stoppedEarly: false,
+      });
       expect(received.some((request) => request.path === '/order')).toBe(true);
       expect(received[0]?.contentType).toBe('text/xml; charset=utf-8');
     });

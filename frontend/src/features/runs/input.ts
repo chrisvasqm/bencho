@@ -23,5 +23,6 @@ export function runToInput(run: Run): CreateRunInput {
     gracePeriodSeconds: run.limits.gracePeriodSeconds,
     maxErrorRate: run.limits.maxErrorRate,
     latencyLimitsMs: run.limits.latencyLimitsMs,
+    stopOnLimit: run.limits.stopOnLimit,
   };
 }

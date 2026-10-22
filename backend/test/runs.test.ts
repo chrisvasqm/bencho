@@ -2,7 +2,12 @@
 // the rest cover what that flow cannot: variants, limits and errors of each endpoint.
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DEFAULT_LIMITS, DEFAULT_MAX_VIRTUAL_USERS, DEFAULT_STAGES } from '../k6/lib/defaults.ts';
+import {
+  DEFAULT_LIMITS,
+  DEFAULT_MAX_VIRTUAL_USERS,
+  DEFAULT_STAGES,
+  DEFAULT_STOP_ON_LIMIT,
+} from '../k6/lib/defaults.ts';
 import { DEFAULT_FLOW, MAX_STEPS } from '../k6/lib/flow.ts';
 import { MAX_BULK_DELETE, MAX_STAGES, RUN_STATUSES, type Run } from '../src/modules/runs/schema.ts';
 import {
@@ -239,7 +244,27 @@ describe('POST /api/v1/runs', () => {
     it('fills limits left out with the defaults', async () => {
       const response = await createRun(runPayload({ maxErrorRate: 0.2 }));
 
-      expect(response.body.run.limits).toEqual({ ...DEFAULT_LIMITS, maxErrorRate: 0.2 });
+      expect(response.body.run.limits).toEqual({
+        ...DEFAULT_LIMITS,
+        maxErrorRate: 0.2,
+        stopOnLimit: DEFAULT_STOP_ON_LIMIT.load,
+      });
+    });
+
+    it.each([
+      ['load', true],
+      ['stress', false],
+      ['spike', false],
+    ])('stops a %s run on a broken limit by default: %s', async (type, expected) => {
+      const response = await createRun(runPayload({ type }));
+
+      expect(response.body.run.limits.stopOnLimit).toBe(expected);
+    });
+
+    it('stores stop on limit when given', async () => {
+      const response = await createRun(runPayload({ type: 'stress', stopOnLimit: true }));
+
+      expect(response.body.run.limits.stopOnLimit).toBe(true);
     });
 
     it('accepts a rate below 1 per second, with up to 2 decimals', async () => {
@@ -368,6 +393,7 @@ describe('POST /api/v1/runs', () => {
       ],
       ['a negative think time', runPayload({ thinkTimeSeconds: -1 })],
       ['a negative grace period', runPayload({ gracePeriodSeconds: -1 })],
+      ['stop on limit that is not a boolean', runPayload({ stopOnLimit: 'yes' })],
       ['a grace period over 5 minutes', runPayload({ gracePeriodSeconds: 301 })],
       ['a fractional grace period', runPayload({ gracePeriodSeconds: 1.5 })],
       ['an error rate over 1', runPayload({ maxErrorRate: 1.1 })],

@@ -1,0 +1,1 @@
+ALTER TABLE "runs" ADD COLUMN "stopped_early" boolean DEFAULT false NOT NULL;

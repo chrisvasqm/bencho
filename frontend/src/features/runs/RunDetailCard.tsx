@@ -335,6 +335,9 @@ export function RunDetailCard({
             })}
             {run.flow.some((step) => step.wait) && t('detail.ownWaits')}
           </Chip>
+          {run.limits.stopOnLimit && (
+            <Chip testId="run-stop-on-limit">{t('detail.stopOnLimit')}</Chip>
+          )}
           {elapsed !== undefined && (
             <span className="text-fg-faint">
               {t('detail.took', { seconds: elapsed.toFixed(0) })}

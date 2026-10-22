@@ -47,17 +47,35 @@ export interface RunLimits {
   gracePeriodSeconds?: number;
   maxErrorRate: number;
   latencyLimitsMs: LatencyLimitsMs;
+  /**
+   * Ends the run as soon as a limit breaks, not at the end. Default per type
+   * (DEFAULT_STOP_ON_LIMIT). Optional: runs stored before this setting existed ran to the end.
+   */
+  stopOnLimit?: boolean;
 }
 
 export const DURATION_PATTERN = /^(\d+(ms|s|m|h))+$/;
 
-export const DEFAULT_LIMITS: Required<RunLimits> = {
+export const DEFAULT_LIMITS: Required<Omit<RunLimits, 'stopOnLimit'>> = {
   thinkTimeSeconds: 1,
   // k6's own default for gracefulRampDown and gracefulStop.
   gracePeriodSeconds: 30,
   maxErrorRate: 0.01,
   latencyLimitsMs: { p50: 200, p90: 400, p95: 500, p99: 1000 },
 };
+
+/**
+ * A load test answers pass or fail, so it stops once the answer is fail. Stress and spike tests
+ * show how far the target degrades and whether it recovers, so they run to the end.
+ */
+export const DEFAULT_STOP_ON_LIMIT: Record<RunType, boolean> = {
+  load: true,
+  stress: false,
+  spike: false,
+};
+
+/** Early in a run a few slow requests swing the percentiles; limits stop it only after this. */
+export const STOP_ON_LIMIT_DELAY_SECONDS = 30;
 
 export const DEFAULT_STAGES: Record<RunType, LoadStage[]> = {
   // Load: normal expected traffic, steady.

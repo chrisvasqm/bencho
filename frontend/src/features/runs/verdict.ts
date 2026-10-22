@@ -53,7 +53,8 @@ export function verdictReason(run: Run, t: Copy): string {
       return t('verdict.error');
     case 'failed': {
       const broken = brokenLimits(run, t);
-      return broken.length > 0 ? broken.join(' · ') : t('verdict.failedUnknown');
+      const reasons = broken.length > 0 ? broken.join(' · ') : t('verdict.failedUnknown');
+      return run.stoppedEarly ? t('verdict.stoppedEarly', { reasons }) : reasons;
     }
     case 'passed': {
       const p95 = run.summary?.metrics.http_req_duration?.['p(95)'];

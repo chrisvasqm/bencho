@@ -6,6 +6,8 @@ import { join } from 'node:path';
 import { AppError } from '../../core/errors.ts';
 import {
   DEFAULT_LIMITS,
+  DEFAULT_STOP_ON_LIMIT,
+  STOP_ON_LIMIT_DELAY_SECONDS,
   DEFAULT_MAX_VIRTUAL_USERS,
   DEFAULT_STAGES,
   stagesToEnv,
@@ -32,6 +34,8 @@ import {
 } from './schema.ts';
 
 const K6_THRESHOLD_FAILED_EXIT_CODE = 99;
+/** What k6 logs when a threshold with abortOnFail ends the run (checked on k6 v2.2.0). */
+const K6_ABORT_ON_FAIL_LOG = 'abortOnFail enabled, stopping test prematurely';
 /** After SIGINT, k6 gets this long to stop gracefully (and write its summary) before SIGKILL. */
 const STOP_GRACE_MS = 10_000;
 const MAX_CONCURRENT_RUNS = 3;
@@ -73,6 +77,8 @@ export class RunsService {
       stages: DEFAULT_STAGES,
       maxVirtualUsers: DEFAULT_MAX_VIRTUAL_USERS,
       limits: DEFAULT_LIMITS,
+      stopOnLimit: DEFAULT_STOP_ON_LIMIT,
+      stopOnLimitDelaySeconds: STOP_ON_LIMIT_DELAY_SECONDS,
       flow: DEFAULT_FLOW,
     };
   }
@@ -105,6 +111,7 @@ export class RunsService {
           gracePeriodSeconds: input.gracePeriodSeconds ?? DEFAULT_LIMITS.gracePeriodSeconds,
           maxErrorRate: input.maxErrorRate ?? DEFAULT_LIMITS.maxErrorRate,
           latencyLimitsMs: input.latencyLimitsMs ?? DEFAULT_LIMITS.latencyLimitsMs,
+          stopOnLimit: input.stopOnLimit ?? DEFAULT_STOP_ON_LIMIT[input.type],
         },
       });
     } finally {
@@ -210,8 +217,10 @@ export class RunsService {
       // A file, not an env var: large flows would pass the OS limit for one env string.
       const flowPath = join(workDir, 'flow.json');
       await writeFile(flowPath, JSON.stringify(run.flow));
-      const { exitCode, stderr } = await this.withLivePoints(run.id, pointsPath, () =>
-        this.spawnK6(run, { summaryPath, pointsPath, flowPath, consolePath }),
+      const { exitCode, stderr, abortedOnLimit } = await this.withLivePoints(
+        run.id,
+        pointsPath,
+        () => this.spawnK6(run, { summaryPath, pointsPath, flowPath, consolePath }),
       );
       const [summary, failures] = await Promise.all([
         readSummary(summaryPath),
@@ -236,6 +245,12 @@ export class RunsService {
         failures,
         errorMessage:
           stopped || exitCode === 0 || exitCode === K6_THRESHOLD_FAILED_EXIT_CODE ? null : stderr,
+        // The exit code is the same as for limits broken at the end; only the log tells them apart.
+        stoppedEarly:
+          !stopped &&
+          run.limits.stopOnLimit === true &&
+          exitCode === K6_THRESHOLD_FAILED_EXIT_CODE &&
+          abortedOnLimit,
         finishedAt: new Date(),
       };
     } finally {
@@ -323,8 +338,9 @@ export class RunsService {
       flowPath,
       consolePath,
     }: { summaryPath: string; pointsPath: string; flowPath: string; consolePath: string },
-  ): Promise<{ exitCode: number; stderr: string }> {
-    const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs, gracePeriodSeconds } = run.limits;
+  ): Promise<{ exitCode: number; stderr: string; abortedOnLimit: boolean }> {
+    const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs, gracePeriodSeconds, stopOnLimit } =
+      run.limits;
     // Only what k6 needs: the child must not inherit DATABASE_URL or other secrets.
     const env = {
       PATH: process.env.PATH,
@@ -342,6 +358,8 @@ export class RunsService {
       P90_MS: String(latencyLimitsMs.p90),
       P95_MS: String(latencyLimitsMs.p95),
       P99_MS: String(latencyLimitsMs.p99),
+      // Runs stored before the setting existed ran to the end.
+      STOP_ON_LIMIT: String(stopOnLimit ?? false),
       // k6 checks every resolved address, so DNS cannot steer a run onto this network.
       ...(this.k6.allowPrivateTargets()
         ? {}
@@ -370,19 +388,23 @@ export class RunsService {
       ];
       if (this.stopRequested.has(run.id)) {
         // Stopped while still queued: never start k6.
-        resolve({ exitCode: -1, stderr: '' });
+        resolve({ exitCode: -1, stderr: '', abortedOnLimit: false });
         return;
       }
       const child = spawn('k6', args, { env });
       this.processes.set(run.id, child);
       let stderr = '';
+      // Checked on the full log: later lines can push the abort line out of the kept tail.
+      let abortedOnLimit = false;
       child.stderr.on('data', (chunk: Buffer) => {
-        stderr = (stderr + chunk.toString()).slice(-4000);
+        const joined = stderr + chunk.toString();
+        abortedOnLimit ||= joined.includes(K6_ABORT_ON_FAIL_LOG);
+        stderr = joined.slice(-4000);
       });
       child.on('error', reject);
       child.on('close', (code) => {
         this.processes.delete(run.id);
-        resolve({ exitCode: code ?? -1, stderr: stderr.trim() });
+        resolve({ exitCode: code ?? -1, stderr: stderr.trim(), abortedOnLimit });
       });
     });
   }

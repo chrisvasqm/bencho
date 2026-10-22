@@ -221,6 +221,9 @@ export const es: Translation = {
     gracePeriod: 'Periodo de gracia',
     gracePeriodHint:
       'Segundos que un usuario puede usar para terminar su flujo después de la última etapa (y, con Usuarios, cuando la forma de la carga lo quita). Pasado este tiempo, k6 corta el flujo.',
+    stopOnLimit: 'Detener cuando se supere un límite',
+    stopOnLimitHint:
+      'Termina la ejecución en el primer límite superado, después de los primeros {{seconds}} segundos. Activado por defecto en pruebas de carga. Las pruebas de estrés y de picos siguen hasta el final para mostrar cuánto empeora el destino.',
     latencyLimits: 'Límites de latencia (ms)',
     rulesNoteTitle: 'Cómo funcionan las reglas',
   },
@@ -391,6 +394,7 @@ export const es: Translation = {
     steps_other: '{{count}} pasos',
     steps_many: '{{count}} pasos',
     pauses: 'pausa de {{think}}s entre pasos, {{grace}}s para terminar',
+    stopOnLimit: 'se detiene cuando se supera un límite',
     ownWaits: ', algunos pasos esperan su propio rango',
     took: 'duró {{seconds}}s',
     errorRate: 'Errores',
@@ -419,6 +423,7 @@ export const es: Translation = {
     dropped_many:
       'Se descartaron {{count}} flujos planeados porque todos los usuarios estaban ocupados',
     failedUnknown: 'Se superó un límite.',
+    stoppedEarly: 'Detenida antes de tiempo por un límite superado: {{reasons}}',
     passed: 'Todos los límites se cumplieron. p95 {{p95}}, límite {{limit}}.',
     passedNoTotals: 'Todos los límites se cumplieron.',
     stopped: 'Detuviste esta ejecución. Se guardaron los resultados obtenidos hasta ahora.',
