@@ -117,7 +117,10 @@ export function RunList({
                   {/* 24px hit area around the 16px box (WCAG 2.2 target size). */}
                   <label
                     className="-mx-1 flex size-6 shrink-0 cursor-pointer items-center justify-center"
-                    onClick={(event) => event.stopPropagation()}
+                    onClick={(event) => {
+                      // A disabled box (active run) lets the click fall through and open the run.
+                      if (!isActive(run.status)) event.stopPropagation();
+                    }}
                   >
                     <Checkbox
                       aria-label={t('runs.selectRun', { time })}
