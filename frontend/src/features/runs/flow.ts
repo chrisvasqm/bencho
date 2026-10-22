@@ -1,4 +1,4 @@
-// Flow editing helpers: drafts the editor can hold mid-typing, the QuickPizza example and
+// Flow editing helpers: drafts the editor can hold mid-typing, the QuickPizza and SOAP examples and
 // checks that mirror the backend so the user sees which step to fix.
 import type { BodyFormat, FlowStep, HttpMethod } from '../../api/runs.ts';
 import { newId } from './ids.ts';
@@ -163,6 +163,58 @@ export const QUICKPIZZA_FLOW: FlowStep[] = [
     path: '/api/ratings',
     headers: AUTH,
     body: null,
+    expectedStatus: 200,
+    extract: [],
+  },
+];
+
+const soapRequest = (content: string) =>
+  [
+    '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">',
+    '  <soapenv:Body>',
+    `    ${content}`,
+    '  </soapenv:Body>',
+    '</soapenv:Envelope>',
+  ].join('\n');
+const HELLO_NS = 'xmlns="http://learnwebservices.com/services/hello"';
+const TEMPERATURE_NS = 'xmlns="http://learnwebservices.com/services/tempconverter"';
+
+/**
+ * Against the SOAP demo app (Learn Web Services): a user says hello, converts a temperature to
+ * Fahrenheit and converts the saved result back to Celsius.
+ */
+export const SOAP_FLOW: FlowStep[] = [
+  {
+    name: 'Say hello',
+    method: 'POST',
+    path: '/services/hello',
+    headers: {},
+    body: soapRequest(`<HelloRequest ${HELLO_NS}><Name>user-{{shortId}}</Name></HelloRequest>`),
+    bodyFormat: 'soap',
+    expectedStatus: 200,
+    extract: [{ name: 'greeting', path: 'HelloResponse.Message' }],
+  },
+  {
+    name: 'Celsius to Fahrenheit',
+    method: 'POST',
+    path: '/services/tempconverter',
+    headers: {},
+    body: soapRequest(
+      `<CelsiusToFahrenheitRequest ${TEMPERATURE_NS}><TemperatureInCelsius>{{iter}}</TemperatureInCelsius></CelsiusToFahrenheitRequest>`,
+    ),
+    bodyFormat: 'soap',
+    expectedStatus: 200,
+    extract: [{ name: 'fahrenheit', path: 'TemperatureInFahrenheit' }],
+  },
+  {
+    name: 'Fahrenheit to Celsius',
+    method: 'POST',
+    path: '/services/tempconverter',
+    headers: {},
+    body: soapRequest(
+      `<FahrenheitToCelsiusRequest ${TEMPERATURE_NS}><TemperatureInFahrenheit>{{fahrenheit}}</TemperatureInFahrenheit></FahrenheitToCelsiusRequest>`,
+    ),
+    bodyFormat: 'soap',
     expectedStatus: 200,
     extract: [],
   },

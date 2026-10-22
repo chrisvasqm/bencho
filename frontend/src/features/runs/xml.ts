@@ -9,9 +9,17 @@ interface XmlElement {
   text: string;
 }
 
+// XML name characters (BMP) as ranges: k6's regex engine fails on \p{L} at index 0. Joiners
+// and combining marks are left out (lint: misleading character class); names rarely use them.
+const NAME_START =
+  'A-Za-z_\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF' +
+  '\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD';
+const NAME_REST = `${NAME_START}0-9.:\\u00B7\\u203F\\u2040-`;
 // An open tag with its attributes; sticky, so it matches only where the tag starts.
-const OPEN_TAG =
-  /<([\p{L}_][\p{L}\p{N}.:_-]*)((?:\s+[^\s=/>]+\s*=\s*(?:"[^"<]*"|'[^'<]*'))*)\s*(\/?)>/uy;
+const OPEN_TAG = new RegExp(
+  `<([${NAME_START}][${NAME_REST}]*)((?:\\s+[^\\s=/>]+\\s*=\\s*(?:"[^"<]*"|'[^'<]*'))*)\\s*(/?)>`,
+  'y',
+);
 // Only the five predefined entities and character references: no DOCTYPE, so no others exist.
 const BAD_AMPERSAND = /&(?!(?:#x[0-9A-Fa-f]+|#\d+|lt|gt|amp|quot|apos);)/;
 const ENTITY = /&(#x[0-9A-Fa-f]+|#\d+|lt|gt|amp|quot|apos);/g;

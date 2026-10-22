@@ -41,6 +41,7 @@ export function useTestApp(k6Overrides: Partial<K6Settings> = {}): TestApp {
   const k6: K6Settings = {
     bundleDir: config.K6_BUNDLE_DIR,
     defaultBaseUrl: config.DEFAULT_BASE_URL,
+    soapExampleBaseUrl: config.SOAP_EXAMPLE_BASE_URL,
     allowPrivateTargets: () => config.allowPrivateTargets,
     ...k6Overrides,
   };

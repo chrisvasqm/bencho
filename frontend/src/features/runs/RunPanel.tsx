@@ -144,6 +144,12 @@ export interface RunPanelProps {
   className?: string;
 }
 
+/** True when both are URLs on the same scheme, host and port: http://Demo:8080/ is http://demo:8080. */
+function sameOrigin(url: string, other: string | undefined): boolean {
+  if (other === undefined || !URL.canParse(url.trim()) || !URL.canParse(other)) return false;
+  return new URL(url.trim()).origin === new URL(other).origin;
+}
+
 export function RunPanel({ defaults, ...props }: RunPanelProps) {
   if (!defaults) return <RunPanelSkeleton className={props.className} />;
   return <RunPanelForm defaults={defaults} {...props} />;
@@ -425,6 +431,22 @@ function RunPanelForm({
                     }}
                     openId={openStepId}
                     onOpenChange={setOpenStepId}
+                    hasSoapExample={Boolean(defaults.soapExampleBaseUrl)}
+                    onExampleLoad={(example) => {
+                      const { soapExampleBaseUrl } = defaults;
+                      // The SOAP example needs its demo app. QuickPizza keeps a typed URL, but
+                      // not the SOAP demo's, which cannot serve it.
+                      const target =
+                        example === 'soap'
+                          ? soapExampleBaseUrl
+                          : sameOrigin(baseUrl, soapExampleBaseUrl)
+                            ? defaults.baseUrl
+                            : undefined;
+                      if (target === undefined) return;
+                      setBaseUrl(target);
+                      // The example's URL is valid: drop an earlier base URL problem.
+                      setErrors(({ baseUrl: _fixed, ...rest }) => rest);
+                    }}
                     errorStepId={errorStepId}
                     error={errors.flow}
                     scrollToError={submitCount !== shownErrorRevision}

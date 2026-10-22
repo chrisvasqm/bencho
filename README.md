@@ -12,16 +12,17 @@ cd bencho
 docker compose up -d --build
 ```
 
-Open http://localhost:10004, pick a test type and click **Start load test** (or stress/spike). The default target `http://quickpizza:3333` is a demo app in the stack; any URL works.
+Open http://localhost:10004, pick a test type and click **Start load test** (or stress/spike). The default target `http://quickpizza:3333` is a demo app in the stack; any URL works. On the Flow tab, **Load SOAP example** sets the target to the SOAP demo app (`http://soap-demo:8080`, [Learn Web Services](https://www.learnwebservices.com/): SayHello and a temperature converter) and loads a three-step SOAP flow.
 
 Stop with `docker compose down` (add `-v` to delete stored runs).
 
-| Service    | URL                    | Port var          |
-| ---------- | ---------------------- | ----------------- |
-| Frontend   | http://localhost:10004 | `FRONTEND_PORT`   |
-| Backend    | http://localhost:10003 | `BACKEND_PORT`    |
-| Postgres   | localhost:10002        | `POSTGRES_PORT`   |
-| QuickPizza | http://localhost:10001 | `QUICKPIZZA_PORT` |
+| Service    | URL                             | Port var          |
+| ---------- | ------------------------------- | ----------------- |
+| Frontend   | http://localhost:10004          | `FRONTEND_PORT`   |
+| Backend    | http://localhost:10003          | `BACKEND_PORT`    |
+| Postgres   | localhost:10002                 | `POSTGRES_PORT`   |
+| QuickPizza | http://localhost:10001          | `QUICKPIZZA_PORT` |
+| SOAP demo  | http://localhost:10007/services | `SOAP_DEMO_PORT`  |
 
 Each run counts its stage targets as virtual users (k6 `ramping-vus`) or as a rate of flow runs started per second (k6 `ramping-arrival-rate`, with a max VUs cap; default 100). Rates take up to 2 decimals, so 0.25 is one flow run every 4 seconds. A rate run keeps its rate as the server slows down, and reports the flow runs it dropped when every allowed VU was busy.
 
@@ -72,7 +73,7 @@ Set `ALLOW_PRIVATE_TARGETS=false` (exactly; `true` or empty allows, anything els
 Requires Node 24, pnpm and k6 (`brew install k6`).
 
 ```sh
-docker compose up -d postgres quickpizza
+docker compose up -d postgres quickpizza soap-demo
 cd backend && pnpm install && pnpm dev     # API on :10003
 cd frontend && pnpm install && pnpm dev    # UI on :10004
 cd frontend && pnpm storybook              # UI kit on :10006
@@ -82,7 +83,7 @@ cd frontend && pnpm storybook              # UI kit on :10006
 
 ## Tests
 
-Keep QuickPizza running; tests start real k6 runs. Both suites use throwaway databases on `postgres-test` (:10005), so dev data is never touched, and both run in parallel: Vitest gives each test file its own database, Playwright gives each worker its own backend and Vite server (ports 10013/10014, then 10015/10016, ...; `E2E_PORT_BASE` moves them).
+Keep QuickPizza and the SOAP demo running; tests start real k6 runs. Both suites use throwaway databases on `postgres-test` (:10005), so dev data is never touched, and both run in parallel: Vitest gives each test file its own database, Playwright gives each worker its own backend and Vite server (ports 10013/10014, then 10015/10016, ...; `E2E_PORT_BASE` moves them).
 
 ```sh
 cd backend && pnpm test:db && pnpm test     # integration (Vitest)

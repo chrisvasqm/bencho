@@ -1,6 +1,12 @@
 // Ordered steps one virtual user runs per iteration. One step is open for editing at a time.
 import { useEffect, useRef } from 'react';
-import { BODY_FORMATS, HTTP_METHODS, type BodyFormat, type HttpMethod } from '../../api/runs.ts';
+import {
+  BODY_FORMATS,
+  HTTP_METHODS,
+  type BodyFormat,
+  type FlowStep,
+  type HttpMethod,
+} from '../../api/runs.ts';
 import {
   Button,
   Field,
@@ -16,6 +22,7 @@ import {
   MAX_STEP_NAME_LENGTH,
   MAX_WAIT_SECONDS,
   QUICKPIZZA_FLOW,
+  SOAP_FLOW,
   emptyStep,
   toDraft,
   type StepDraft,
@@ -36,6 +43,10 @@ export interface FlowEditorProps {
   onErrorShown?: () => void;
   /** "Step 2 (Log in)", shown with the message when that step is closed. */
   errorLabel?: string;
+  /** Shows "Load SOAP example"; its target is the run panel's business (onExampleLoad). */
+  hasSoapExample: boolean;
+  /** Called after an example's steps are loaded, so the panel can point the run at its target. */
+  onExampleLoad: (example: 'quickPizza' | 'soap') => void;
 }
 
 const METHOD_OPTIONS = HTTP_METHODS.map((value) => ({ value, label: value }));
@@ -58,6 +69,8 @@ export function FlowEditor({
   scrollToError,
   onErrorShown,
   errorLabel,
+  hasSoapExample,
+  onExampleLoad,
 }: FlowEditorProps) {
   // A problem with no step, or with its step closed, shows under the list instead.
   const listError = error && (!errorStepId || errorStepId !== openId) ? error : undefined;
@@ -82,8 +95,8 @@ export function FlowEditor({
     onChange([...steps, step]);
     setOpenId(step.id);
   };
-  const loadExample = () => {
-    const example = QUICKPIZZA_FLOW.map(toDraft);
+  const loadExample = (flow: FlowStep[]) => {
+    const example = flow.map(toDraft);
     onChange(example);
     setOpenId(example[0]?.id);
   };
@@ -189,9 +202,30 @@ export function FlowEditor({
         <Button variant="secondary" size="sm" onClick={add}>
           Add step
         </Button>
-        <Button variant="ghost" size="sm" onClick={loadExample}>
+        <Button
+          variant="ghost"
+          size="sm"
+          data-testid="load-quickpizza-example"
+          onClick={() => {
+            loadExample(QUICKPIZZA_FLOW);
+            onExampleLoad('quickPizza');
+          }}
+        >
           Load QuickPizza example
         </Button>
+        {hasSoapExample && (
+          <Button
+            variant="ghost"
+            size="sm"
+            data-testid="load-soap-example"
+            onClick={() => {
+              loadExample(SOAP_FLOW);
+              onExampleLoad('soap');
+            }}
+          >
+            Load SOAP example
+          </Button>
+        )}
       </div>
     </div>
   );

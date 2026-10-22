@@ -55,6 +55,34 @@ test('a SOAP step sends its XML body as SOAP and passes', async ({ page }) => {
   await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
 });
 
+test('the SOAP example runs against the SOAP demo app and passes', async ({ page, api }) => {
+  const { soapExampleBaseUrl } = await api.defaults();
+  await page.getByTestId('panel-tab-flow').click();
+  await page.getByTestId('load-soap-example').click();
+  await setSingleStage(page, '1s');
+  await setLooseLimits(page);
+
+  await startRun(page);
+
+  await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
+  await page.getByTestId('panel-tab-setup').click();
+  await expect(page.getByTestId('base-url')).toHaveValue(soapExampleBaseUrl ?? '');
+});
+
+test('the QuickPizza example after the SOAP example points the run back at QuickPizza', async ({
+  page,
+  api,
+}) => {
+  const { baseUrl } = await api.defaults();
+  await page.getByTestId('panel-tab-flow').click();
+  await page.getByTestId('load-soap-example').click();
+  await page.getByTestId('load-quickpizza-example').click();
+
+  await page.getByTestId('panel-tab-setup').click();
+
+  await expect(page.getByTestId('base-url')).toHaveValue(baseUrl);
+});
+
 test('a SOAP step with malformed XML shows the problem without calling the backend', async ({
   page,
   api,

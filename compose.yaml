@@ -1,10 +1,17 @@
-# Local stack: target API (QuickPizza), Postgres, backend (runs k6), frontend.
+# Local stack: target APIs (QuickPizza, SOAP demo), Postgres, backend (runs k6), frontend.
 # Every host port is an env var so parallel stacks can pick other ports.
 services:
   quickpizza:
     image: ghcr.io/grafana/quickpizza-local:0.15.31
     ports:
       - "127.0.0.1:${QUICKPIZZA_PORT:-10001}:3333"
+    restart: unless-stopped
+
+  # SOAP target for the SOAP example flow: Learn Web Services (SayHello, temperature converter).
+  soap-demo:
+    image: vicziani/lwsapp:3.0.1@sha256:7ebfad6577cb89e5d5ee6a2d6f646eff9f1cdd5fee2be45701aabe4e4cd72af0
+    ports:
+      - "127.0.0.1:${SOAP_DEMO_PORT:-10007}:8080"
     restart: unless-stopped
 
   postgres:
@@ -50,6 +57,7 @@ services:
     environment:
       DATABASE_URL: postgres://perf:perf@postgres:5432/perf
       DEFAULT_BASE_URL: http://quickpizza:3333
+      SOAP_EXAMPLE_BASE_URL: http://soap-demo:8080
       # Set to false when people who must not load-test your own network can reach Bencho.
       ALLOW_PRIVATE_TARGETS: ${ALLOW_PRIVATE_TARGETS:-}
     ports:
