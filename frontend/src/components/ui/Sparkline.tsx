@@ -21,7 +21,10 @@ export function Sparkline({
   className,
 }: SparklineProps) {
   if (values.length < 2) return null;
-  const top = Math.max(...values, limit ?? 0) * 1.1 || 1;
+  const peak = values.reduce((max, value) => (value > max ? value : max), 0);
+  // A limit far above the data would flatten the line; then the line is the whole story.
+  const shownLimit = limit !== undefined && limit <= peak * 3 ? limit : undefined;
+  const top = Math.max(peak, shownLimit ?? 0) * 1.1 || 1;
   const x = (index: number) => (index / (values.length - 1)) * width;
   const y = (value: number) => height - 2 - (value / top) * (height - 6);
   const points = values.map((value, index) => `${x(index).toFixed(1)},${y(value).toFixed(1)}`);
@@ -41,12 +44,12 @@ export function Sparkline({
           fillOpacity={0.12}
         />
       )}
-      {limit !== undefined && (
+      {shownLimit !== undefined && (
         <line
           x1={0}
           x2={width}
-          y1={y(limit)}
-          y2={y(limit)}
+          y1={y(shownLimit)}
+          y2={y(shownLimit)}
           stroke="var(--danger)"
           strokeWidth={1.2}
           strokeDasharray="4 3"

@@ -57,6 +57,8 @@ export function RunList({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.18 }}
+        role="listbox"
+        aria-label={t('app.runsTitle')}
         className="m-0 list-none p-0"
       >
         {loading
@@ -85,7 +87,16 @@ export function RunList({
                   exit={{ opacity: 0, transition: { duration: 0.12 } }}
                   transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
                   onClick={() => onSelect(run)}
+                  role="option"
                   aria-selected={selected}
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      onSelect(run);
+                    }
+                  }}
                   data-testid="run-row"
                   data-run-id={run.id}
                   data-status={run.status}
@@ -138,11 +149,12 @@ export function RunList({
                     <span className="flex gap-1 font-mono text-[11px] text-fg-muted tabular-nums">
                       <span className="truncate">{time}</span>
                       <span className="shrink-0">
-                        · {formatMs(run.summary?.metrics.http_req_duration?.['p(95)'])}
+                        · {formatMs(run.summary?.metrics.http_req_duration?.['p(95)'])} ·{' '}
+                        {formatPercent(run.summary?.metrics.http_req_failed?.value)}
                       </span>
                     </span>
                   </div>
-                  <RunSparkline run={run} width={60} />
+                  <RunSparkline run={run} width={56} />
                 </m.li>
               );
             })}

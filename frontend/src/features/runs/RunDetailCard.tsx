@@ -219,7 +219,7 @@ export function RunDetailCard({
 
         <div className="flex flex-wrap items-center gap-1.5 text-xs" data-testid="run-made-with">
           <span className="font-medium text-fg-muted">{t('detail.madeWith')}</span>
-          <Chip title={run.baseUrl}>{run.baseUrl.replace(/^https?:\/\//, '')}</Chip>
+          <Chip title={run.baseUrl}>{run.baseUrl}</Chip>
           <Chip title={formatStages(run.stages, run.mode, t)}>
             {formatPeak(run, t)} · {formatSeconds(plannedSeconds(run.stages))}
           </Chip>
@@ -235,12 +235,11 @@ export function RunDetailCard({
             </Chip>
           )}
           <Chip title={run.flow.map((step) => step.name).join(' → ')}>
-            {t('detail.steps', { count: run.flow.length })}
+            {t('detail.steps', { count: run.flow.length })}:{' '}
+            {run.flow.map((step) => step.name).join(' → ')}
           </Chip>
-          <Chip>p95 &lt; {run.limits.latencyLimitsMs.p95} ms</Chip>
-          <Chip>
-            {t('detail.errorRate').toLowerCase()} &lt; {(run.limits.maxErrorRate * 100).toFixed(2)}%
-          </Chip>
+          <Chip>{t('detail.p95Under', { limit: run.limits.latencyLimitsMs.p95 })}</Chip>
+          <Chip>{t('detail.errorsUnder', { limit: formatPercent(run.limits.maxErrorRate) })}</Chip>
           <Chip>
             {t('detail.pauses', {
               think: run.limits.thinkTimeSeconds,
@@ -272,7 +271,7 @@ export function RunDetailCard({
             <Stat
               label={t('detail.errorRate')}
               value={formatPercent(failed?.value)}
-              limit={`< ${(run.limits.maxErrorRate * 100).toFixed(2)}%`}
+              limit={`< ${formatPercent(run.limits.maxErrorRate)}`}
               tone={toneFor(failed?.value, run.limits.maxErrorRate)}
             />
             <Stat

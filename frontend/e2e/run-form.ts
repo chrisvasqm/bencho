@@ -19,7 +19,16 @@ export async function setSingleStage(page: Page, duration: string): Promise<void
 }
 
 /** Latency limits no local request can reach, no think time, and a 50% error limit. */
+export type PanelTab = 'setup' | 'flow' | 'limits';
+
+/** Shows one section of the run form: Setup, Steps or Pass rules. */
+export async function openTab(page: Page, tab: PanelTab): Promise<void> {
+  await page.getByTestId(`panel-tab-${tab}`).click();
+  await expect(page.getByTestId(`panel-section-${tab}`)).toBeVisible();
+}
+
 export async function setLooseLimits(page: Page): Promise<void> {
+  await openTab(page, 'limits');
   await expect(page.getByTestId('think-time')).toBeVisible();
   await page.getByTestId('think-time').fill('0');
   await page.getByTestId('max-error-rate').fill('50');

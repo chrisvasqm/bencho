@@ -83,6 +83,7 @@ export const es: Translation = {
   panel: {
     title: 'Nueva ejecución',
     close: 'Cerrar',
+    tabsLabel: 'Secciones del formulario',
     sections: {
       setup: 'Ajustes',
       flow: 'Pasos',
@@ -303,6 +304,8 @@ export const es: Translation = {
     took: 'duró {{seconds}}s',
     errorRate: 'Errores',
     madeWith: 'Hecha con',
+    p95Under: 'p95 < {{limit}} ms',
+    errorsUnder: 'errores < {{limit}}',
     requests: 'Solicitudes',
     readTitle: 'Cómo leer estos números',
     read1: 'Verde significa que el número está dentro de su límite. Rojo, que pasó el límite.',

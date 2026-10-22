@@ -23,10 +23,16 @@ export function RunSparkline({ run, width, height, detailed }: RunSparklineProps
     refetchInterval: active ? POLL_INTERVAL_MS : false,
     // A finished run's points never change.
     staleTime: active ? 0 : Infinity,
+    // The key changes with the status; the old line stays until the new one arrives.
+    placeholderData: (previous) => previous,
   });
-  const values = (points.data?.points ?? [])
-    .map((point) => point.p95)
-    .filter((value): value is number => value !== null);
+  // One value per second: a second with no requests keeps the last p95, so time stays even.
+  const values: number[] = [];
+  let last = 0;
+  for (const point of points.data?.points ?? []) {
+    if (point.p95 !== null) last = point.p95;
+    values.push(last);
+  }
   return (
     <Sparkline
       values={values}

@@ -1,6 +1,6 @@
 // Real k6 runs, started and controlled from the UI.
 import { expect, openApp, test } from './fixtures.ts';
-import { openNewRun, setLooseLimits, setSingleStage, startRun } from './run-form.ts';
+import { openNewRun, openTab, setLooseLimits, setSingleStage, startRun } from './run-form.ts';
 
 test.beforeEach(async ({ page }) => {
   await openApp(page);
@@ -22,6 +22,7 @@ test('a run within its limits passes and shows its numbers', async ({ page }) =>
 });
 
 test('a run with a random wait after a step passes', async ({ page }) => {
+  await openTab(page, 'flow');
   await page.getByTestId('step-wait-min').fill('.1');
   await page.getByTestId('step-wait-max').fill('0,3');
   await setSingleStage(page, '1s');
@@ -39,6 +40,7 @@ test('a run with a random wait after a step passes', async ({ page }) => {
 
 test('a SOAP step sends its XML body as SOAP and passes', async ({ page }) => {
   const body = '<Envelope><Body><Ping id="{{uuid}}">user-{{shortId}}</Ping></Body></Envelope>';
+  await openTab(page, 'flow');
   await page.getByTestId('step-body-format-soap').click();
   await page.getByTestId('step-body').fill(body);
   await setSingleStage(page, '1s');
@@ -82,6 +84,7 @@ test('a SOAP step with malformed XML shows the problem without calling the backe
   page,
   api,
 }) => {
+  await openTab(page, 'flow');
   await page.getByTestId('step-body-format-soap').click();
   await page.getByTestId('step-body').fill('<Envelope><Body></Envelope>');
 
@@ -169,6 +172,7 @@ test('refuses a VU cap below 1 without starting a run', async ({ page }) => {
 });
 
 test('a failed run shows a sample of the failed responses', async ({ page }) => {
+  await openTab(page, 'flow');
   await page.getByTestId('step-expected-status').fill('418');
   await setSingleStage(page, '1s');
   await setLooseLimits(page);

@@ -79,6 +79,7 @@ export const en = {
   panel: {
     title: 'New run',
     close: 'Close',
+    tabsLabel: 'Form sections',
     sections: {
       setup: 'Setup',
       flow: 'Steps',
@@ -296,6 +297,8 @@ export const en = {
     took: 'took {{seconds}}s',
     errorRate: 'Errors',
     madeWith: 'Made with',
+    p95Under: 'p95 < {{limit}} ms',
+    errorsUnder: 'errors < {{limit}}',
     requests: 'Requests',
     readTitle: 'How to read these numbers',
     read1: 'Green means the number is within its limit. Red means it broke the limit.',
