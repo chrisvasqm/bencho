@@ -84,7 +84,7 @@ export const en = {
     sections: {
       setup: 'Setup',
       flow: 'Steps',
-      limits: 'Pass rules',
+      limits: 'Rules',
     },
     filledFrom: 'Settings from the {{typeLower}} run of {{time}}. Change what you need.',
     loading: 'Loading settings…',

@@ -88,7 +88,7 @@ export const es: Translation = {
     sections: {
       setup: 'Ajustes',
       flow: 'Pasos',
-      limits: 'Reglas para aprobar',
+      limits: 'Reglas',
     },
     filledFrom: 'Ajustes de la ejecución de {{typeLower}} del {{time}}. Cambia lo que necesites.',
     loading: 'Cargando ajustes…',
