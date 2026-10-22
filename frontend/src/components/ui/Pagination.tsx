@@ -18,7 +18,7 @@ export function Pagination({ page, pageSize, total, onPageChange, loading }: Pag
   return (
     <nav
       aria-label={t('pagination.label')}
-      className="flex flex-wrap items-center justify-between gap-3"
+      className="flex min-h-8 flex-wrap items-center justify-between gap-3"
     >
       <p data-testid="pagination-range" className="text-xs text-fg-muted tabular-nums">
         {total === 0 ? t('pagination.none') : t('pagination.range', { first, last, total })}
