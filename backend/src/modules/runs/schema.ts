@@ -210,10 +210,14 @@ export const createRunSchema = z
   })
   .superRefine((input, context) => {
     for (const [index, stage] of (input.stages ?? []).entries()) {
-      if (isValidTarget(stage.target, input.mode ?? 'users')) continue;
+      const mode = input.mode ?? 'users';
+      if (isValidTarget(stage.target, mode)) continue;
       context.addIssue({
         code: 'custom',
-        message: 'Use whole virtual users, or a rate with at most 2 decimals',
+        message:
+          mode === 'rate'
+            ? 'Use a rate of 0 or more with at most 2 decimals'
+            : 'Use a whole number of virtual users',
         path: ['stages', index, 'target'],
       });
     }

@@ -64,7 +64,8 @@ export function formatStages(stages: Stage[], mode: LoadMode): string {
 }
 
 export function peakTarget(stages: Stage[]): number {
-  return Math.max(0, ...stages.map((stage) => stage.target));
+  // A target still being typed (NaN) must not hide the others, such as in the capacity warning.
+  return Math.max(0, ...stages.map((stage) => stage.target).filter(Number.isFinite));
 }
 
 /** The largest stage target with its unit: "20 VUs", or "50/s" for a rate run. */

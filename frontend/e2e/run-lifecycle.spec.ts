@@ -73,8 +73,13 @@ test('a rate run that cannot keep its rate fails and shows the dropped runs', as
   await expect(chart).toContainText('Dropped');
 });
 
-test('accepts a rate below 1 per second and refuses one with 3 decimals', async ({ page }) => {
+test('accepts a rate below 1 per second and refuses unclear targets', async ({ page }) => {
   await page.getByTestId('panel-tab-shape').click();
+  // "1,000" users is a thousands separator, not 1: refused, never sent as 1 VU.
+  await page.getByTestId('stage-0-target').fill('1,000');
+  await page.getByTestId('start-run').click();
+  await expect(page.getByTestId('stages-error')).toBeVisible();
+
   await page.getByTestId('load-mode-rate').click();
   await expect(page.getByTestId('load-mode-hint')).toContainText('flow runs started per second');
   await page.getByTestId('stage-0-target').fill('0.125');

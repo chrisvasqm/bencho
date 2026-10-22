@@ -34,7 +34,7 @@ import {
 } from './format.ts';
 import { CapacityHint } from './CapacityHint.tsx';
 import { StagesEditor } from './StagesEditor.tsx';
-import { toStageRow, type StageRow } from './stages.ts';
+import { parseTarget, toStageRow, type StageRow } from './stages.ts';
 import { FlowEditor } from './FlowEditor.tsx';
 import { draftProblem, flowProblem, fromDraft, toDraft, type StepDraft } from './flow.ts';
 
@@ -320,7 +320,16 @@ function RunPanelForm({
                       label="Stage targets count"
                       testId="load-mode"
                       value={mode}
-                      onChange={setMode}
+                      onChange={(next) => {
+                        setMode(next);
+                        // The same text can be valid in one mode and not the other ("0,5").
+                        setStages(
+                          stages.map((stage) => ({
+                            ...stage,
+                            target: parseTarget(stage.targetText, next === 'rate'),
+                          })),
+                        );
+                      }}
                       options={LOAD_MODES.map((value) => ({
                         value,
                         label: LOAD_MODE_LABELS[value],

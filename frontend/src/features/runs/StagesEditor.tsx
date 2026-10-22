@@ -48,7 +48,7 @@ export function StagesEditor({ stages, onChange, targetLabel, decimals }: Stages
             onChange={(event) =>
               update(index, {
                 targetText: event.target.value,
-                target: parseTarget(event.target.value),
+                target: parseTarget(event.target.value, decimals),
               })
             }
           />

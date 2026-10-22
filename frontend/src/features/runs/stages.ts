@@ -14,10 +14,14 @@ export function toStageRow(stage: Stage): StageRow {
   return { ...stage, targetText: String(stage.target), id: newId('stage') };
 }
 
-const TARGET_PATTERN = /^\d+(\.\d+)?$/;
+// Whole digits for VUs, so "1,000" is an error and never 1. A rate takes one decimal comma or
+// point with up to 2 digits after it: "0,25", "0.25", ".25".
+const WHOLE_PATTERN = /^\d+$/;
+const RATE_PATTERN = /^(\d+|\d*[.,]\d{1,2})$/;
 
-/** "0,25" or "0.25" → 0.25. Anything else, empty included, is NaN, so validation reports it. */
-export function parseTarget(text: string): number {
-  const value = text.trim().replace(',', '.');
-  return TARGET_PATTERN.test(value) ? Number(value) : Number.NaN;
+/** The typed target as a number, or NaN (empty included) so validation reports it. */
+export function parseTarget(text: string, decimals: boolean): number {
+  const value = text.trim();
+  if (!(decimals ? RATE_PATTERN : WHOLE_PATTERN).test(value)) return Number.NaN;
+  return Number(value.replace(',', '.'));
 }
