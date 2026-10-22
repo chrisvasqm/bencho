@@ -29,7 +29,8 @@ export const NoLimit: Story = {
   args: {
     label: 'Requests',
     value: '4,280',
-    unit: '42.5 per second',
+    unit: undefined,
+    footer: { left: '42.5 per second', right: 'over 100 s' },
     limit: undefined,
     tone: 'neutral',
     status: undefined,

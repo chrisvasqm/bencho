@@ -392,6 +392,7 @@ export const es: Translation = {
     overLimit: 'Pasó el límite',
     ofLimit: '{{percent}}% del límite',
     perSecond: '{{rate}} por segundo',
+    over: 'en {{seconds}} s',
     errorsUnder: 'errores < {{limit}}',
     requests: 'Solicitudes',
     readTitle: 'Cómo leer estos números',

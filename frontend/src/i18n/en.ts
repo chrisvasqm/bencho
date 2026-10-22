@@ -381,6 +381,7 @@ export const en = {
     overLimit: 'Over limit',
     ofLimit: '{{percent}}% of limit',
     perSecond: '{{rate}} per second',
+    over: 'over {{seconds}} s',
     errorsUnder: 'errors < {{limit}}',
     requests: 'Requests',
     readTitle: 'How to read these numbers',
