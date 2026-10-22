@@ -76,6 +76,15 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+    # `docker compose up -d --watch` rebuilds the image when the source changes.
+    develop:
+      watch:
+        - action: rebuild
+          path: ./frontend/src
+        - action: rebuild
+          path: ./frontend/index.html
+        - action: rebuild
+          path: ./frontend/package.json
 
 volumes:
   postgres-data:
