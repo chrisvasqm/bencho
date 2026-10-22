@@ -299,6 +299,7 @@ export const en = {
     errorRate: 'Errors',
     madeWith: 'Made with',
     p95Under: 'p95 < {{limit}} ms',
+    latency: 'Latency',
     errorsUnder: 'errors < {{limit}}',
     requests: 'Requests',
     readTitle: 'How to read these numbers',

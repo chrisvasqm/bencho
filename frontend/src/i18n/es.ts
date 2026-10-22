@@ -306,6 +306,7 @@ export const es: Translation = {
     errorRate: 'Errores',
     madeWith: 'Hecha con',
     p95Under: 'p95 < {{limit}} ms',
+    latency: 'Latencia',
     errorsUnder: 'errores < {{limit}}',
     requests: 'Solicitudes',
     readTitle: 'Cómo leer estos números',

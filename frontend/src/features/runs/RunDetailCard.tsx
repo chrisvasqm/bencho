@@ -255,19 +255,20 @@ export function RunDetailCard({
         </div>
 
         {run.summary ? (
-          <div
-            data-testid="run-summary"
-            className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6"
-          >
-            {LATENCY_KEYS.map(([label, metricKey]) => (
-              <Stat
-                key={label}
-                label={label}
-                value={formatMs(duration?.[metricKey])}
-                limit={`< ${run.limits.latencyLimitsMs[label]} ms`}
-                tone={toneFor(duration?.[metricKey], run.limits.latencyLimitsMs[label])}
-              />
-            ))}
+          <div data-testid="run-summary" className="grid grid-cols-3 gap-2">
+            <Stat
+              testId="stat-latency"
+              label={t('detail.latency')}
+              value={formatMs(duration?.['p(99)'])}
+              limit={`< ${run.limits.latencyLimitsMs.p99} ms`}
+              tone={toneFor(duration?.['p(99)'], run.limits.latencyLimitsMs.p99)}
+              details={LATENCY_KEYS.map(([label, metricKey]) => ({
+                label,
+                value: formatMs(duration?.[metricKey]),
+                limit: `< ${run.limits.latencyLimitsMs[label]} ms`,
+                tone: toneFor(duration?.[metricKey], run.limits.latencyLimitsMs[label]),
+              }))}
+            />
             <Stat
               label={t('detail.errorRate')}
               value={formatPercent(failed?.value)}

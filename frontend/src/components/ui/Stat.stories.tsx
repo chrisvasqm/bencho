@@ -14,6 +14,21 @@ export const OverLimit: Story = { args: { value: '1.84', unit: 's', tone: 'dange
 export const NoLimit: Story = {
   args: { label: 'Requests', value: '4280', unit: '42.5/s', limit: undefined, tone: 'neutral' },
 };
+export const WithDetails: Story = {
+  args: {
+    label: 'Latency',
+    value: '1.36',
+    unit: 's',
+    limit: '< 1000 ms',
+    tone: 'danger',
+    details: [
+      { label: 'p50', value: '4.2 ms', limit: '< 200 ms', tone: 'success' },
+      { label: 'p90', value: '8.1 ms', limit: '< 400 ms', tone: 'success' },
+      { label: 'p95', value: '9.4 ms', limit: '< 500 ms', tone: 'success' },
+      { label: 'p99', value: '1.36 s', limit: '< 1000 ms', tone: 'danger' },
+    ],
+  },
+};
 export const Row: Story = {
   render: () => (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
