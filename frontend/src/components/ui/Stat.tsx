@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { Fragment, useId } from 'react';
 import { Badge } from './Badge.tsx';
 import { cn } from './cn.ts';
 
@@ -95,24 +95,26 @@ export function Stat({
         limit && <span className="mt-auto font-mono text-[11px] text-fg-muted">limit {limit}</span>
       )}
       {hasDetails && (
-        <dl
+        <div
           id={tooltipId}
           role="tooltip"
           data-testid={testId ? `${testId}-details` : undefined}
-          className="pointer-events-none absolute top-full left-0 z-10 mt-1 grid w-max max-w-[calc(100vw-2rem)] grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-md border border-line bg-surface px-3 py-2 text-xs opacity-0 shadow-raised transition-opacity group-hover:opacity-100 group-focus:opacity-100"
+          className="pointer-events-none absolute top-full left-0 z-10 mt-1 w-max max-w-[calc(100vw-2rem)] rounded-md border border-line bg-surface px-3 py-2 text-xs opacity-0 shadow-raised transition-opacity group-hover:opacity-100 group-focus:opacity-100"
         >
-          {details?.map((detail) => (
-            <div key={detail.label} className="contents">
-              <dt className="font-medium text-fg-muted">{detail.label}</dt>
-              <dd className="m-0 font-mono tabular-nums">
-                <span className={cn('font-semibold', toneClasses[detail.tone ?? 'neutral'])}>
-                  {detail.value}
-                </span>
-                {detail.limit && <span className="ml-2 text-fg-muted">limit {detail.limit}</span>}
-              </dd>
-            </div>
-          ))}
-        </dl>
+          <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+            {details?.map((detail) => (
+              <Fragment key={detail.label}>
+                <dt className="font-medium text-fg-muted">{detail.label}</dt>
+                <dd className="m-0 font-mono tabular-nums">
+                  <span className={cn('font-semibold', toneClasses[detail.tone ?? 'neutral'])}>
+                    {detail.value}
+                  </span>
+                  {detail.limit && <span className="ml-2 text-fg-muted">limit {detail.limit}</span>}
+                </dd>
+              </Fragment>
+            ))}
+          </dl>
+        </div>
       )}
     </div>
   );

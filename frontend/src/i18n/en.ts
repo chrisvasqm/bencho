@@ -422,6 +422,7 @@ export const en = {
   compare: {
     title: 'Compare 2 runs',
     close: 'Close',
+    metric: 'Metric',
     older: 'Older',
     newer: 'Newer',
     change: 'Change',

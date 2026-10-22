@@ -435,6 +435,7 @@ export const es: Translation = {
   compare: {
     title: 'Comparar 2 ejecuciones',
     close: 'Cerrar',
+    metric: 'Métrica',
     older: 'Anterior',
     newer: 'Reciente',
     change: 'Cambio',

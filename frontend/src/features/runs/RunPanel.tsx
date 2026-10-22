@@ -339,7 +339,7 @@ function RunPanelForm({
               </Field>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <h4 className="m-0 text-sm font-semibold text-fg">{t('panel.loadShape')}</h4>
+              <h3 className="m-0 text-sm font-semibold text-fg">{t('panel.loadShape')}</h3>
               <LearnMore
                 testId="learn-shape"
                 title={t('panel.shapeNoteTitle')}
