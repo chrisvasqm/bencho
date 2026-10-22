@@ -31,8 +31,9 @@ export function DateRangePicker({
 }: DateRangePickerProps) {
   return (
     <div className="flex items-start gap-2">
-      <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-fg-muted">
-        {labels.from}
+      {/* Not <label>: it would forward clicks on the calendar to the field and close it. */}
+      <div className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-fg-muted">
+        <span aria-hidden>{labels.from}</span>
         <DatePicker
           label={labels.from}
           testId={testIds?.from}
@@ -42,9 +43,9 @@ export function DateRangePicker({
           invalid={invalid}
           onChange={(from) => onChange({ ...value, from })}
         />
-      </label>
-      <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-fg-muted">
-        {labels.to}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-fg-muted">
+        <span aria-hidden>{labels.to}</span>
         <DatePicker
           label={labels.to}
           testId={testIds?.to}
@@ -56,7 +57,7 @@ export function DateRangePicker({
           invalid={invalid}
           onChange={(to) => onChange({ ...value, to })}
         />
-      </label>
+      </div>
     </div>
   );
 }

@@ -328,8 +328,6 @@ export const en = {
     filterAllTypes: 'All',
     filterFrom: 'From',
     filterTo: 'To',
-    filterRangeInverted:
-      'The end date is before the start date. Dates are ignored until it is fixed.',
     selectAll: 'Select all finished runs on this page',
     selectRun: 'Select run from {{time}}',
     openRun: '{{status}}, run from {{time}}',

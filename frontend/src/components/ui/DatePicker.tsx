@@ -1,11 +1,21 @@
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type FocusEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from './Button.tsx';
 import {
   addDays,
   addMonths,
   clampDay,
+  daysInMonth,
   firstWeekday,
   isOutside,
   monthGrid,
@@ -15,7 +25,6 @@ import {
   today,
 } from './calendar.ts';
 import { cn } from './cn.ts';
-import { inputClasses } from './Input.tsx';
 
 export interface DatePickerProps {
   /** A calendar day as `YYYY-MM-DD`, or empty for none. */
@@ -69,6 +78,10 @@ export function DatePicker({
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // Set when the focused day should take keyboard focus: on open, arrow keys, a picked month.
+  // Not for Previous/Next, so focus stays on the button the user pressed.
+  const focusGridRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>('days');
   // The day with keyboard focus; its month is the one on screen.
@@ -88,6 +101,7 @@ export function DatePicker({
     setFocusDay(start);
     setYearsPageEnd(parseDay(start).year);
     setView('days');
+    focusGridRef.current = true;
     setOpen(true);
   };
   const pick = (day: string) => {
@@ -105,13 +119,35 @@ export function DatePicker({
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [open]);
 
-  // Keyboard focus follows the focused day (on open, and as arrow keys move it).
+  // Keyboard focus follows the focused day when asked; in the month and year grids it goes to
+  // the chosen one, since the header button that opened the grid is gone.
   useEffect(() => {
-    if (!open || view !== 'days') return;
+    if (!open) return;
+    if (view !== 'days') {
+      dialogRef.current
+        ?.querySelector<HTMLButtonElement>('[data-grid] [aria-pressed="true"]')
+        ?.focus();
+      return;
+    }
+    if (!focusGridRef.current) return;
+    focusGridRef.current = false;
     gridRef.current?.querySelector<HTMLButtonElement>(`[data-day="${focusDay}"]`)?.focus();
   }, [open, view, focusDay]);
 
-  const moveFocus = (day: string) => setFocusDay(clampDay(day, min, max));
+  // Tabbing out closes the calendar. A click on a blank part of it moves focus nowhere
+  // (relatedTarget null), so that keeps it open.
+  const onBlur = (event: FocusEvent) => {
+    const next = event.relatedTarget;
+    if (open && next && !rootRef.current?.contains(next)) setOpen(false);
+  };
+
+  const moveFocus = (day: string) => {
+    focusGridRef.current = true;
+    setFocusDay(clampDay(day, min, max));
+  };
+  /** The same date in another month or year, kept inside that month and the bounds. */
+  const sameDateIn = (year: number, month: number) =>
+    clampDay(toDay(year, month, Math.min(shown.date, daysInMonth(year, month))), min, max);
   const onGridKeyDown = (event: KeyboardEvent) => {
     const step = DAY_KEYS[event.key];
     if (step !== undefined) moveFocus(addDays(focusDay, step));
@@ -157,26 +193,19 @@ export function DatePicker({
   };
   const step = steps[view];
 
+  const formats = useMemo(() => formatsFor(language), [language]);
+  const { weekStart, weekdays } = formats;
   const monthName = (month: number, style: 'long' | 'short') =>
-    new Intl.DateTimeFormat(language, { month: style }).format(new Date(2000, month, 1));
-  const weekStart = firstWeekday(language);
-  const weekdays = Array.from({ length: 7 }, (_, offset) =>
-    // 2023-01-01 was a Sunday.
-    new Intl.DateTimeFormat(language, { weekday: 'narrow' }).format(
-      new Date(2023, 0, 1 + ((weekStart + offset) % 7)),
-    ),
-  );
-  const fullDate = (day: string) =>
-    new Intl.DateTimeFormat(language, { dateStyle: 'full' }).format(new Date(`${day}T00:00`));
-  const shortDate = (day: string) =>
-    new Intl.DateTimeFormat(language, { dateStyle: 'medium' }).format(new Date(`${day}T00:00`));
+    formats[style === 'long' ? 'monthLong' : 'monthShort'].format(new Date(2000, month, 1));
+  const fullDate = (day: string) => formats.full.format(new Date(`${day}T00:00`));
+  const shortDate = (day: string) => formats.medium.format(new Date(`${day}T00:00`));
   const yearsPage = Array.from(
     { length: YEARS_PER_PAGE },
     (_, index) => yearsPageEnd - YEARS_PER_PAGE + 1 + index,
   );
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative" onBlur={onBlur}>
       <button
         ref={triggerRef}
         type="button"
@@ -189,10 +218,12 @@ export function DatePicker({
         data-value={value}
         onClick={toggle}
         className={cn(
-          inputClasses,
-          'flex h-8 items-center gap-2 px-2 text-left text-xs',
-          open && 'border-accent-line',
-          invalid && 'border-danger',
+          'flex h-8 w-full items-center gap-2 rounded-md border bg-surface px-2 text-left text-xs text-fg',
+          invalid
+            ? 'border-danger'
+            : open
+              ? 'border-accent-line'
+              : 'border-line hover:border-line-strong focus:border-accent-line',
         )}
       >
         <CalendarDays size={14} aria-hidden className="shrink-0 text-fg-muted" />
@@ -203,8 +234,10 @@ export function DatePicker({
 
       {open && (
         <div
+          ref={dialogRef}
           id={calendarId}
           role="dialog"
+          tabIndex={-1}
           aria-label={label}
           data-testid={id('calendar')}
           onKeyDown={(event) => {
@@ -298,7 +331,7 @@ export function DatePicker({
           )}
 
           {view === 'months' && (
-            <div className="grid grid-cols-3 gap-1">
+            <div data-grid className="grid grid-cols-3 gap-1">
               {Array.from({ length: 12 }, (_, month) => (
                 <GridChoice
                   key={month}
@@ -306,9 +339,8 @@ export function DatePicker({
                   disabled={monthOutside(shown.year, month)}
                   testId={id(`month-${month + 1}`)}
                   onClick={() => {
-                    setFocusDay(
-                      clampDay(toDay(shown.year, month, Math.min(shown.date, 28)), min, max),
-                    );
+                    focusGridRef.current = true;
+                    setFocusDay(sameDateIn(shown.year, month));
                     setView('days');
                   }}
                 >
@@ -319,7 +351,7 @@ export function DatePicker({
           )}
 
           {view === 'years' && (
-            <div className="grid grid-cols-3 gap-1">
+            <div data-grid className="grid grid-cols-3 gap-1">
               {yearsPage.map((year) => (
                 <GridChoice
                   key={year}
@@ -327,9 +359,7 @@ export function DatePicker({
                   disabled={yearOutside(year)}
                   testId={id(`year-${year}`)}
                   onClick={() => {
-                    setFocusDay(
-                      clampDay(toDay(year, shown.month, Math.min(shown.date, 28)), min, max),
-                    );
+                    setFocusDay(sameDateIn(year, shown.month));
                     setView('months');
                   }}
                 >
@@ -497,4 +527,21 @@ function IconButton({
       {children}
     </button>
   );
+}
+
+/** Built once per language: Intl formatters are costly to create on every render. */
+function formatsFor(language: string) {
+  const weekStart = firstWeekday(language);
+  const weekday = new Intl.DateTimeFormat(language, { weekday: 'narrow' });
+  return {
+    weekStart,
+    // 2023-01-01 was a Sunday.
+    weekdays: Array.from({ length: 7 }, (_, offset) =>
+      weekday.format(new Date(2023, 0, 1 + ((weekStart + offset) % 7))),
+    ),
+    monthLong: new Intl.DateTimeFormat(language, { month: 'long' }),
+    monthShort: new Intl.DateTimeFormat(language, { month: 'short' }),
+    full: new Intl.DateTimeFormat(language, { dateStyle: 'full' }),
+    medium: new Intl.DateTimeFormat(language, { dateStyle: 'medium' }),
+  };
 }
