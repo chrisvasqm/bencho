@@ -56,7 +56,7 @@ export function ScrollPane({ children, className, labels, testId }: ScrollPanePr
       <div
         aria-hidden="true"
         className={cn(
-          'pointer-events-none absolute inset-x-0 bottom-0 h-10 rounded-b-lg bg-linear-to-t from-overlay/52 to-transparent transition-opacity',
+          'pointer-events-none absolute right-1 bottom-0 left-0 h-10 bg-linear-to-t from-overlay/52 to-transparent transition-opacity',
           edges.below ? 'opacity-100' : 'opacity-0',
         )}
       />
