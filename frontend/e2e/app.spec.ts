@@ -66,6 +66,22 @@ test.describe('first load', () => {
   });
 });
 
+test.describe('setup tab', () => {
+  test('opens Setup for a stage error and keeps edits across tabs', async ({ page }) => {
+    await openApp(page);
+    await page.getByTestId('stage-0-duration').fill('abc');
+    await page.getByTestId('panel-tab-flow').click();
+    await page.getByTestId('panel-tab-setup').click();
+    await expect(page.getByTestId('stage-0-duration')).toHaveValue('abc');
+    await page.getByTestId('panel-tab-limits').click();
+
+    await page.getByTestId('start-run').click();
+
+    await expect(page.getByTestId('stages-error')).toBeVisible();
+    await expect(page.getByTestId('run-row')).toHaveCount(0);
+  });
+});
+
 test.describe('load shape chart', () => {
   test('puts time ticks on round steps that fit the stages', async ({ page }) => {
     await openApp(page);

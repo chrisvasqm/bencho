@@ -197,14 +197,16 @@ function RunPanelForm({
     };
     const nextErrors = validate(input, flowSteps);
     setErrors(nextErrors);
-    const firstError = Object.keys(nextErrors)[0];
+    // The first tab, in tab order, that has an error.
+    const errorTabs = new Set(Object.keys(nextErrors).map((key) => ERROR_TAB[key]));
+    const firstErrorTab = PANEL_TABS.find((item) => errorTabs.has(item.value))?.value;
     const revision = submitCount + 1;
     setSubmitCount(revision);
     // Scroll to a flow problem only when this submit opens the Flow tab, not on a later visit.
-    if (ERROR_TAB[Object.keys(nextErrors)[0] ?? ''] !== 'flow') setShownErrorRevision(revision);
+    if (firstErrorTab !== 'flow') setShownErrorRevision(revision);
     if (nextErrors.flowStep) setOpenStepId(nextErrors.flowStep);
-    if (firstError) {
-      setTab(ERROR_TAB[firstError] ?? 'setup');
+    if (firstErrorTab) {
+      setTab(firstErrorTab);
       return;
     }
     await onSubmit(input);
@@ -279,6 +281,9 @@ function RunPanelForm({
                       invalid={Boolean(errors.baseUrl)}
                     />
                   </Field>
+                  <h3 className="m-0 border-t border-line pt-4 text-sm font-semibold text-fg">
+                    Load shape
+                  </h3>
                   <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
                     <LoadShapeChart stages={stages} mode={mode} />
                   </Suspense>
@@ -533,6 +538,9 @@ function RunPanelSkeleton({ className }: { className?: string }) {
     >
       <div className="flex flex-col gap-5">
         <FieldSkeleton />
+        <FieldSkeleton />
+        {/* The Setup tab opens with the load shape chart and stages below the fields. */}
+        <Skeleton className="h-[164px] w-full" />
         <FieldSkeleton />
       </div>
     </Card>
