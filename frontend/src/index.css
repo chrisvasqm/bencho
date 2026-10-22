@@ -43,6 +43,7 @@
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --shadow-raised: var(--shadow-raised);
+  --shadow-card: var(--shadow-card);
 }
 
 html {

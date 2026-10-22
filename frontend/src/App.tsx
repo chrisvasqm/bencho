@@ -239,7 +239,7 @@ export function App() {
 
   return (
     <div className="flex min-h-dvh flex-col lg:h-dvh">
-      <header className="shrink-0 bg-surface">
+      <header className="relative z-10 shrink-0 bg-surface shadow-card">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-3">
             <Logo />

@@ -35,7 +35,7 @@ export function Card({
   ...rest
 }: CardProps) {
   return (
-    <section className={cn('flex flex-col rounded-lg bg-surface', className)} {...rest}>
+    <section className={cn('flex flex-col rounded-lg bg-surface shadow-card', className)} {...rest}>
       {(title || actions || headerExtra) && (
         <header className="flex shrink-0 flex-col gap-3 px-5 pt-5 pb-2">
           {(title || actions) && (
