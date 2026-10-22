@@ -51,7 +51,7 @@ export function RunList({
     onCheckedChange(next);
   };
   return (
-    <div className="relative" style={{ height: pageSize * ROW_HEIGHT_PX }}>
+    <div className="relative" style={{ minHeight: pageSize * ROW_HEIGHT_PX }}>
       {empty && (
         <p
           data-testid="runs-empty"
@@ -113,7 +113,7 @@ export function RunList({
                   data-status={run.status}
                   data-type={run.type}
                   style={{ height: ROW_HEIGHT_PX }}
-                  className={`flex cursor-pointer items-center gap-3 border-b border-line px-4 last:border-b-0 hover:bg-surface-sunken ${
+                  className={`flex cursor-pointer items-center gap-3 border-b border-line px-4 outline-offset-[-2px] last:border-b-0 hover:bg-surface-sunken ${
                     selected
                       ? 'bg-accent-soft shadow-[inset_3px_0_0_var(--accent)]'
                       : checkedIds.has(run.id)
