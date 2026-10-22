@@ -25,6 +25,12 @@ export type PanelTab = 'setup' | 'flow' | 'limits';
 export async function openTab(page: Page, tab: PanelTab): Promise<void> {
   await page.getByTestId(`panel-tab-${tab}`).click();
   await expect(page.getByTestId(`panel-section-${tab}`)).toBeVisible();
+  // Steps start folded; the tests edit the first one.
+  if (tab === 'flow') {
+    const first = page.getByTestId('step-0-toggle');
+    if ((await first.getAttribute('aria-expanded')) !== 'true') await first.click();
+    await expect(first).toHaveAttribute('aria-expanded', 'true');
+  }
 }
 
 export async function setLooseLimits(page: Page): Promise<void> {

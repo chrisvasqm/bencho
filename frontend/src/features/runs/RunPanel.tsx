@@ -169,7 +169,8 @@ function RunPanelForm({
   const [flowSteps, setFlowSteps] = useState<StepDraft[]>(() =>
     (initial?.flow ?? defaults.flow).map(toDraft),
   );
-  const [openStepId, setOpenStepId] = useState<string | undefined>(flowSteps[0]?.id);
+  // Every step starts folded: the list reads as a summary until one is opened.
+  const [openStepId, setOpenStepId] = useState<string | undefined>();
   const [submitCount, setSubmitCount] = useState(0);
   // The submit whose flow problem was already scrolled into view.
   const [shownErrorRevision, setShownErrorRevision] = useState(0);

@@ -129,6 +129,7 @@ export function FlowEditor({
               <button
                 type="button"
                 aria-expanded={openId === step.id}
+                data-testid={`step-${index}-toggle`}
                 aria-controls={openId === step.id ? `${step.id}-body` : undefined}
                 onClick={() => setOpenId(openId === step.id ? undefined : step.id)}
                 className="grid min-w-0 flex-1 grid-cols-[1.25rem_3.25rem_minmax(0,1fr)] items-baseline gap-x-2 py-1 text-left text-sm"
