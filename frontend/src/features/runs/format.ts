@@ -112,9 +112,11 @@ export function plannedShape(stages: Stage[]): PlannedPoint[] {
   return points;
 }
 
-/** The planned stage target at a second: k6 ramps in straight lines between stage targets. */
-export function targetAt(stages: Stage[], second: number): number {
-  const points = plannedShape(stages);
+/**
+ * The planned stage target at a second of a shape from plannedShape: k6 ramps in straight lines
+ * between stage targets, and plans nothing after the last stage (the grace period).
+ */
+export function targetAt(points: PlannedPoint[], second: number): number {
   for (const [index, point] of points.entries()) {
     const previous = points[index - 1];
     if (!previous || second > point.second) continue;
@@ -123,7 +125,7 @@ export function targetAt(stages: Stage[], second: number): number {
     const share = (second - previous.second) / span;
     return previous.virtualUsers + (point.virtualUsers - previous.virtualUsers) * share;
   }
-  return points[points.length - 1]?.virtualUsers ?? 0;
+  return 0;
 }
 
 export function formatSeconds(value: number | string): string {

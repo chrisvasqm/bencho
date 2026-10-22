@@ -103,7 +103,11 @@ describe('run lifecycle', () => {
     const total = (key: string) =>
       points.reduce((sum: number, point: Record<string, number>) => sum + (point[key] ?? 0), 0);
     expect(total('iterationsPerSecond')).toBeGreaterThan(0);
-    expect(total('droppedPerSecond')).toBe(run.summary.metrics.dropped_iterations.count);
+    // Samples that reach the CSV after their second is stored are skipped, so at most the total.
+    expect(total('droppedPerSecond')).toBeGreaterThan(0);
+    expect(total('droppedPerSecond')).toBeLessThanOrEqual(
+      run.summary.metrics.dropped_iterations.count,
+    );
   });
 
   it('cuts flow runs off after the grace period once the stages end', async () => {

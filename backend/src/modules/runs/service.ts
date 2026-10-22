@@ -268,8 +268,7 @@ export class RunsService {
     work: () => Promise<Result>,
   ): Promise<Result> {
     const tail = new FileTail(pointsPath);
-    // k6 stamps samples with wall-clock seconds; second 0 is when k6 was started.
-    const aggregator = new TimeseriesAggregator(Math.floor(Date.now() / 1000));
+    const aggregator = new TimeseriesAggregator();
     // Points that failed to insert stay here and go out with the next flush.
     let pending: RunPointValues[] = [];
     let flushing = Promise.resolve();

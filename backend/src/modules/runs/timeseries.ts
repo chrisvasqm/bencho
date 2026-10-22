@@ -45,9 +45,11 @@ export class TimeseriesAggregator {
   private latestSecond = 0;
   private lastVirtualUsers = 0;
   private closedUpTo = Number.NEGATIVE_INFINITY;
-
-  /** `startSecond`: unix second the run started; points count seconds from there. */
-  constructor(private readonly startSecond: number) {}
+  /**
+   * Unix second of k6's first sample: point second 0 is when the test itself started, after k6
+   * loaded the script and created its VUs, so the points line up with the planned stages.
+   */
+  private startSecond: number | undefined;
 
   /** Adds raw CSV text. Lines may be split across chunks. */
   consume(chunk: string): void {
@@ -75,7 +77,7 @@ export class TimeseriesAggregator {
       if (bucket.sawVirtualUsers) this.lastVirtualUsers = bucket.virtualUsers;
       const sorted = bucket.durations.sort((a, b) => a - b);
       return {
-        second: Math.max(0, second - this.startSecond),
+        second: Math.max(0, second - (this.startSecond ?? second)),
         virtualUsers: this.lastVirtualUsers,
         requestsPerSecond: bucket.requests,
         iterationsPerSecond: bucket.iterations,
@@ -95,6 +97,7 @@ export class TimeseriesAggregator {
     const value = Number(rawValue);
     if (!metric || !Number.isFinite(second) || !Number.isFinite(value)) return; // header or junk
     if (second <= this.closedUpTo) return; // too late: that second is already stored
+    this.startSecond ??= second;
     this.latestSecond = Math.max(this.latestSecond, second);
     const bucket = this.bucketFor(second);
     if (metric === 'http_req_duration') bucket.durations.push(value);

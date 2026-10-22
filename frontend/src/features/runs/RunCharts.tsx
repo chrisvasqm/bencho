@@ -1,12 +1,12 @@
 // Per-second charts for one run. Latency, load and errors have different units, so each gets
 // its own chart on one axis instead of a shared dual-axis chart.
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { runsApi, type Run } from '../../api/runs.ts';
 import { Note, Tabs } from '../../components/ui/index.ts';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
-import { formatMs, formatSeconds, isActive, targetAt } from './format.ts';
+import { formatMs, formatSeconds, isActive, plannedShape, targetAt } from './format.ts';
 import { LATENCY_SERIES } from './series.ts';
 
 type ChartTab = 'latency' | 'load' | 'errors';
@@ -20,7 +20,7 @@ const CHART_TABS: ReadonlyArray<{ value: ChartTab; label: string }> = [
 const CHART_NOTES: Record<ChartTab, string> = {
   latency:
     'Each point is one second of the run. Each line shows one percentile (p50, p90, p95, p99) of the requests that ended in that second: p95 is the time 95 of every 100 of them stayed at or under. With only a few requests in a second, p90, p95 and p99 often equal the slowest one. Lines that climb as users are added mean the API is slowing down.',
-  load: 'Virtual users is how many simulated users were running. Requests per second is how many requests they sent. When users keep rising but requests per second stops rising, the API has reached its limit. For a rate run, flow runs per second compares the planned rate with the flow runs that finished and the ones k6 dropped because every allowed VU was busy.',
+  load: 'Virtual users is how many simulated users were running. Requests per second is how many requests they sent. When users keep rising but requests per second stops rising, the API has reached its limit. For a rate run, flow runs per second compares the planned rate with the flow runs that finished and the ones k6 dropped because every allowed VU was busy. A flow run counts in the second it ends, so Finished trails Planned by about the length of one flow run.',
   errors:
     'The share of requests in each second that did not get the status their step expects. Errors that start when the load peaks mean the API cannot handle that load.',
 };
@@ -37,7 +37,13 @@ export function RunCharts({ run }: { run: Run }) {
     refetchInterval: active ? POLL_INTERVAL_MS : false,
     placeholderData: (previous) => previous,
   });
-  const data = points.data?.points ?? [];
+  const data = useMemo(() => points.data?.points ?? [], [points.data]);
+  // Rate runs only: each point with the rate the stages planned for that second.
+  const rateData = useMemo(() => {
+    if (run.mode !== 'rate') return [];
+    const shape = plannedShape(run.stages);
+    return data.map((point) => ({ ...point, target: targetAt(shape, point.second) }));
+  }, [data, run.mode, run.stages]);
   const empty = active
     ? 'Waiting for the first seconds of data…'
     : 'No per-second data for this run.';
@@ -77,10 +83,7 @@ export function RunCharts({ run }: { run: Run }) {
               <LineChart
                 integerX
                 {...shared}
-                data={data.map((point) => ({
-                  ...point,
-                  target: targetAt(run.stages, point.second),
-                }))}
+                data={rateData}
                 title="Flow runs per second"
                 testId="rate-chart"
                 series={[
