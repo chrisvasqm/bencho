@@ -76,7 +76,7 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
-    # `docker compose up -d --watch` rebuilds the image when the source changes.
+    # `docker compose watch` (after `up -d`) rebuilds the image when the source changes.
     develop:
       watch:
         - action: rebuild
