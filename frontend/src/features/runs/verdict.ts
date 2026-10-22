@@ -7,7 +7,7 @@ import { LATENCY_KEYS, formatMs, formatPercent, plannedRuns } from './format.ts'
 /** k6 `checks: rate>0.99`: a run fails once 1 in 100 steps or more miss their check. */
 const MIN_CHECK_RATE = 0.99;
 
-/** The limits a finished run broke, each as "p95 1.24 s, limit 500 ms". */
+/** The limits a finished run broke, each as "p95 1.24 s, limit 0.50 s". */
 export function brokenLimits(run: Run, t: Copy): string[] {
   const metrics = run.summary?.metrics;
   if (!metrics) return [];

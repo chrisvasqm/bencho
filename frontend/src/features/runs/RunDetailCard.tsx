@@ -149,7 +149,7 @@ export function RunDetailCard({
   const latency: StatDetail[] = LATENCY_KEYS.map(([label, metricKey]) => ({
     label,
     value: formatMs(duration?.[metricKey]),
-    limit: `< ${run.limits.latencyLimitsMs[label]} ms`,
+    limit: `< ${formatMs(run.limits.latencyLimitsMs[label])}`,
     tone: toneFor(duration?.[metricKey], run.limits.latencyLimitsMs[label]),
   }));
   const [slowLabel, slowKey] = LATENCY_KEYS[LATENCY_KEYS.length - 1];
@@ -323,7 +323,7 @@ export function RunDetailCard({
             {t('detail.steps', { count: run.flow.length })}:{' '}
             {run.flow.map((step) => step.name).join(' → ')}
           </Chip>
-          <Chip>{t('detail.p95Under', { limit: run.limits.latencyLimitsMs.p95 })}</Chip>
+          <Chip>{t('detail.p95Under', { limit: formatMs(run.limits.latencyLimitsMs.p95) })}</Chip>
           <Chip>{t('detail.errorsUnder', { limit: formatPercent(run.limits.maxErrorRate) })}</Chip>
           <Chip>
             {t('detail.pauses', {

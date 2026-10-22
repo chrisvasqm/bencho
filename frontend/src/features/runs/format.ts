@@ -70,7 +70,8 @@ export function formatPeak(run: Pick<Run, 'stages' | 'mode'>, t: Copy): string {
 
 export function formatMs(value: number | undefined): string {
   if (value === undefined) return '–';
-  return value >= 1000 ? `${(value / 1000).toFixed(2)} s` : `${value.toFixed(1)} ms`;
+  // Seconds with 2 decimals read easier than milliseconds for people new to load tests.
+  return `${(value / 1000).toFixed(2)} s`;
 }
 
 export function formatPercent(fraction: number | undefined): string {
