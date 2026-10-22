@@ -1,7 +1,14 @@
 import { RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import type { Run } from '../../api/runs.ts';
-import { Button, Card, Skeleton, Stat, type StatTone } from '../../components/ui/index.ts';
+import {
+  Button,
+  Card,
+  Skeleton,
+  Stat,
+  type StatDetail,
+  type StatTone,
+} from '../../components/ui/index.ts';
 import { hasRedactedSecrets } from './input.ts';
 import { verdictReason } from './verdict.ts';
 import { failuresItems, resultsItems } from '../learn/items.ts';
@@ -115,6 +122,14 @@ export function RunDetailCard({
   const duration = run.summary?.metrics.http_req_duration;
   const failed = run.summary?.metrics.http_req_failed;
   const requests = run.summary?.metrics.http_reqs;
+  // One tile shows the slow requests (p99); every percentile sits in its tooltip.
+  const latency: StatDetail[] = LATENCY_KEYS.map(([label, metricKey]) => ({
+    label,
+    value: formatMs(duration?.[metricKey]),
+    limit: `< ${run.limits.latencyLimitsMs[label]} ms`,
+    tone: toneFor(duration?.[metricKey], run.limits.latencyLimitsMs[label]),
+  }));
+  const headline = latency[latency.length - 1] ?? { value: '–', tone: 'neutral' as const };
   const dropped = run.summary?.metrics.dropped_iterations?.count ?? 0;
   const elapsed = durationSeconds(run);
   const active = isActive(run.status);
@@ -267,19 +282,15 @@ export function RunDetailCard({
         </div>
 
         {run.summary ? (
-          <div
-            data-testid="run-summary"
-            className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6"
-          >
-            {LATENCY_KEYS.map(([label, metricKey]) => (
-              <Stat
-                key={label}
-                label={label}
-                value={formatMs(duration?.[metricKey])}
-                limit={`< ${run.limits.latencyLimitsMs[label]} ms`}
-                tone={toneFor(duration?.[metricKey], run.limits.latencyLimitsMs[label])}
-              />
-            ))}
+          <div data-testid="run-summary" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <Stat
+              testId="stat-latency"
+              label={t('detail.latency')}
+              value={headline.value}
+              limit={headline.limit}
+              tone={headline.tone}
+              details={latency}
+            />
             <Stat
               label={t('detail.errorRate')}
               value={formatPercent(failed?.value)}
