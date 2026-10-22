@@ -325,7 +325,6 @@ export const en = {
     filterAllTypes: 'All',
     filterFrom: 'From',
     filterTo: 'To',
-    filterClear: 'Clear filters',
     filterRangeInverted:
       'The end date is before the start date. Dates are ignored until it is fixed.',
     selectAll: 'Select all finished runs on this page',
