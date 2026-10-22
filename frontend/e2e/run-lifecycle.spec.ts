@@ -19,7 +19,7 @@ test('a run within its limits passes and shows its numbers', async ({ page }) =>
   await expect(page.getByTestId('toast-run-passed')).toBeVisible();
   await expect(page.getByTestId('run-summary')).toBeVisible();
   await page.getByTestId('stat-latency').hover();
-  await expect(page.getByTestId('stat-latency-details')).toBeVisible();
+  await expect(page.getByTestId('stat-latency-details')).toHaveCSS('opacity', '1');
   await expect(page.getByTestId('stat-latency-details')).toContainText('p50');
   await expect(page.getByTestId('run-row')).toHaveAttribute('data-status', 'passed');
 });

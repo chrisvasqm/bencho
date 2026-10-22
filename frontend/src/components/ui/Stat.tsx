@@ -34,8 +34,10 @@ export function Stat({ label, value, unit, limit, tone = 'neutral', details, tes
   return (
     <div
       data-testid={testId}
-      // Hovering or focusing the tile reveals the details; the tile is focusable only then.
+      // Hovering, tapping or focusing the tile reveals the details; the tile is focusable only then.
       tabIndex={hasDetails ? 0 : undefined}
+      role={hasDetails ? 'group' : undefined}
+      aria-label={hasDetails ? label : undefined}
       aria-describedby={hasDetails ? tooltipId : undefined}
       className="group relative flex min-w-0 flex-col gap-0.5 rounded-md bg-surface-sunken px-3 py-2 outline-offset-[-2px]"
     >
@@ -50,21 +52,16 @@ export function Stat({ label, value, unit, limit, tone = 'neutral', details, tes
           id={tooltipId}
           role="tooltip"
           data-testid={testId ? `${testId}-details` : undefined}
-          className="pointer-events-none absolute top-full left-0 z-10 mt-1 grid min-w-full grid-cols-[auto_auto_1fr] gap-x-3 gap-y-1 rounded-md border border-line bg-surface px-3 py-2 text-xs whitespace-nowrap opacity-0 shadow-raised transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+          className="pointer-events-none absolute top-full left-0 z-10 mt-1 grid w-max max-w-[calc(100vw-2rem)] grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-md border border-line bg-surface px-3 py-2 text-xs opacity-0 shadow-raised transition-opacity group-hover:opacity-100 group-focus:opacity-100"
         >
           {details?.map((detail) => (
             <div key={detail.label} className="contents">
               <dt className="font-medium text-fg-muted">{detail.label}</dt>
-              <dd
-                className={cn(
-                  'm-0 font-mono font-semibold tabular-nums',
-                  toneClasses[detail.tone ?? 'neutral'],
-                )}
-              >
-                {detail.value}
-              </dd>
-              <dd className="m-0 font-mono text-fg-muted">
-                {detail.limit ? `limit ${detail.limit}` : ''}
+              <dd className="m-0 font-mono tabular-nums">
+                <span className={cn('font-semibold', toneClasses[detail.tone ?? 'neutral'])}>
+                  {detail.value}
+                </span>
+                {detail.limit && <span className="ml-2 text-fg-muted">limit {detail.limit}</span>}
               </dd>
             </div>
           ))}
