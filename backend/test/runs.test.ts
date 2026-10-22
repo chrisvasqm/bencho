@@ -309,6 +309,7 @@ describe('POST /api/v1/runs', () => {
 
       expect(response.status).toBe(409);
       expectError(response.body, 'TOO_MANY_RUNS');
+      expect(response.body.error.details).toEqual({ max: 3 });
     });
 
     it('lets only 3 of 4 parallel requests through', async () => {

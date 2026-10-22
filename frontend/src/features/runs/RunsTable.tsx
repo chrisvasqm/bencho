@@ -1,8 +1,8 @@
 import { AnimatePresence, m } from 'motion/react';
 import type { Run } from '../../api/runs.ts';
 import { Badge, Checkbox, Skeleton } from '../../components/ui/index.ts';
+import { useCopy } from '../../i18n/useCopy.ts';
 import {
-  STATUS_LABELS,
   STATUS_TONES,
   formatMs,
   formatPercent,
@@ -29,13 +29,17 @@ export interface RunsTableProps {
 const ROW_HEIGHT_PX = 34;
 const HEAD_HEIGHT_PX = 36;
 
-const HEADERS = [
-  { label: 'Status' },
-  { label: 'Target', wide: true },
-  { label: 'Peak', right: true },
-  { label: 'p95', right: true },
-  { label: 'Errors', right: true },
-  { label: 'Started', wide: true },
+const HEADERS: ReadonlyArray<{
+  key: 'status' | 'target' | 'peak' | 'p95' | 'errors' | 'started';
+  wide?: boolean;
+  right?: boolean;
+}> = [
+  { key: 'status' },
+  { key: 'target', wide: true },
+  { key: 'peak', right: true },
+  { key: 'p95', right: true },
+  { key: 'errors', right: true },
+  { key: 'started', wide: true },
 ];
 
 export function RunsTable({
@@ -48,6 +52,7 @@ export function RunsTable({
   checkedIds,
   onCheckedChange,
 }: RunsTableProps) {
+  const { t, language } = useCopy();
   const empty = !loading && runs.length === 0;
   const checkable = runs.filter((run) => !isActive(run.status));
   const checkedOnPage = checkable.filter((run) => checkedIds.has(run.id)).length;
@@ -77,7 +82,7 @@ export function RunsTable({
           data-testid="runs-empty"
           className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-sm text-fg-muted"
         >
-          No runs of this type yet. Start one from the panel.
+          {t('runs.empty')}
         </p>
       )}
       <table className="w-full border-collapse text-sm">
@@ -88,7 +93,7 @@ export function RunsTable({
           >
             <th scope="col" className="w-10 px-3 py-0">
               <Checkbox
-                aria-label="Select all finished runs on this page"
+                aria-label={t('runs.selectAll')}
                 data-testid="select-all-runs"
                 checked={allChecked}
                 indeterminate={checkedOnPage > 0 && !allChecked}
@@ -98,11 +103,11 @@ export function RunsTable({
             </th>
             {HEADERS.map((header) => (
               <th
-                key={header.label}
+                key={header.key}
                 scope="col"
                 className={`px-3 py-0 font-medium whitespace-nowrap ${header.right ? 'text-right' : ''} ${header.wide ? 'hidden sm:table-cell' : ''}`}
               >
-                {header.label}
+                {t(`runs.headers.${header.key}`)}
               </th>
             ))}
           </tr>
@@ -123,7 +128,7 @@ export function RunsTable({
                   <td className="w-10 px-3 py-0" />
                   {HEADERS.map((header) => (
                     <td
-                      key={header.label}
+                      key={header.key}
                       className={`px-3 py-0 ${header.wide ? 'hidden sm:table-cell' : ''}`}
                     >
                       <Skeleton className="h-4 w-full" />
@@ -153,7 +158,9 @@ export function RunsTable({
                   >
                     <td className="w-10 px-3 py-0" onClick={(event) => event.stopPropagation()}>
                       <Checkbox
-                        aria-label={`Select run from ${formatTime(run.createdAt)}`}
+                        aria-label={t('runs.selectRun', {
+                          time: formatTime(run.createdAt, language),
+                        })}
                         data-testid="run-row-checkbox"
                         checked={checkedIds.has(run.id)}
                         disabled={isActive(run.status)}
@@ -167,11 +174,14 @@ export function RunsTable({
                           event.stopPropagation();
                           onSelect(run);
                         }}
-                        aria-label={`${STATUS_LABELS[run.status]}, run from ${formatTime(run.createdAt)}`}
+                        aria-label={t('runs.openRun', {
+                          status: t(`status.${run.status}`),
+                          time: formatTime(run.createdAt, language),
+                        })}
                         className="rounded-full"
                       >
                         <Badge tone={STATUS_TONES[run.status]} pulse={isActive(run.status)}>
-                          {STATUS_LABELS[run.status]}
+                          {t(`status.${run.status}`)}
                         </Badge>
                       </button>
                     </td>
@@ -179,7 +189,7 @@ export function RunsTable({
                       {run.baseUrl}
                     </td>
                     <td className="px-3 py-0 text-right tabular-nums" data-testid="run-peak">
-                      {formatPeak(run)}
+                      {formatPeak(run, t)}
                     </td>
                     <td className="px-3 py-0 text-right tabular-nums whitespace-nowrap">
                       {formatMs(run.summary?.metrics.http_req_duration?.['p(95)'])}
@@ -188,7 +198,7 @@ export function RunsTable({
                       {formatPercent(run.summary?.metrics.http_req_failed?.value)}
                     </td>
                     <td className="hidden px-3 py-0 whitespace-nowrap text-fg-muted sm:table-cell">
-                      {formatTime(run.createdAt)}
+                      {formatTime(run.createdAt, language)}
                     </td>
                   </m.tr>
                 );

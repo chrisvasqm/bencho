@@ -5,11 +5,13 @@ import { Card, Note } from '../../components/ui/index.ts';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
 import { LATENCY_SERIES } from './series.ts';
-import { RUN_TYPE_LABELS, formatMs, formatTime } from './format.ts';
+import { useCopy } from '../../i18n/useCopy.ts';
+import { formatMs, formatTime, runTypeVars } from './format.ts';
 
 const TREND_RUNS = 20;
 
 export function TrendCard({ type }: { type: RunType }) {
+  const { t, language } = useCopy();
   const trend = useQuery({
     queryKey: ['trend', type],
     queryFn: () => runsApi.list(type, 1, TREND_RUNS),
@@ -20,7 +22,7 @@ export function TrendCard({ type }: { type: RunType }) {
     .map((run) => {
       const duration = run.summary?.metrics.http_req_duration;
       return {
-        when: formatTime(run.createdAt),
+        when: formatTime(run.createdAt, language),
         p50: duration?.med ?? null,
         p90: duration?.['p(90)'] ?? null,
         p95: duration?.['p(95)'] ?? null,
@@ -30,11 +32,11 @@ export function TrendCard({ type }: { type: RunType }) {
 
   return (
     <Card
-      title="Trend"
-      description={`Latency of the last ${TREND_RUNS} ${RUN_TYPE_LABELS[type].toLowerCase()} runs, oldest first`}
+      title={t('app.trendTitle')}
+      description={t('app.trendDescription', { count: TREND_RUNS, ...runTypeVars(type, t) })}
     >
       <LineChart
-        title="Response time per run"
+        title={t('app.trendChart')}
         data={data}
         xKey="when"
         xType="category"
@@ -42,14 +44,11 @@ export function TrendCard({ type }: { type: RunType }) {
         minYStep={0.1}
         formatY={(value) => formatMs(value)}
         loading={trend.isPending}
-        empty="Finish a run of this type to start the trend."
+        empty={t('app.trendEmpty')}
       />
       {data.length > 0 && (
         <Note className="mt-4">
-          <p className="m-0">
-            Each point is one finished run. Lines that go up from left to right mean the API got
-            slower between runs, for example after a code change.
-          </p>
+          <p className="m-0">{t('app.trendNote')}</p>
         </Note>
       )}
     </Card>

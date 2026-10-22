@@ -45,6 +45,7 @@ describe('POST /api/v1/runs with private targets blocked', () => {
     expect(response.status).toBe(400);
     expectError(response.body, 'TARGET_NOT_ALLOWED');
     expect(response.body.error.message).toContain(PRIVATE_TARGET_MESSAGE);
+    expect(response.body.error.details).toEqual({ host: new URL(baseUrl).hostname });
   });
 
   it('returns 400 TARGET_NOT_ALLOWED for a step whose full URL is private', async () => {

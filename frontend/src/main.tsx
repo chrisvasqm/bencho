@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { Toaster } from 'sonner';
 import { App } from './App.tsx';
 import { useTheme } from './features/theme/theme.ts';
+import './i18n/index.ts';
 import './index.css';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1 } } });

@@ -1,6 +1,7 @@
 import { AnimatePresence, m } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/index.ts';
+import { useCopy } from '../../i18n/useCopy.ts';
 
 export interface BulkDeleteBarProps {
   count: number;
@@ -21,6 +22,7 @@ export function BulkDeleteBar({
   onDelete,
   onClear,
 }: BulkDeleteBarProps) {
+  const { t } = useCopy();
   // The confirm is for the selection it was asked for; changing the selection cancels it.
   const [confirmedSelection, setConfirmedSelection] = useState<string | undefined>();
   const confirming = count > 0 && confirmedSelection === selectionKey;
@@ -41,7 +43,7 @@ export function BulkDeleteBar({
           className="flex items-center gap-2"
         >
           <span data-testid="bulk-count" className="text-sm text-fg-muted tabular-nums">
-            {count} selected
+            {t('runs.bulkSelected', { count })}
           </span>
           <Button
             variant="ghost"
@@ -50,7 +52,7 @@ export function BulkDeleteBar({
             disabled={deleting}
             data-testid="bulk-clear"
           >
-            Clear
+            {t('runs.bulkClear')}
           </Button>
           {confirming ? (
             <Button
@@ -60,7 +62,7 @@ export function BulkDeleteBar({
               onClick={onDelete}
               data-testid="bulk-delete-confirm"
             >
-              Delete {count} {count === 1 ? 'run' : 'runs'}
+              {t('runs.bulkConfirm', { count })}
             </Button>
           ) : (
             <Button
@@ -69,7 +71,7 @@ export function BulkDeleteBar({
               onClick={() => setConfirmedSelection(selectionKey)}
               data-testid="bulk-delete"
             >
-              Delete
+              {t('runs.bulkDelete')}
             </Button>
           )}
         </m.div>

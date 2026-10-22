@@ -5,28 +5,29 @@ import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { runsApi, type Run } from '../../api/runs.ts';
-import { RUN_TYPE_LABELS, formatMs, isActive } from './format.ts';
+import { useCopy, type Copy } from '../../i18n/useCopy.ts';
+import { formatMs, isActive, runTypeVars } from './format.ts';
 
 const POLL_INTERVAL_MS = 2000;
 
-function announce(run: Run): void {
-  const label = `${RUN_TYPE_LABELS[run.type]} test`;
+function announce(run: Run, t: Copy): void {
+  const type = runTypeVars(run.type, t);
   const p95 = run.summary?.metrics.http_req_duration?.['p(95)'];
-  const detail = p95 === undefined ? undefined : `p95 ${formatMs(p95)}`;
+  const detail = p95 === undefined ? undefined : t('toast.passedHint', { value: formatMs(p95) });
   if (run.status === 'passed')
-    toast.success(`${label} passed`, { description: detail, testId: 'toast-run-passed' });
+    toast.success(t('toast.passed', type), { description: detail, testId: 'toast-run-passed' });
   else if (run.status === 'failed') {
-    toast.error(`${label} failed`, {
-      description: 'A limit was crossed. See the run for details.',
+    toast.error(t('toast.failed', type), {
+      description: t('toast.failedHint'),
       testId: 'toast-run-failed',
     });
   } else if (run.status === 'stopped') {
-    toast(`${label} stopped`, {
-      description: 'Partial results were kept.',
+    toast(t('toast.stopped', type), {
+      description: t('toast.stoppedHint'),
       testId: 'toast-run-stopped',
     });
   } else {
-    toast.warning(`${label} could not finish`, {
+    toast.warning(t('toast.couldNotFinish', type), {
       description: run.errorMessage?.split('\n')[0] ?? undefined,
       testId: 'toast-run-error',
     });
@@ -34,6 +35,7 @@ function announce(run: Run): void {
 }
 
 export function useRunWatcher() {
+  const { t } = useCopy();
   const queryClient = useQueryClient();
   const [watched, setWatched] = useState<string[]>([]);
   const announced = useRef(new Set<string>());
@@ -55,7 +57,7 @@ export function useRunWatcher() {
     if (finished.length === 0) return;
     for (const run of finished) {
       announced.current.add(run.id);
-      announce(run);
+      announce(run, t);
     }
     const done = new Set(finished.map((run) => run.id));
     setWatched((current) => current.filter((id) => !done.has(id)));

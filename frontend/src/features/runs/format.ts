@@ -1,26 +1,6 @@
 import type { BadgeTone } from '../../components/ui/index.ts';
 import type { LoadMode, Run, RunStatus, RunType, Stage } from '../../api/runs.ts';
-
-export const RUN_TYPE_LABELS: Record<RunType, string> = {
-  load: 'Load',
-  stress: 'Stress',
-  spike: 'Spike',
-};
-
-export const RUN_TYPE_DESCRIPTIONS: Record<RunType, string> = {
-  load: 'Steady, expected traffic. Confirms the API meets its limits on a normal day.',
-  stress: 'Steps up past normal traffic to find where latency or errors start to climb.',
-  spike: 'Jumps to a burst of users in seconds, then drops back to check recovery.',
-};
-
-export const STATUS_LABELS: Record<RunStatus, string> = {
-  queued: 'Queued',
-  running: 'Running',
-  passed: 'Passed',
-  failed: 'Failed',
-  error: 'Error',
-  stopped: 'Stopped',
-};
+import type { Copy } from '../../i18n/useCopy.ts';
 
 export const STATUS_TONES: Record<RunStatus, BadgeTone> = {
   queued: 'neutral',
@@ -31,15 +11,12 @@ export const STATUS_TONES: Record<RunStatus, BadgeTone> = {
   stopped: 'neutral',
 };
 
+/** The run type for a sentence: each language uses the form its grammar needs. */
+export function runTypeVars(type: RunType, t: Copy) {
+  return { type: t(`runType.${type}`), typeLower: t(`runTypeLower.${type}`) };
+}
+
 export const isActive = (status: RunStatus) => status === 'queued' || status === 'running';
-
-export const LOAD_MODE_LABELS: Record<LoadMode, string> = { users: 'Users', rate: 'Rate' };
-
-/** What a stage target counts in each mode, for labels and axes. */
-export const TARGET_LABELS: Record<LoadMode, string> = {
-  users: 'Virtual users',
-  rate: 'Flow runs per second',
-};
 
 /** Whole VUs, or a rate with at most 2 decimals (0.25 = one flow run every 4 s). Same as the API. */
 export function isValidTarget(target: number, mode: LoadMode): boolean {
@@ -49,17 +26,16 @@ export function isValidTarget(target: number, mode: LoadMode): boolean {
   return Number(target.toFixed(2)) === target && Number.isSafeInteger(Math.round(target * 3600));
 }
 
-/** What the stage targets mean in each mode, shown under the switch. */
-export const MODE_HINTS: Record<LoadMode, string> = {
-  users: 'Each target is a number of virtual users running at the same time.',
-  rate: 'Each target is flow runs started per second, up to 2 decimals (0.25 = one every 4 seconds). Switching keeps the numbers as they are, so check them.',
-};
+/** "20 users" (or "20 VUs" in Advanced), or "50/s" for a rate run. */
+export function formatTarget(target: number, mode: LoadMode, t: Copy): string {
+  return mode === 'rate'
+    ? t('runs.unitRate', { count: target })
+    : t('runs.unitUsers', { count: target });
+}
 
-const TARGET_UNITS: Record<LoadMode, string> = { users: ' VUs', rate: '/s' };
-
-export function formatStages(stages: Stage[], mode: LoadMode): string {
+export function formatStages(stages: Stage[], mode: LoadMode, t: Copy): string {
   return stages
-    .map((stage) => `${stage.duration} → ${stage.target}${TARGET_UNITS[mode]}`)
+    .map((stage) => `${stage.duration} → ${formatTarget(stage.target, mode, t)}`)
     .join(', ');
 }
 
@@ -68,9 +44,9 @@ export function peakTarget(stages: Stage[]): number {
   return Math.max(0, ...stages.map((stage) => stage.target).filter(Number.isFinite));
 }
 
-/** The largest stage target with its unit: "20 VUs", or "50/s" for a rate run. */
-export function formatPeak(run: Pick<Run, 'stages' | 'mode'>): string {
-  return `${peakTarget(run.stages)}${TARGET_UNITS[run.mode]}`;
+/** The largest stage target with its unit. */
+export function formatPeak(run: Pick<Run, 'stages' | 'mode'>, t: Copy): string {
+  return formatTarget(peakTarget(run.stages), run.mode, t);
 }
 
 export function formatMs(value: number | undefined): string {
@@ -83,8 +59,8 @@ export function formatPercent(fraction: number | undefined): string {
   return `${(fraction * 100).toFixed(2)}%`;
 }
 
-export function formatTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+export function formatTime(iso: string, language: string): string {
+  return new Date(iso).toLocaleString(language, {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -158,12 +134,3 @@ export function formatSeconds(value: number | string): string {
   if (rest) return `${hours}h${minutes}m${rest}s`;
   return minutes ? `${hours}h${minutes}m` : `${hours}h`;
 }
-
-// Plain-language explanations shared by the inline notes, so the wording stays the same everywhere.
-export const EXPLAIN = {
-  percentile:
-    'A percentile of the response time. A p95 of 300 ms means 95 of every 100 requests took 300 ms or less; the slowest 5 took longer.',
-  errorRate: 'Error rate is the share of requests that did not get the status their step expects.',
-  failRule:
-    'A run fails when any latency value reaches its limit (each must stay below it), when the error rate reaches the maximum, or when 99% or fewer of the checks pass. Checks confirm that each step got its expected status and saved its values, so a run can fail with a 0% error rate. A rate run also fails when it drops more of its planned flow runs than the max error rate allows.',
-} as const;

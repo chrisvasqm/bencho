@@ -4,13 +4,8 @@ import { AnimatePresence, m } from 'motion/react';
 import { useEffect, useState, type RefObject } from 'react';
 import { runsApi, type Run } from '../../api/runs.ts';
 import { Badge } from '../../components/ui/index.ts';
-import {
-  RUN_TYPE_LABELS,
-  STATUS_LABELS,
-  STATUS_TONES,
-  durationToSeconds,
-  formatPeak,
-} from './format.ts';
+import { useCopy } from '../../i18n/useCopy.ts';
+import { STATUS_TONES, durationToSeconds, formatPeak, runTypeVars } from './format.ts';
 
 const ACTIVE_POLL_MS = 2000;
 const IDLE_POLL_MS = 10000;
@@ -53,6 +48,7 @@ function formatClock(seconds: number): string {
 }
 
 export function ActiveRunsWidget({ anchorRef, onOpen }: ActiveRunsWidgetProps) {
+  const { t } = useCopy();
   const outOfView = useOutOfView(anchorRef);
   const active = useQuery({
     queryKey: ['runs', 'active'],
@@ -67,16 +63,14 @@ export function ActiveRunsWidget({ anchorRef, onOpen }: ActiveRunsWidgetProps) {
     <AnimatePresence>
       {visible && (
         <m.aside
-          aria-label="Runs in progress"
+          aria-label={t('active.title')}
           initial={{ opacity: 0, y: 16, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.98 }}
           transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
           className="fixed right-[max(16px,env(safe-area-inset-right))] bottom-[max(16px,env(safe-area-inset-bottom))] z-40 w-[min(320px,calc(100vw-32px))] rounded-lg bg-surface p-3 shadow-raised ring-1 ring-line"
         >
-          <p className="mb-2 text-xs text-fg-muted">
-            {runs.length === 1 ? '1 run in progress' : `${runs.length} runs in progress`}
-          </p>
+          <p className="mb-2 text-xs text-fg-muted">{t('active.count', { count: runs.length })}</p>
           <ul className="m-0 flex list-none flex-col gap-1 p-0">
             {runs.map((run) => {
               const planned = run.stages.reduce(
@@ -94,10 +88,10 @@ export function ActiveRunsWidget({ anchorRef, onOpen }: ActiveRunsWidgetProps) {
                   >
                     <span className="flex items-center gap-2 text-sm">
                       <Badge tone={STATUS_TONES[run.status]} pulse>
-                        {STATUS_LABELS[run.status]}
+                        {t(`status.${run.status}`)}
                       </Badge>
-                      <span className="font-medium text-fg">{RUN_TYPE_LABELS[run.type]}</span>
-                      <span className="text-fg-muted tabular-nums">{formatPeak(run)}</span>
+                      <span className="font-medium text-fg">{t(`runType.${run.type}`)}</span>
+                      <span className="text-fg-muted tabular-nums">{formatPeak(run, t)}</span>
                       <span className="ml-auto text-xs text-fg-muted tabular-nums">
                         {formatClock(elapsed)} / {formatClock(planned)}
                       </span>
@@ -105,7 +99,7 @@ export function ActiveRunsWidget({ anchorRef, onOpen }: ActiveRunsWidgetProps) {
                     <span
                       className="block h-1 w-full overflow-hidden rounded-full bg-surface-sunken"
                       role="progressbar"
-                      aria-label={`${RUN_TYPE_LABELS[run.type]} run progress`}
+                      aria-label={t('active.progress', runTypeVars(run.type, t))}
                       aria-valuemin={0}
                       aria-valuemax={100}
                       aria-valuenow={Math.round(progress * 100)}

@@ -86,6 +86,7 @@ export class RunsService {
         409,
         'TOO_MANY_RUNS',
         `At most ${MAX_CONCURRENT_RUNS} runs can be in progress. Wait for one to finish.`,
+        { max: MAX_CONCURRENT_RUNS },
       );
     }
     this.starting += 1;
@@ -127,7 +128,9 @@ export class RunsService {
       .filter((path) => isFullUrl(path) && !hasPlaceholderHost(path));
     for (const url of [input.baseUrl, ...fullUrls]) {
       const problem = privateTargetProblem(url);
-      if (problem) throw new AppError(400, 'TARGET_NOT_ALLOWED', problem);
+      if (problem) {
+        throw new AppError(400, 'TARGET_NOT_ALLOWED', problem, { host: new URL(url).hostname });
+      }
     }
   }
 

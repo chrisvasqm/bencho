@@ -16,6 +16,8 @@ export default defineConfig({
   use: {
     testIdAttribute: 'data-testid',
     trace: 'retain-on-failure',
+    // English copy and number formats, whatever the machine's language.
+    locale: 'en-US',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });
