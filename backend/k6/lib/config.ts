@@ -23,8 +23,9 @@ function parseStage(entry: string, mode: LoadMode): Stage {
   const [duration = '', rawTarget = ''] = entry.trim().split(':');
   const target = Number(rawTarget);
   if (!DURATION_PATTERN.test(duration) || !isValidTarget(target, mode)) {
+    const rule = mode === 'rate' ? 'a rate with at most 2 decimals' : 'whole VUs';
     throw new Error(
-      `STAGES entry "${entry}" must be <duration>:<target>, for example 30s:10 (rate: up to 2 decimals)`,
+      `STAGES entry "${entry}" must be <duration>:<target> (${rule}), such as 30s:10`,
     );
   }
   return { duration, target };

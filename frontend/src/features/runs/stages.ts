@@ -14,10 +14,11 @@ export function toStageRow(stage: Stage): StageRow {
   return { ...stage, targetText: String(stage.target), id: newId('stage') };
 }
 
-// Whole digits for VUs, so "1,000" is an error and never 1. A rate takes one decimal comma or
-// point with up to 2 digits after it: "0,25", "0.25", ".25".
-const WHOLE_PATTERN = /^\d+$/;
-const RATE_PATTERN = /^(\d+|\d*[.,]\d{1,2})$/;
+// A comma followed by 3 digits ("1,000") reads as a thousands separator, so it is refused and
+// never becomes 1. A point is always a decimal point ("10.0", "0.250"); validation then checks
+// whole VUs, or a rate with at most 2 decimals.
+const WHOLE_PATTERN = /^\d+(\.\d+)?$/;
+const RATE_PATTERN = /^(\d+|\d*\.\d+|\d*,\d{1,2})$/;
 
 /** The typed target as a number, or NaN (empty included) so validation reports it. */
 export function parseTarget(text: string, decimals: boolean): number {

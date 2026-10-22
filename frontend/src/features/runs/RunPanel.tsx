@@ -322,6 +322,8 @@ function RunPanelForm({
                       value={mode}
                       onChange={(next) => {
                         setMode(next);
+                        // An error for the other mode no longer applies; the next start checks again.
+                        setErrors(({ stages: _stale, ...rest }) => rest);
                         // The same text can be valid in one mode and not the other ("0,5").
                         setStages(
                           stages.map((stage) => ({
