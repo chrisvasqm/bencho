@@ -388,7 +388,7 @@ export const es: Translation = {
     took: 'duró {{seconds}}s',
     errorRate: 'Errores',
     madeWith: 'Hecha con',
-    p95Under: 'p95 < {{limit}}',
+    p95Under: 'p95 {{limit}}',
     latency: 'Latencia',
     withinLimit: 'Dentro del límite',
     overLimit: 'Pasó el límite',

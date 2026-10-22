@@ -76,6 +76,12 @@ export function formatMs(value: number | undefined): string {
   return `${(value / 1000).toFixed(2)} s`;
 }
 
+/** A latency limit as "< 0.50 s"; one under 10 ms already reads "< 0.01 s". */
+export function formatLimitMs(value: number): string {
+  const formatted = formatMs(value);
+  return formatted.startsWith('<') ? formatted : `< ${formatted}`;
+}
+
 export function formatPercent(fraction: number | undefined): string {
   if (fraction === undefined) return '–';
   return `${(fraction * 100).toFixed(2)}%`;

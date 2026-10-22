@@ -377,7 +377,7 @@ export const en = {
     took: 'took {{seconds}}s',
     errorRate: 'Errors',
     madeWith: 'Made with',
-    p95Under: 'p95 < {{limit}}',
+    p95Under: 'p95 {{limit}}',
     latency: 'Latency',
     withinLimit: 'Within limit',
     overLimit: 'Over limit',
