@@ -63,7 +63,12 @@ describe('run lifecycle', () => {
       }),
     );
 
-    expect(run).toMatchObject({ status: 'failed', errorMessage: null, stoppedEarly: true });
+    expect(run).toMatchObject({
+      status: 'failed',
+      exitCode: 99,
+      errorMessage: null,
+      stoppedEarly: true,
+    });
     expect(run.summary.metrics.checks.value).toBe(0);
     const elapsedSeconds =
       (new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000;

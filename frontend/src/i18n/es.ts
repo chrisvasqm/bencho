@@ -424,7 +424,7 @@ export const es: Translation = {
     dropped_many:
       'Se descartaron {{count}} flujos planeados porque todos los usuarios estaban ocupados',
     failedUnknown: 'Se superó un límite.',
-    stoppedEarly: 'Detenida antes de tiempo en el primer límite superado: {{reasons}}',
+    stoppedEarly: 'Detenida antes de tiempo por un límite superado: {{reasons}}',
     passed: 'Todos los límites se cumplieron. p95 {{p95}}, límite {{limit}}.',
     passedNoTotals: 'Todos los límites se cumplieron.',
     stopped: 'Detuviste esta ejecución. Se guardaron los resultados obtenidos hasta ahora.',

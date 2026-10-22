@@ -410,7 +410,7 @@ export const en = {
     dropped_other: '{{count}} planned flow runs were dropped because all users were busy',
     dropped_many: '{{count}} planned flow runs were dropped because all users were busy',
     failedUnknown: 'A limit was crossed.',
-    stoppedEarly: 'Stopped early at the first broken limit: {{reasons}}',
+    stoppedEarly: 'Stopped early on a broken limit: {{reasons}}',
     passed: 'All limits held. p95 {{p95}}, limit {{limit}}.',
     passedNoTotals: 'All limits held.',
     stopped: 'You stopped this run. The results so far were kept.',

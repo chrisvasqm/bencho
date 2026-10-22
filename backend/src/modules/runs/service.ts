@@ -246,7 +246,11 @@ export class RunsService {
         errorMessage:
           stopped || exitCode === 0 || exitCode === K6_THRESHOLD_FAILED_EXIT_CODE ? null : stderr,
         // The exit code is the same as for limits broken at the end; only the log tells them apart.
-        stoppedEarly: !stopped && exitCode === K6_THRESHOLD_FAILED_EXIT_CODE && abortedOnLimit,
+        stoppedEarly:
+          !stopped &&
+          run.limits.stopOnLimit === true &&
+          exitCode === K6_THRESHOLD_FAILED_EXIT_CODE &&
+          abortedOnLimit,
         finishedAt: new Date(),
       };
     } finally {
