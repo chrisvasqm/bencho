@@ -1,4 +1,4 @@
-// Chart series shared by the run charts and the trend. Keep each percentile on the same slot.
+// Chart series shared by the run charts. Keep each percentile on the same slot.
 export const LATENCY_SERIES = [
   { key: 'p50', label: 'p50', color: 'var(--series-1)' },
   { key: 'p90', label: 'p90', color: 'var(--series-2)' },

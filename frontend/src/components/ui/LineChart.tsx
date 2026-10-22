@@ -30,8 +30,6 @@ export interface LineChartProps<Row> {
   series: ReadonlyArray<LineSeries<Row>>;
   /** Accessible name; also shown as the chart title. */
   title: string;
-  /** 'number' spaces points by value (time in seconds); 'category' spaces them evenly. */
-  xType?: 'number' | 'category';
   formatX?: (value: number | string) => string;
   formatY?: (value: number) => string;
   height?: number;
@@ -60,7 +58,6 @@ export function LineChart<Row extends object>({
   xKey,
   series,
   title,
-  xType = 'number',
   formatX = String,
   formatY = String,
   height = 220,
@@ -74,10 +71,9 @@ export function LineChart<Row extends object>({
   testId,
 }: LineChartProps<Row>) {
   const showLegend = series.length > 1;
-  const xTicks =
-    xTime && xType === 'number'
-      ? timeTicks(numberAt(data[0], xKey), numberAt(data[data.length - 1], xKey))
-      : undefined;
+  const xTicks = xTime
+    ? timeTicks(numberAt(data[0], xKey), numberAt(data[data.length - 1], xKey))
+    : undefined;
   // The y axis uses this exact scale, so label spacing can be measured in pixels.
   const yTicks = niceTicks(seriesMax(data, series), integerY, minYStep);
   const yMax = yTicks[yTicks.length - 1] ?? 1;
@@ -122,8 +118,8 @@ export function LineChart<Row extends object>({
               <CartesianGrid stroke="var(--line)" strokeDasharray="2 4" vertical={false} />
               <XAxis
                 dataKey={xKey as string}
-                type={xType}
-                domain={xType === 'number' ? ['dataMin', 'dataMax'] : undefined}
+                type="number"
+                domain={['dataMin', 'dataMax']}
                 tick={tick}
                 tickFormatter={formatX}
                 stroke="var(--line-strong)"

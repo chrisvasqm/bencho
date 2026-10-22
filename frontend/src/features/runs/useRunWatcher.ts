@@ -62,7 +62,6 @@ export function useRunWatcher() {
     const done = new Set(finished.map((run) => run.id));
     setWatched((current) => current.filter((id) => !done.has(id)));
     void queryClient.invalidateQueries({ queryKey: ['runs'] });
-    void queryClient.invalidateQueries({ queryKey: ['trend'] });
     // finishedKey changes exactly when the set of newly finished runs changes.
   }, [finishedKey]);
 

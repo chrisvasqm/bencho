@@ -15,19 +15,6 @@ export const es: Translation = {
     runsDescription: 'Las más recientes primero. Selecciona una ejecución para ver sus resultados.',
     runsLoadError:
       'No se pudieron cargar las ejecuciones. Bencho lo intenta de nuevo en un momento.',
-    trendTitle: 'Tendencia',
-    trendDescription_one:
-      'Tiempo de respuesta de la última {{count}} ejecución de {{typeLower}}, de la más antigua a la más reciente',
-    trendDescription_other:
-      'Tiempo de respuesta de las últimas {{count}} ejecuciones de {{typeLower}}, de la más antigua a la más reciente',
-    trendDescription_many:
-      'Tiempo de respuesta de las últimas {{count}} ejecuciones de {{typeLower}}, de la más antigua a la más reciente',
-    trendChart: 'Tiempo de respuesta por ejecución',
-    trendEmpty: 'Termina una ejecución de este tipo para empezar la tendencia.',
-    trendNote:
-      'Cada punto es una ejecución terminada. Si las líneas suben de izquierda a derecha, el sitio se volvió más lento entre ejecuciones, por ejemplo después de una nueva versión.',
-    trendNote_advanced:
-      'Cada punto es una ejecución terminada. Si las líneas suben de izquierda a derecha, la API se volvió más lenta entre ejecuciones, por ejemplo después de un cambio de código.',
   },
   prefs: {
     language: 'Idioma',

@@ -49,7 +49,7 @@ const flowStepSchema = z.object({
 });
 export type FlowStep = z.infer<typeof flowStepSchema>;
 
-const trendSchema = z
+const k6TrendSchema = z
   .object({
     avg: z.number(),
     min: z.number(),
@@ -65,7 +65,7 @@ const summarySchema = z
   .object({
     metrics: z
       .object({
-        http_req_duration: trendSchema.optional(),
+        http_req_duration: k6TrendSchema.optional(),
         http_req_failed: z
           .object({ value: z.number(), passes: z.number(), fails: z.number() })
           .optional(),
