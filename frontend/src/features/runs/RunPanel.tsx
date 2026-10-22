@@ -157,7 +157,10 @@ function RunPanelForm({
   const limits = initial?.limits ?? defaults.limits;
   const [thinkTime, setThinkTime] = useState(limits.thinkTimeSeconds);
   const [gracePeriod, setGracePeriod] = useState(limits.gracePeriodSeconds);
-  const [maxErrorPercent, setMaxErrorPercent] = useState(limits.maxErrorRate * 100);
+  // Rounded: 0.07 * 100 is 7.000000000000001 in floating point.
+  const [maxErrorPercent, setMaxErrorPercent] = useState(
+    Math.round(limits.maxErrorRate * 10000) / 100,
+  );
   const [latency, setLatency] = useState(limits.latencyLimitsMs);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const currentInput = (): CreateRunInput => ({

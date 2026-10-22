@@ -1,6 +1,6 @@
 // Why a run passed or failed, in one sentence, from the totals it stored and the limits it ran
 // with. Mirrors the k6 thresholds the backend sets (backend/k6/lib/options.ts).
-import type { CreateRunInput, Run } from '../../api/runs.ts';
+import type { Run } from '../../api/runs.ts';
 import type { Copy } from '../../i18n/useCopy.ts';
 import { LATENCY_KEYS, formatMs, formatPercent, plannedRuns } from './format.ts';
 
@@ -65,21 +65,4 @@ export function verdictReason(run: Run, t: Copy): string {
           });
     }
   }
-}
-
-/** The settings of a stored run, ready to start again as they were. */
-export function runToInput(run: Run): CreateRunInput {
-  return {
-    type: run.type,
-    baseUrl: run.baseUrl,
-    mode: run.mode,
-    ...(run.mode === 'rate' &&
-      run.maxVirtualUsers !== null && { maxVirtualUsers: run.maxVirtualUsers }),
-    stages: run.stages.map(({ duration, target }) => ({ duration, target })),
-    flow: run.flow,
-    thinkTimeSeconds: run.limits.thinkTimeSeconds,
-    gracePeriodSeconds: run.limits.gracePeriodSeconds,
-    maxErrorRate: run.limits.maxErrorRate,
-    latencyLimitsMs: run.limits.latencyLimitsMs,
-  };
 }

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { m } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
@@ -14,7 +14,7 @@ import { CompareCard } from './features/runs/CompareCard.tsx';
 import { RunDetailCard } from './features/runs/RunDetailCard.tsx';
 import { RunFormDrawer } from './features/runs/RunFormDrawer.tsx';
 import { RunsTable } from './features/runs/RunsTable.tsx';
-import { runToInput } from './features/runs/verdict.ts';
+import { runToInput } from './features/runs/input.ts';
 import { useRunWatcher } from './features/runs/useRunWatcher.ts';
 import { ThemeSwitch } from './features/theme/ThemeSwitch.tsx';
 
@@ -92,17 +92,23 @@ export function App() {
   const loadingNext = runs.isPending || (Boolean(effectiveId) && selected.isPending);
   const shownRun = selectedRun ?? (loadingNext ? lastShown : undefined);
 
-  // Two ticked runs are compared in place of the selected run's results. They may sit on
-  // different pages: every fetched page is looked through.
-  const compared = [...checkedIds]
-    .map((id) =>
-      queryClient
-        .getQueriesData<RunsPage>({ queryKey: ['runs', 'page'] })
-        .flatMap(([, data]) => data?.runs ?? [])
-        .find((run) => run.id === id),
-    )
+  // Two ticked runs are compared in place of the selected run's results. Each has its own
+  // query, so a run ticked on another page stays known after that page leaves the cache.
+  const comparedIds = checkedIds.size === 2 ? [...checkedIds].sort() : [];
+  const comparedQueries = useQueries({
+    queries: comparedIds.map((id) => ({
+      queryKey: ['run', id],
+      queryFn: () => runsApi.get(id),
+      initialData: () => {
+        const run = list.find((item) => item.id === id);
+        return run ? { run } : undefined;
+      },
+    })),
+  });
+  const compared = comparedQueries
+    .map((query) => query.data?.run)
     .filter((run): run is Run => run !== undefined);
-  const comparing = checkedIds.size === 2 && compared.length === 2;
+  const comparing = comparedIds.length === 2 && compared.length === 2;
 
   const create = useMutation({
     mutationFn: (input: CreateRunInput) => runsApi.create(input),
@@ -128,16 +134,22 @@ export function App() {
 
   // New run opens the form with the newest run's settings, or the defaults when there is none.
   // Page 1 is newest first, so it already holds that run; another page needs one fetch.
+  const opening = useRef(false);
   const openNewRun = async () => {
-    if (form.open) return;
-    const newest =
-      page === 1 && runs.data
-        ? list[0]
-        : await runsApi
-            .list(1, 1)
-            .then((result) => result.runs[0])
-            .catch(() => undefined);
-    setForm((current) => ({ open: true, initial: newest, key: current.key + 1 }));
+    if (opening.current) return;
+    opening.current = true;
+    try {
+      const newest =
+        page === 1 && runs.data && !runs.isPlaceholderData
+          ? list[0]
+          : await runsApi
+              .list(1, 1)
+              .then((result) => result.runs[0])
+              .catch(() => undefined);
+      setForm((current) => ({ open: true, initial: newest, key: current.key + 1 }));
+    } finally {
+      opening.current = false;
+    }
   };
   const openChange = (run: Run) =>
     setForm((current) => ({ open: true, initial: run, key: current.key + 1 }));
