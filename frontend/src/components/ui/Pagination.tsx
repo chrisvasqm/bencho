@@ -10,6 +10,7 @@ export interface PaginationProps {
 }
 
 export function Pagination({ page, pageSize, total, onPageChange, loading }: PaginationProps) {
+  // UI primitives have no Advanced wording, so plain useTranslation, not useCopy.
   const { t } = useTranslation();
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const first = total === 0 ? 0 : (page - 1) * pageSize + 1;

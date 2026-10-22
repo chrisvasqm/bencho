@@ -335,11 +335,11 @@ function Logo() {
 function describeError(error: Error, t: Copy): string {
   if (!(error instanceof ApiError)) return t('errors.offline');
   if (error.code === 'VALIDATION') return t('errors.validation');
-  // TOO_MANY_RUNS sends its limit; TARGET_NOT_ALLOWED ends its message with the host.
-  const details = (error.details ?? {}) as { max?: number };
+  // TOO_MANY_RUNS sends its limit; TARGET_NOT_ALLOWED the refused host.
+  const details = (error.details ?? {}) as { max?: number; host?: string };
   return t(`errors.${error.code}` as 'errors.INTERNAL', {
     defaultValue: error.message,
     max: details.max,
-    host: /\(([^)]+)\)$/.exec(error.message)?.[1] ?? '',
+    host: details.host,
   });
 }

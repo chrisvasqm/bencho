@@ -168,15 +168,25 @@ function RunPanelForm({
   const [maxErrorPercent, setMaxErrorPercent] = useState(defaults.limits.maxErrorRate * 100);
   const [latency, setLatency] = useState(defaults.limits.latencyLimitsMs);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // The input of the last start that found problems: a language switch shows them again in the
-  // new language.
-  const [checked, setChecked] = useState<{ input: CreateRunInput; steps: StepDraft[] }>();
+  const currentInput = (): CreateRunInput => ({
+    type,
+    baseUrl: baseUrl.trim(),
+    mode,
+    ...(mode === 'rate' && { maxVirtualUsers }),
+    stages: stages.map(({ duration, target }) => ({ duration, target })),
+    flow: flowSteps.map(fromDraft),
+    thinkTimeSeconds: thinkTime,
+    gracePeriodSeconds: gracePeriod,
+    maxErrorRate: maxErrorPercent / 100,
+    latencyLimitsMs: latency,
+  });
+  // Problems on screen are text: a language switch checks the form again and shows the same
+  // fields' problems in the new language.
   const [errorsLanguage, setErrorsLanguage] = useState(language);
   if (errorsLanguage !== language) {
     setErrorsLanguage(language);
-    if (checked && Object.keys(errors).length > 0) {
-      const again = validate(checked.input, checked.steps, t);
-      // Keep only problems still on screen: edits since the start may have cleared some.
+    if (Object.keys(errors).length > 0) {
+      const again = validate(currentInput(), flowSteps, t);
       setErrors(
         Object.fromEntries(
           Object.keys(errors)
@@ -225,21 +235,9 @@ function RunPanelForm({
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const input: CreateRunInput = {
-      type,
-      baseUrl: baseUrl.trim(),
-      mode,
-      ...(mode === 'rate' && { maxVirtualUsers }),
-      stages: stages.map(({ duration, target }) => ({ duration, target })),
-      flow: flowSteps.map(fromDraft),
-      thinkTimeSeconds: thinkTime,
-      gracePeriodSeconds: gracePeriod,
-      maxErrorRate: maxErrorPercent / 100,
-      latencyLimitsMs: latency,
-    };
+    const input = currentInput();
     const nextErrors = validate(input, flowSteps, t);
     setErrors(nextErrors);
-    setChecked({ input, steps: flowSteps });
     // The first tab, in tab order, that has an error.
     const errorTabs = new Set(Object.keys(nextErrors).map((key) => ERROR_TAB[key]));
     const firstErrorTab = PANEL_TABS.find((value) => errorTabs.has(value));
@@ -546,6 +544,8 @@ function RunPanelForm({
                           <Input
                             id={`limit-${key}`}
                             data-testid={`limit-${key}`}
+                            // Basic shows no label above the one limit; the legend names it.
+                            aria-label={allLimits ? undefined : t('panel.maxResponseTime')}
                             mono
                             type="number"
                             min={1}

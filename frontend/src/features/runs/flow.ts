@@ -326,9 +326,14 @@ function stepProblem(step: FlowStep, known: Set<string>): string | undefined {
     (item) => !NAME_PATTERN.test(item.name) || builtIn.has(item.name),
   );
   if (badSave) return i18n.t('flowProblem.badSaveName', { name: badSave.name });
-  if (step.extract.some((item) => item.path === '')) return i18n.t('flowProblem.savePath');
+  const path = i18n.t(soap ? 'flow.savePath.soap' : 'flow.savePath.json').toLowerCase();
+  // "JSON path" keeps its capitals.
+  const pathName = soap ? path : i18n.t('flow.savePath.json');
+  if (step.extract.some((item) => item.path === '')) {
+    return i18n.t('flowProblem.savePath', { path: pathName });
+  }
   if (step.extract.some((item) => item.path.length > MAX_EXTRACT_PATH_LENGTH)) {
-    return i18n.t('flowProblem.savePathLength', { max: MAX_EXTRACT_PATH_LENGTH });
+    return i18n.t('flowProblem.savePathLength', { path: pathName, max: MAX_EXTRACT_PATH_LENGTH });
   }
   return undefined;
 }
