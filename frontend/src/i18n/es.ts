@@ -8,11 +8,11 @@ import type { Translation } from './en.ts';
 
 export const es: Translation = {
   app: {
+    scrollToTop: 'Ir al inicio',
+    scrollToBottom: 'Ir al final',
     backendDown: 'Bencho no puede conectarse a su servidor',
     backendDownHint: 'Inicia Bencho con docker compose up y luego recarga esta página.',
     runsTitle: 'Ejecuciones',
-    runsDescription:
-      'De todos los tipos, las más recientes primero. Selecciona una ejecución para ver sus resultados, o marca dos para compararlas.',
     newRun: 'Nueva ejecución',
     runsLoadError:
       'No se pudieron cargar las ejecuciones. Bencho lo intenta de nuevo en un momento.',
@@ -84,11 +84,11 @@ export const es: Translation = {
   },
   panel: {
     title: 'Nueva ejecución',
-    close: 'Cerrar',
+    tabsLabel: 'Secciones del formulario',
     sections: {
       setup: 'Ajustes',
       flow: 'Pasos',
-      limits: 'Reglas para aprobar',
+      limits: 'Reglas',
     },
     filledFrom: 'Ajustes de la ejecución de {{typeLower}} del {{time}}. Cambia lo que necesites.',
     loading: 'Cargando ajustes…',
@@ -253,15 +253,7 @@ export const es: Translation = {
     selectAll: 'Seleccionar todas las ejecuciones terminadas de esta página',
     selectRun: 'Seleccionar la ejecución del {{time}}',
     openRun: '{{status}}, ejecución del {{time}}',
-    headers: {
-      status: 'Resultado',
-      type: 'Tipo',
-      target: 'Dirección',
-      peak: 'Pico',
-      p95: 'p95',
-      errors: 'Errores',
-      started: 'Inicio',
-    },
+    compareHint: 'Marca dos ejecuciones para compararlas',
     bulkSelected: '{{count}} seleccionadas',
     bulkClear: 'Limpiar',
     bulkDelete: 'Eliminar',
@@ -312,6 +304,9 @@ export const es: Translation = {
     ownWaits: ', algunos pasos esperan su propio rango',
     took: 'duró {{seconds}}s',
     errorRate: 'Errores',
+    madeWith: 'Hecha con',
+    p95Under: 'p95 < {{limit}} ms',
+    errorsUnder: 'errores < {{limit}}',
     requests: 'Solicitudes',
     readTitle: 'Cómo leer estos números',
     read1: 'Verde significa que el número está dentro de su límite. Rojo, que pasó el límite.',
@@ -342,6 +337,8 @@ export const es: Translation = {
     older: 'Anterior',
     newer: 'Reciente',
     change: 'Cambio',
+    p95Older: 'p95, anterior',
+    p95Newer: 'p95, reciente',
     rows: {
       status: 'Resultado',
       type: 'Tipo',

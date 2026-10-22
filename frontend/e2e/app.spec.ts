@@ -1,5 +1,5 @@
 import { expect, openApp, test } from './fixtures.ts';
-import { openNewRun } from './run-form.ts';
+import { openNewRun, openTab } from './run-form.ts';
 
 test.describe('first load', () => {
   test('shows an empty runs list and opens the form with the backend defaults', async ({
@@ -21,7 +21,7 @@ test.describe('first load', () => {
 
     await expect(page.getByTestId('base-url')).toHaveValue(defaults.baseUrl);
     await expect(page.getByTestId('run-type')).toHaveValue('load');
-    await page.getByTestId('run-form-close').click();
+    await page.keyboard.press('Escape');
     await expect(page.getByTestId('run-form-drawer')).toHaveCount(0);
   });
 
@@ -81,6 +81,7 @@ test.describe('stage errors', () => {
     await openApp(page);
     await openNewRun(page);
     await page.getByTestId('stage-0-duration').fill('abc');
+    await openTab(page, 'limits');
     await page.getByTestId('limit-p99').scrollIntoViewIfNeeded();
 
     await page.getByTestId('start-run').click();

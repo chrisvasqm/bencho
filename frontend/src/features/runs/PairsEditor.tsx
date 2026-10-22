@@ -58,7 +58,7 @@ export function PairsEditor({
             onChange={(event) => update(index, { value: event.target.value })}
           />
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
             aria-label={t('flow.removePair', { label: keyLabel.toLowerCase(), number: index + 1 })}
             onClick={() => remove(index)}

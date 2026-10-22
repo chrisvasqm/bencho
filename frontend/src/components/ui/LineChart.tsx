@@ -22,6 +22,8 @@ export interface LineSeries<Row> {
   color: string;
   /** SVG dash pattern, so neighboring series differ by more than hue (color-vision deficiency). */
   dash?: string;
+  /** The line is drawn from `key` (e.g. a smoothed copy); the tooltip shows this exact value. */
+  rawKey?: keyof Row & string;
 }
 
 export interface LineChartProps<Row> {
@@ -381,6 +383,9 @@ function ChartTooltip<Row>({
         {series.map((line) => {
           const entry = payload.find((item) => item.dataKey === line.key);
           if (!entry || typeof entry.value !== 'number') return null;
+          const row = entry.payload as Row | undefined;
+          const raw = line.rawKey === undefined ? undefined : row?.[line.rawKey];
+          const value = typeof raw === 'number' ? raw : entry.value;
           return (
             <li key={line.key} className="flex items-center gap-2">
               <svg width="12" height="4" aria-hidden="true" className="shrink-0">
@@ -395,7 +400,7 @@ function ChartTooltip<Row>({
                 />
               </svg>
               <span className="text-fg-muted">{line.label}</span>
-              <span className="ml-auto pl-3 text-fg tabular-nums">{formatY(entry.value)}</span>
+              <span className="ml-auto pl-3 text-fg tabular-nums">{formatY(value)}</span>
             </li>
           );
         })}

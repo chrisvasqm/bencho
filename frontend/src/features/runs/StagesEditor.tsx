@@ -58,7 +58,7 @@ export function StagesEditor({ stages, onChange, targetLabel, decimals }: Stages
             }
           />
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
             aria-label={t('panel.removeStage', { number: index + 1 })}
             data-testid={`stage-${index}-remove`}

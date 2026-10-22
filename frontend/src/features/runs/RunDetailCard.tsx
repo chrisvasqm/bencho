@@ -1,20 +1,22 @@
 import { RotateCcw, SlidersHorizontal } from 'lucide-react';
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import type { Run } from '../../api/runs.ts';
-import { Badge, Button, Card, Skeleton, Stat, type StatTone } from '../../components/ui/index.ts';
+import { Button, Card, Skeleton, Stat, type StatTone } from '../../components/ui/index.ts';
 import { hasRedactedSecrets } from './input.ts';
 import { verdictReason } from './verdict.ts';
 import { LearnMore } from '../learn/LearnMore.tsx';
 import { useCopy } from '../../i18n/useCopy.ts';
 import {
   LATENCY_KEYS,
-  STATUS_TONES,
   durationSeconds,
   formatMs,
+  formatPeak,
   formatPercent,
+  formatSeconds,
   formatStages,
   formatTime,
   isActive,
+  plannedSeconds,
   runTypeVars,
 } from './format.ts';
 
@@ -44,6 +46,36 @@ const VERDICT_CLASSES: Record<Run['status'], string> = {
   error: 'bg-warning-soft',
   stopped: 'bg-surface-sunken',
 };
+
+const VERDICT_TEXT: Record<Run['status'], string> = {
+  queued: 'text-fg-muted',
+  running: 'text-info',
+  passed: 'text-success',
+  failed: 'text-danger',
+  error: 'text-warning',
+  stopped: 'text-fg-muted',
+};
+
+/** One setting the run was made with. */
+function Chip({
+  children,
+  title,
+  testId,
+}: {
+  children: ReactNode;
+  title?: string;
+  testId?: string;
+}) {
+  return (
+    <span
+      title={title}
+      data-testid={testId}
+      className="max-w-64 truncate rounded-md bg-surface-sunken px-2 py-0.5 font-mono text-[11px] text-fg"
+    >
+      {children}
+    </span>
+  );
+}
 
 // Charts pull in recharts; load them after the first paint.
 const RunCharts = lazy(() =>
@@ -105,16 +137,6 @@ export function RunDetailCard({
   const reuseButtons = !active && (
     <>
       <Button
-        variant="secondary"
-        size="sm"
-        onClick={() => onChange(run)}
-        disabled={starting || !canChange}
-        data-testid="run-change"
-      >
-        <SlidersHorizontal size={14} aria-hidden />
-        {t('detail.change')}
-      </Button>
-      <Button
         size="sm"
         onClick={() => onRunAgain(run)}
         loading={starting}
@@ -125,12 +147,22 @@ export function RunDetailCard({
         <RotateCcw size={14} aria-hidden />
         {t('detail.runAgain')}
       </Button>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => onChange(run)}
+        disabled={starting || !canChange}
+        data-testid="run-change"
+      >
+        <SlidersHorizontal size={14} aria-hidden />
+        {t('detail.change')}
+      </Button>
     </>
   );
   const actionButtons = confirming ? (
     <div className="flex items-center gap-2">
       <Button
-        variant="ghost"
+        variant="secondary"
         size="sm"
         onClick={() => setConfirming(false)}
         data-testid="run-action-keep"
@@ -149,7 +181,7 @@ export function RunDetailCard({
     </div>
   ) : (
     <Button
-      variant={active ? 'danger' : 'ghost'}
+      variant={active ? 'danger' : 'secondary'}
       size="sm"
       onClick={() => setConfirming(true)}
       data-testid={active ? 'run-stop' : 'run-delete'}
@@ -164,31 +196,35 @@ export function RunDetailCard({
         ...runTypeVars(run.type, t),
         time: formatTime(run.createdAt, language),
       })}
-      description={<span className="text-xs">{run.baseUrl}</span>}
-      actions={
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {reuseButtons}
-          {actionButtons}
-        </div>
-      }
+      actions={actionButtons}
       data-testid="run-detail"
       data-run-id={run.id}
       data-status={run.status}
     >
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-4">
         <div
           data-testid="run-verdict"
-          className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-3 py-2 text-sm ${VERDICT_CLASSES[run.status]}`}
+          className={`flex flex-col gap-1 rounded-md px-4 py-3 ${VERDICT_CLASSES[run.status]}`}
         >
-          <Badge tone={STATUS_TONES[run.status]} pulse={active}>
+          <span className={`flex items-center gap-2 text-lg font-bold ${VERDICT_TEXT[run.status]}`}>
+            {active && (
+              <span aria-hidden="true" className="size-2 animate-pulse rounded-full bg-current" />
+            )}
             {t(`status.${run.status}`)}
-          </Badge>
-          <span className="text-fg">{verdictReason(run, t)}</span>
+          </span>
+          <span className="text-sm text-fg">{verdictReason(run, t)}</span>
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-          <span className="text-xs text-fg-muted">{formatStages(run.stages, run.mode, t)}</span>
+
+        {reuseButtons && <div className="flex flex-wrap gap-2">{reuseButtons}</div>}
+
+        <div className="flex flex-wrap items-center gap-1.5 text-xs" data-testid="run-made-with">
+          <span className="font-medium text-fg-muted">{t('detail.madeWith')}</span>
+          <Chip title={run.baseUrl}>{run.baseUrl}</Chip>
+          <Chip title={formatStages(run.stages, run.mode, t)}>
+            {formatPeak(run, t)} · {formatSeconds(plannedSeconds(run.stages))}
+          </Chip>
           {run.mode === 'rate' && (
-            <span className="text-xs text-fg-muted" data-testid="run-rate-cap">
+            <Chip testId="run-rate-cap">
               {t('detail.rateCap', { count: run.maxVirtualUsers })}
               {dropped > 0 && (
                 <span className="text-warning" data-testid="run-dropped">
@@ -196,21 +232,23 @@ export function RunDetailCard({
                   {t('detail.dropped', { count: dropped })}
                 </span>
               )}
-            </span>
+            </Chip>
           )}
-          <span className="text-xs text-fg-muted">
+          <Chip title={run.flow.map((step) => step.name).join(' → ')}>
             {t('detail.steps', { count: run.flow.length })}:{' '}
             {run.flow.map((step) => step.name).join(' → ')}
-          </span>
-          <span className="text-xs text-fg-muted">
+          </Chip>
+          <Chip>{t('detail.p95Under', { limit: run.limits.latencyLimitsMs.p95 })}</Chip>
+          <Chip>{t('detail.errorsUnder', { limit: formatPercent(run.limits.maxErrorRate) })}</Chip>
+          <Chip>
             {t('detail.pauses', {
               think: run.limits.thinkTimeSeconds,
               grace: run.limits.gracePeriodSeconds,
             })}
             {run.flow.some((step) => step.wait) && t('detail.ownWaits')}
-          </span>
+          </Chip>
           {elapsed !== undefined && (
-            <span className="text-xs text-fg-faint">
+            <span className="text-fg-faint">
               {t('detail.took', { seconds: elapsed.toFixed(0) })}
             </span>
           )}
@@ -219,7 +257,7 @@ export function RunDetailCard({
         {run.summary ? (
           <div
             data-testid="run-summary"
-            className="grid grid-cols-2 gap-4 sm:grid-cols-3 2xl:grid-cols-6"
+            className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6"
           >
             {LATENCY_KEYS.map(([label, metricKey]) => (
               <Stat
@@ -233,7 +271,7 @@ export function RunDetailCard({
             <Stat
               label={t('detail.errorRate')}
               value={formatPercent(failed?.value)}
-              limit={`< ${(run.limits.maxErrorRate * 100).toFixed(2)}%`}
+              limit={`< ${formatPercent(run.limits.maxErrorRate)}`}
               tone={toneFor(failed?.value, run.limits.maxErrorRate)}
             />
             <Stat

@@ -11,6 +11,20 @@ import { useCopy } from '../../i18n/useCopy.ts';
 import { LATENCY_SERIES } from './series.ts';
 
 const POLL_INTERVAL_MS = 2000;
+// Seconds on each side of a point that its drawn value averages over.
+const SMOOTH_RADIUS = 2;
+
+function rollingMean(
+  points: ReadonlyArray<Record<string, unknown>>,
+  key: string,
+  index: number,
+): number {
+  const from = Math.max(0, index - SMOOTH_RADIUS);
+  const to = Math.min(points.length - 1, index + SMOOTH_RADIUS);
+  let total = 0;
+  for (let at = from; at <= to; at += 1) total += Number(points[at]?.[key] ?? 0);
+  return total / (to - from + 1);
+}
 
 export function RunCharts({ run }: { run: Run }) {
   const { t } = useCopy();
@@ -23,6 +37,17 @@ export function RunCharts({ run }: { run: Run }) {
     placeholderData: (previous) => previous,
   });
   const data = useMemo(() => points.data?.points ?? [], [points.data]);
+  // Users and requests change in whole steps each second; a short rolling mean draws the trend
+  // while the tooltip still shows each second's exact value.
+  const loadData = useMemo(
+    () =>
+      data.map((point, index) => ({
+        ...point,
+        usersSmooth: rollingMean(data, 'virtualUsers', index),
+        requestsSmooth: rollingMean(data, 'requestsPerSecond', index),
+      })),
+    [data],
+  );
   // Rate runs only: each point with the rate the stages planned for that second.
   const rateData = useMemo(() => {
     if (run.mode !== 'rate') return [];
@@ -71,16 +96,30 @@ export function RunCharts({ run }: { run: Run }) {
         <LineChart
           integerX
           {...shared}
+          data={loadData}
           title={t('charts.users')}
-          series={[{ key: 'virtualUsers', label: t('charts.users'), color: 'var(--series-1)' }]}
+          series={[
+            {
+              key: 'usersSmooth',
+              rawKey: 'virtualUsers',
+              label: t('charts.users'),
+              color: 'var(--series-1)',
+            },
+          ]}
           integerY
         />
         <LineChart
           integerX
           {...shared}
+          data={loadData}
           title={t('charts.requestsTitle')}
           series={[
-            { key: 'requestsPerSecond', label: t('charts.requests'), color: 'var(--series-3)' },
+            {
+              key: 'requestsSmooth',
+              rawKey: 'requestsPerSecond',
+              label: t('charts.requests'),
+              color: 'var(--series-3)',
+            },
           ]}
         />
       </div>

@@ -46,7 +46,7 @@ export function BulkDeleteBar({
             {t('runs.bulkSelected', { count })}
           </span>
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
             onClick={onClear}
             disabled={deleting}

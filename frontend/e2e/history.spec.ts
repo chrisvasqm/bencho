@@ -1,6 +1,6 @@
 // Every run is a starting point: run it again, change it, or compare it with another.
 import { expect, openApp, test } from './fixtures.ts';
-import { openNewRun, setLooseLimits, setSingleStage, startRun } from './run-form.ts';
+import { openNewRun, openTab, setLooseLimits, setSingleStage, startRun } from './run-form.ts';
 
 test('a passed run says that every limit held', async ({ page }) => {
   await openApp(page);
@@ -12,12 +12,14 @@ test('a passed run says that every limit held', async ({ page }) => {
 
   await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
   await expect(page.getByTestId('run-verdict')).toContainText('All limits held');
+  await expect(page.getByTestId('run-made-with')).toContainText('errors < 50.00%');
 });
 
 test('a failed run names the limit it broke', async ({ page }) => {
   await openApp(page);
   await openNewRun(page);
   // Every request answers 200, not 418: 100% errors, above the 50% that setLooseLimits allows.
+  await openTab(page, 'flow');
   await page.getByTestId('step-expected-status').fill('418');
   await setSingleStage(page, '1s');
   await setLooseLimits(page);
@@ -83,6 +85,7 @@ test('ticking two runs compares them side by side', async ({ page, api }) => {
   const compare = page.getByTestId('run-compare');
   await expect(compare).toHaveAttribute('data-older-id', older!.id);
   await expect(compare).toHaveAttribute('data-newer-id', newer!.id);
+  await expect(page.getByTestId('compare-sparklines')).toBeVisible();
   await expect(compare).toContainText('p95');
   await expect(page.getByTestId('run-detail')).toHaveCount(0);
 

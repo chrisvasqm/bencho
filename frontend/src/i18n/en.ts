@@ -8,11 +8,11 @@
 //   response time · errors = requests that did not get the expected answer
 export const en = {
   app: {
+    scrollToTop: 'Jump to the top',
+    scrollToBottom: 'Jump to the end',
     backendDown: 'Bencho cannot reach its server',
     backendDownHint: 'Start Bencho with docker compose up, then reload this page.',
     runsTitle: 'Runs',
-    runsDescription:
-      'Every type, newest first. Select a run to see its results, or tick two to compare them.',
     newRun: 'New run',
     runsLoadError: 'Could not load the runs. Bencho tries again in a moment.',
   },
@@ -80,11 +80,11 @@ export const en = {
   },
   panel: {
     title: 'New run',
-    close: 'Close',
+    tabsLabel: 'Form sections',
     sections: {
       setup: 'Setup',
       flow: 'Steps',
-      limits: 'Pass rules',
+      limits: 'Rules',
     },
     filledFrom: 'Settings from the {{typeLower}} run of {{time}}. Change what you need.',
     loading: 'Loading settings…',
@@ -246,15 +246,7 @@ export const en = {
     selectAll: 'Select all finished runs on this page',
     selectRun: 'Select run from {{time}}',
     openRun: '{{status}}, run from {{time}}',
-    headers: {
-      status: 'Result',
-      type: 'Type',
-      target: 'Address',
-      peak: 'Peak',
-      p95: 'p95',
-      errors: 'Errors',
-      started: 'Started',
-    },
+    compareHint: 'Tick two runs to compare them',
     bulkSelected: '{{count}} selected',
     bulkClear: 'Clear',
     bulkDelete: 'Delete',
@@ -305,6 +297,9 @@ export const en = {
     ownWaits: ', some steps wait their own range',
     took: 'took {{seconds}}s',
     errorRate: 'Errors',
+    madeWith: 'Made with',
+    p95Under: 'p95 < {{limit}} ms',
+    errorsUnder: 'errors < {{limit}}',
     requests: 'Requests',
     readTitle: 'How to read these numbers',
     read1: 'Green means the number is within its limit. Red means it broke the limit.',
@@ -332,6 +327,8 @@ export const en = {
     older: 'Older',
     newer: 'Newer',
     change: 'Change',
+    p95Older: 'p95, older',
+    p95Newer: 'p95, newer',
     rows: {
       status: 'Result',
       type: 'Type',

@@ -1,5 +1,5 @@
 // The run form in a drawer from the right edge, so the run list and results stay in view.
-import { X } from 'lucide-react';
+// No close button: a click outside or Escape dismisses it.
 import { Drawer } from 'vaul';
 import type { CreateRunInput, Run, RunDefaults } from '../../api/runs.ts';
 import { useCopy } from '../../i18n/useCopy.ts';
@@ -40,15 +40,6 @@ export function RunFormDrawer({
             onSubmit={onSubmit}
             submitting={submitting}
             className="h-full shadow-raised ring-1 ring-line"
-            actions={
-              <Drawer.Close
-                aria-label={t('panel.close')}
-                data-testid="run-form-close"
-                className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-sunken hover:text-fg"
-              >
-                <X size={16} aria-hidden />
-              </Drawer.Close>
-            }
           />
         </Drawer.Content>
       </Drawer.Portal>

@@ -129,6 +129,7 @@ export function FlowEditor({
               <button
                 type="button"
                 aria-expanded={openId === step.id}
+                data-testid={`step-${index}-toggle`}
                 aria-controls={openId === step.id ? `${step.id}-body` : undefined}
                 onClick={() => setOpenId(openId === step.id ? undefined : step.id)}
                 className="grid min-w-0 flex-1 grid-cols-[1.25rem_3.25rem_minmax(0,1fr)] items-baseline gap-x-2 py-1 text-left text-sm"
@@ -152,7 +153,7 @@ export function FlowEditor({
                 </span>
               </button>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 aria-label={t('flow.moveUp', { number: index + 1 })}
                 disabled={index === 0}
@@ -162,7 +163,7 @@ export function FlowEditor({
                 ↑
               </Button>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 aria-label={t('flow.moveDown', { number: index + 1 })}
                 disabled={index === steps.length - 1}
@@ -172,7 +173,7 @@ export function FlowEditor({
                 ↓
               </Button>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 aria-label={t('flow.remove', { number: index + 1 })}
                 disabled={steps.length === 1}
@@ -206,7 +207,7 @@ export function FlowEditor({
           {t('flow.add')}
         </Button>
         <Button
-          variant="ghost"
+          variant="secondary"
           size="sm"
           data-testid="load-quickpizza-example"
           onClick={() => {
@@ -218,7 +219,7 @@ export function FlowEditor({
         </Button>
         {hasSoapExample && (
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
             data-testid="load-soap-example"
             onClick={() => {
