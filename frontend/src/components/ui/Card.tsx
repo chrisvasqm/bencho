@@ -9,7 +9,11 @@ export interface CardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
   headerExtra?: ReactNode;
   /** Pinned under the body, e.g. the primary action. */
   footer?: ReactNode;
-  /** Body scrolls inside the card while header and footer stay visible. Give the card a height. */
+  /**
+   * Body scrolls inside the card while header and footer stay visible. Give the card a height.
+   * The body is also the positioning context, so absolute children (e.g. sr-only text) stay
+   * inside it instead of stretching the page.
+   */
   scrollBody?: boolean;
   /** Footer without padding, so its content (e.g. a block button) fills it. */
   flushFooter?: boolean;

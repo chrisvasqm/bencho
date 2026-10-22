@@ -213,6 +213,7 @@ export function App() {
           className="lg:min-h-0"
         />
 
+        {/* relative: absolute children (e.g. sr-only text) stay in this pane, not the page. */}
         <div className="relative flex min-w-0 flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           <Card
             ref={runsCardRef}
