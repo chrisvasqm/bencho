@@ -39,9 +39,9 @@ export function Card({
       {(title || actions || headerExtra) && (
         <header className="flex shrink-0 flex-col gap-3 px-5 pt-5 pb-2">
           {(title || actions) && (
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
-                {title && <h2 className="text-base font-semibold text-fg">{title}</h2>}
+                {title && <h2 className="text-lg font-semibold text-fg">{title}</h2>}
                 {description && (
                   <p className="mt-0.5 truncate text-sm text-fg-muted">{description}</p>
                 )}
