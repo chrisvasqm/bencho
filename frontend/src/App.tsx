@@ -24,7 +24,6 @@ import { useRunWatcher } from './features/runs/useRunWatcher.ts';
 import { ThemeSwitch } from './features/theme/ThemeSwitch.tsx';
 
 const POLL_INTERVAL_MS = 2000;
-
 const PAGE_SIZE = 8;
 
 export function App() {
