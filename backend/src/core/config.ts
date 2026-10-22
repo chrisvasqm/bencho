@@ -7,8 +7,11 @@ const schema = z
     PORT: z.coerce.number().int().positive().default(3000),
     DATABASE_URL: z.url().default('postgres://perf:perf@localhost:10002/perf'),
     DEFAULT_BASE_URL: z.url().default('http://localhost:10001'),
-    /** Base URL of the SOAP demo app (Learn Web Services) that the SOAP example flow calls. */
-    SOAP_EXAMPLE_BASE_URL: z.url().default('http://localhost:10006'),
+    /**
+     * Base URL of the SOAP demo app (Learn Web Services) that the SOAP example flow calls.
+     * Defaults to the local stack outside production; unset in production hides the example.
+     */
+    SOAP_EXAMPLE_BASE_URL: z.url().optional(),
     K6_BUNDLE_DIR: z.string().min(1).default('dist/k6'),
     /**
      * Lets runs target private, loopback and link-local addresses (see modules/runs/targets.ts).
@@ -20,6 +23,9 @@ const schema = z
   .transform((env) => ({
     ...env,
     allowPrivateTargets: env.ALLOW_PRIVATE_TARGETS !== 'false',
+    SOAP_EXAMPLE_BASE_URL:
+      env.SOAP_EXAMPLE_BASE_URL ??
+      (env.NODE_ENV === 'production' ? undefined : 'http://localhost:10007'),
   }));
 
 export type Config = z.infer<typeof schema>;

@@ -22,7 +22,7 @@ Stop with `docker compose down` (add `-v` to delete stored runs).
 | Backend    | http://localhost:10003          | `BACKEND_PORT`    |
 | Postgres   | localhost:10002                 | `POSTGRES_PORT`   |
 | QuickPizza | http://localhost:10001          | `QUICKPIZZA_PORT` |
-| SOAP demo  | http://localhost:10006/services | `SOAP_DEMO_PORT`  |
+| SOAP demo  | http://localhost:10007/services | `SOAP_DEMO_PORT`  |
 
 Each run counts its stage targets as virtual users (k6 `ramping-vus`) or as a rate of flow runs started per second (k6 `ramping-arrival-rate`, with a max VUs cap; default 100). Rates take up to 2 decimals, so 0.25 is one flow run every 4 seconds. A rate run keeps its rate as the server slows down, and reports the flow runs it dropped when every allowed VU was busy.
 

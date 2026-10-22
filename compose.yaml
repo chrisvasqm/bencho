@@ -11,7 +11,7 @@ services:
   soap-demo:
     image: vicziani/lwsapp:3.0.1
     ports:
-      - "127.0.0.1:${SOAP_DEMO_PORT:-10006}:8080"
+      - "127.0.0.1:${SOAP_DEMO_PORT:-10007}:8080"
     restart: unless-stopped
 
   postgres:

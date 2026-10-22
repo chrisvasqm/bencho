@@ -235,7 +235,8 @@ describe('run lifecycle', () => {
       return body;
     }
 
-    // No XML declaration: a response that starts with its root tag once broke k6's tag regex.
+    // Responses come with an XML declaration only when the step asks (X-Prolog): one that
+    // starts with its root tag once broke k6's tag regex.
     // A SOAP service: Login answers a token; Order accepts only that token, escaped.
     beforeAll(async () => {
       server = createServer((request, response) => {
@@ -252,7 +253,8 @@ describe('run lifecycle', () => {
               ? `<LoginResponse><Token>${ESCAPED_TOKEN}</Token><session>s-1</session></LoginResponse>`
               : '<OrderResponse><Id>7</Id></OrderResponse>';
           response.writeHead(ok ? 200 : 500, { 'Content-Type': 'text/xml; charset=utf-8' });
-          response.end(envelope(ok ? content : '<soap:Fault/>'));
+          const prolog = request.headers['x-prolog'] ? '<?xml version="1.0"?>' : '';
+          response.end(prolog + envelope(ok ? content : '<soap:Fault/>'));
         });
       });
       await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -299,6 +301,7 @@ describe('run lifecycle', () => {
             soapStep(envelope('<Login><User>user-{{shortId}}</User></Login>'), {
               name: 'Login',
               path: '/login',
+              headers: { 'X-Prolog': '1' },
               extract: [{ name: 'missing', path: 'LoginResponse.Session' }],
             }),
           ],

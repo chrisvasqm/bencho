@@ -43,8 +43,8 @@ export interface FlowEditorProps {
   onErrorShown?: () => void;
   /** "Step 2 (Log in)", shown with the message when that step is closed. */
   errorLabel?: string;
-  /** Targets of the examples: loading one also sets the run's base URL to its target. */
-  exampleBaseUrls: { quickPizza: string; soap?: string };
+  /** Target of the SOAP example: loading it also sets the run's base URL. None hides it. */
+  soapExampleBaseUrl?: string;
   onBaseUrlChange: (baseUrl: string) => void;
 }
 
@@ -68,7 +68,7 @@ export function FlowEditor({
   scrollToError,
   onErrorShown,
   errorLabel,
-  exampleBaseUrls,
+  soapExampleBaseUrl,
   onBaseUrlChange,
 }: FlowEditorProps) {
   // A problem with no step, or with its step closed, shows under the list instead.
@@ -94,10 +94,9 @@ export function FlowEditor({
     onChange([...steps, step]);
     setOpenId(step.id);
   };
-  const loadExample = (flow: FlowStep[], baseUrl: string) => {
+  const loadExample = (flow: FlowStep[]) => {
     const example = flow.map(toDraft);
     onChange(example);
-    onBaseUrlChange(baseUrl);
     setOpenId(example[0]?.id);
   };
 
@@ -202,19 +201,18 @@ export function FlowEditor({
         <Button variant="secondary" size="sm" onClick={add}>
           Add step
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => loadExample(QUICKPIZZA_FLOW, exampleBaseUrls.quickPizza)}
-        >
+        <Button variant="ghost" size="sm" onClick={() => loadExample(QUICKPIZZA_FLOW)}>
           Load QuickPizza example
         </Button>
-        {exampleBaseUrls.soap && (
+        {soapExampleBaseUrl && (
           <Button
             variant="ghost"
             size="sm"
             data-testid="load-soap-example"
-            onClick={() => loadExample(SOAP_FLOW, exampleBaseUrls.soap ?? '')}
+            onClick={() => {
+              loadExample(SOAP_FLOW);
+              onBaseUrlChange(soapExampleBaseUrl);
+            }}
           >
             Load SOAP example
           </Button>

@@ -44,8 +44,8 @@ const REDACTED = '[redacted]';
 export interface K6Settings {
   bundleDir: string;
   defaultBaseUrl: string;
-  /** Target of the SOAP example flow, offered to the frontend with the defaults. */
-  soapExampleBaseUrl: string;
+  /** Target of the SOAP example flow, offered to the frontend with the defaults; none hides it. */
+  soapExampleBaseUrl?: string;
   /** Runs may target private, loopback and link-local addresses (SSRF when exposed). Read per run. */
   allowPrivateTargets: () => boolean;
 }

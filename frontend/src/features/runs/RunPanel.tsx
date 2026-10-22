@@ -425,11 +425,12 @@ function RunPanelForm({
                     }}
                     openId={openStepId}
                     onOpenChange={setOpenStepId}
-                    exampleBaseUrls={{
-                      quickPizza: defaults.baseUrl,
-                      soap: defaults.soapExampleBaseUrl,
+                    soapExampleBaseUrl={defaults.soapExampleBaseUrl}
+                    onBaseUrlChange={(url) => {
+                      setBaseUrl(url);
+                      // The example's URL is valid: drop an earlier base URL problem.
+                      setErrors(({ baseUrl: _fixed, ...rest }) => rest);
                     }}
-                    onBaseUrlChange={setBaseUrl}
                     errorStepId={errorStepId}
                     error={errors.flow}
                     scrollToError={submitCount !== shownErrorRevision}
