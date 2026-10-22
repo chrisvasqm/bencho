@@ -23,8 +23,9 @@ export function Pagination({ page, pageSize, total, onPageChange, loading }: Pag
       <p data-testid="pagination-range" className="text-xs text-fg-muted tabular-nums">
         {total === 0 ? t('pagination.none') : t('pagination.range', { first, last, total })}
       </p>
-      {/* One page needs no paging buttons; the range alone says how many there are. */}
-      {pageCount > 1 && (
+      {/* One page needs no paging buttons; the range alone says how many there are. Past the
+          last page (runs deleted) they stay, so there is a way back. */}
+      {(pageCount > 1 || page > 1) && (
         <div className="flex items-center gap-2">
           <Button
             variant="secondary"

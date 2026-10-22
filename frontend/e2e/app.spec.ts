@@ -14,6 +14,7 @@ test.describe('first load', () => {
     await expect(page.getByTestId('pagination-range')).toHaveText('No runs');
     await expect(page.getByTestId('pagination-previous')).toHaveCount(0);
     await expect(page.getByTestId('pagination-next')).toHaveCount(0);
+    await expect(page.getByTestId('pagination-page')).toHaveCount(0);
     await expect(page.getByTestId('run-detail')).toHaveCount(0);
     await expect(page.getByTestId('run-form-drawer')).toHaveCount(0);
 
