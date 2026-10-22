@@ -1,9 +1,10 @@
-// Theme choice: system (follow the OS), light or dark. Stored per browser; applied as data-theme on <html>.
+// Theme choice: system (follow the OS) until the user picks light or dark. Stored per browser; applied as data-theme on <html>.
 // index.html applies the stored choice before first paint so the page never flashes the wrong theme.
 import { useCallback, useSyncExternalStore } from 'react';
 
 export const THEMES = ['system', 'light', 'dark'] as const;
 export type Theme = (typeof THEMES)[number];
+export type ResolvedTheme = Exclude<Theme, 'system'>;
 
 export const THEME_STORAGE_KEY = 'theme';
 const listeners = new Set<() => void>();
@@ -50,6 +51,26 @@ function subscribe(listener: () => void): () => void {
     listeners.delete(listener);
     window.removeEventListener('storage', onStorage);
   };
+}
+
+const darkQuery = '(prefers-color-scheme: dark)';
+
+function subscribeSystem(listener: () => void): () => void {
+  const query = window.matchMedia(darkQuery);
+  query.addEventListener('change', listener);
+  return () => query.removeEventListener('change', listener);
+}
+
+/** The theme on screen: the stored choice, else the OS preference. */
+export function useResolvedTheme(): ResolvedTheme {
+  const [theme] = useTheme();
+  const systemDark = useSyncExternalStore(
+    subscribeSystem,
+    () => window.matchMedia(darkQuery).matches,
+    () => false,
+  );
+  if (theme !== 'system') return theme;
+  return systemDark ? 'dark' : 'light';
 }
 
 export function useTheme(): [Theme, (theme: Theme) => void] {

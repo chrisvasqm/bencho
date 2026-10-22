@@ -31,7 +31,7 @@ export const en = {
     languages: { en: 'English', es: 'Spanish' },
     switchLanguage: 'change to {{language}}',
     theme: 'Theme',
-    themes: { system: 'System', light: 'Light', dark: 'Dark' },
+    switchTheme: { light: 'Change to light theme', dark: 'Change to dark theme' },
     detail: 'Detail level',
     detailHint: 'Basic shows the main settings in plain words. Advanced shows every setting.',
     details: { basic: 'Basic', advanced: 'Advanced' },

@@ -34,7 +34,7 @@ export const es: Translation = {
     languages: { en: 'inglés', es: 'español' },
     switchLanguage: 'cambiar a {{language}}',
     theme: 'Tema',
-    themes: { system: 'Sistema', light: 'Claro', dark: 'Oscuro' },
+    switchTheme: { light: 'Cambiar al tema claro', dark: 'Cambiar al tema oscuro' },
     detail: 'Nivel de detalle',
     detailHint:
       'Básico muestra los ajustes principales con palabras simples. Avanzado muestra todos los ajustes.',

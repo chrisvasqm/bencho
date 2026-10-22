@@ -105,22 +105,35 @@ test.describe('load shape chart', () => {
 });
 
 test.describe('theme', () => {
-  test('switches to dark and light and keeps the choice after a reload', async ({ page }) => {
+  test('flips between light and dark and keeps the choice after a reload', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
     await openApp(page);
     // The theme lives on <html>, which has no test id: read it, do not select it.
     const theme = () => page.evaluate(() => document.documentElement.dataset.theme ?? 'system');
+    const toggle = page.getByTestId('theme');
 
-    await page.getByTestId('theme-dark').click();
+    // No stored choice: the OS preference shows.
+    await expect.poll(theme).toBe('system');
+    await expect(toggle).toHaveAttribute('data-theme', 'light');
+
+    await toggle.click();
     await expect.poll(theme).toBe('dark');
-    await expect(page.getByTestId('theme-dark')).toHaveAttribute('aria-checked', 'true');
+    await expect(toggle).toHaveAttribute('data-theme', 'dark');
 
     await page.reload();
     await expect.poll(theme).toBe('dark');
 
-    await page.getByTestId('theme-light').click();
+    await toggle.click();
     await expect.poll(theme).toBe('light');
+    await expect(toggle).toHaveAttribute('data-theme', 'light');
+  });
 
-    await page.getByTestId('theme-system').click();
-    await expect.poll(theme).toBe('system');
+  test('keeps the same width when the language changes', async ({ page }) => {
+    await openApp(page);
+    const toggle = page.getByTestId('theme');
+    const before = await toggle.boundingBox();
+    await page.getByTestId('language').click();
+    await expect(page.getByTestId('language')).not.toHaveAttribute('data-language', 'en');
+    expect(await toggle.boundingBox()).toEqual(before);
   });
 });
