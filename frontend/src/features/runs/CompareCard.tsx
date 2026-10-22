@@ -98,7 +98,7 @@ export function CompareCard({ runs, onClose }: CompareCardProps) {
     <Card
       title={t('compare.title')}
       actions={
-        <Button variant="ghost" size="sm" onClick={onClose} data-testid="compare-close">
+        <Button variant="secondary" size="sm" onClick={onClose} data-testid="compare-close">
           {t('compare.close')}
         </Button>
       }

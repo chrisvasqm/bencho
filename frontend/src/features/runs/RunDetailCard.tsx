@@ -162,7 +162,7 @@ export function RunDetailCard({
   const actionButtons = confirming ? (
     <div className="flex items-center gap-2">
       <Button
-        variant="ghost"
+        variant="secondary"
         size="sm"
         onClick={() => setConfirming(false)}
         data-testid="run-action-keep"
@@ -181,7 +181,7 @@ export function RunDetailCard({
     </div>
   ) : (
     <Button
-      variant={active ? 'danger' : 'ghost'}
+      variant={active ? 'danger' : 'secondary'}
       size="sm"
       onClick={() => setConfirming(true)}
       data-testid={active ? 'run-stop' : 'run-delete'}

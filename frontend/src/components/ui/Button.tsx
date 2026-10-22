@@ -2,7 +2,8 @@ import type { ButtonHTMLAttributes } from 'react';
 import { cn } from './cn.ts';
 import { Spinner } from './Spinner.tsx';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+// No ghost variant: every button is filled, so it reads as a button at a glance.
+export type ButtonVariant = 'primary' | 'secondary' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'block';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -13,8 +14,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary: 'bg-accent text-accent-fg hover:bg-accent-hover',
-  secondary: 'bg-surface-sunken text-fg hover:bg-line',
-  ghost: 'bg-transparent text-fg-muted hover:bg-surface-sunken hover:text-fg',
+  secondary: 'border border-line bg-surface-sunken text-fg hover:bg-line',
   danger: 'bg-danger-soft text-danger hover:bg-danger hover:text-surface',
 };
 
