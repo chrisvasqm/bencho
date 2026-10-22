@@ -23,6 +23,8 @@ export interface StatProps {
   status?: string;
   /** How far the value is along its limit (1 = at the limit), with the text under the bar. */
   meter?: { ratio: number; label: string };
+  /** Bottom row for a stat without a limit, e.g. its rate and the time span. */
+  footer?: { left?: string; right?: string };
   testId?: string;
 }
 
@@ -48,6 +50,7 @@ export function Stat({
   details,
   status,
   meter,
+  footer,
   testId,
 }: StatProps) {
   const tooltipId = useId();
@@ -71,7 +74,7 @@ export function Stat({
         {unit && <span className="ml-1.5 text-sm font-normal text-fg-muted">{unit}</span>}
       </span>
       {meter ? (
-        <div className="flex flex-col gap-1">
+        <div className="mt-auto flex flex-col gap-1">
           <div aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-line">
             <div
               className={cn('h-full rounded-full transition-[width]', barClasses[tone])}
@@ -83,8 +86,13 @@ export function Stat({
             {limit && <span>limit {limit}</span>}
           </div>
         </div>
+      ) : footer ? (
+        <div className="mt-auto flex justify-between gap-2 font-mono text-[11px] text-fg-muted">
+          <span>{footer.left}</span>
+          <span>{footer.right}</span>
+        </div>
       ) : (
-        limit && <span className="font-mono text-[11px] text-fg-muted">limit {limit}</span>
+        limit && <span className="mt-auto font-mono text-[11px] text-fg-muted">limit {limit}</span>
       )}
       {hasDetails && (
         <dl
