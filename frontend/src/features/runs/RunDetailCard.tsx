@@ -2,6 +2,7 @@ import { RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { Suspense, lazy, useEffect, useState } from 'react';
 import type { Run } from '../../api/runs.ts';
 import { Badge, Button, Card, Skeleton, Stat, type StatTone } from '../../components/ui/index.ts';
+import { hasRedactedSecrets } from './input.ts';
 import { verdictReason } from './verdict.ts';
 import { LearnMore } from '../learn/LearnMore.tsx';
 import { useCopy } from '../../i18n/useCopy.ts';
@@ -99,6 +100,8 @@ export function RunDetailCard({
         busy: deleting,
         run: () => onDelete(run),
       };
+  // A redacted secret header cannot be sent again as it is; the form asks for it again.
+  const secrets = hasRedactedSecrets(run);
   const reuseButtons = !active && (
     <>
       <Button
@@ -111,7 +114,14 @@ export function RunDetailCard({
         <SlidersHorizontal size={14} aria-hidden />
         {t('detail.change')}
       </Button>
-      <Button size="sm" onClick={() => onRunAgain(run)} loading={starting} data-testid="run-again">
+      <Button
+        size="sm"
+        onClick={() => onRunAgain(run)}
+        loading={starting}
+        disabled={secrets}
+        title={secrets ? t('detail.runAgainSecrets') : undefined}
+        data-testid="run-again"
+      >
         <RotateCcw size={14} aria-hidden />
         {t('detail.runAgain')}
       </Button>

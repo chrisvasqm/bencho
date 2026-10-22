@@ -213,6 +213,8 @@ export const en = {
     duplicateHeader: 'Each header name can be used only once',
     headerNoName: 'Every header needs a name',
     badHeaderName: '"{{name}}" is not a valid header name',
+    redactedHeader:
+      'Enter the value of the "{{name}}" header again. Bencho does not keep secrets between runs.',
     headerLength: 'A header value can be at most {{max}} characters',
     headerLineBreak: 'Header values cannot contain line breaks',
     unknownPlaceholder: '{{placeholder}} is not built in and no earlier step saves it',
@@ -282,6 +284,8 @@ export const en = {
   detail: {
     title: '{{type}} run · {{time}}',
     runAgain: 'Run again',
+    runAgainSecrets:
+      'This run sent a secret header, which Bencho does not keep. Use Change and run and enter it again.',
     change: 'Change and run',
     stop: 'Stop',
     stopConfirm: 'Stop run',

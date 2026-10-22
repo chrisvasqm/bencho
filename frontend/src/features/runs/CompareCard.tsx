@@ -137,9 +137,9 @@ export function CompareCard({ runs, onClose }: CompareCardProps) {
                       worse === 0 ? 'text-fg-faint' : worse > 0 ? 'text-danger' : 'text-success'
                     }`}
                   >
-                    {row.delta === undefined || row.format === undefined
+                    {row.delta === undefined || row.delta === 0 || row.format === undefined
                       ? ''
-                      : `${row.delta > 0 ? '+' : row.delta < 0 ? '−' : ''}${row.format(Math.abs(row.delta))}`}
+                      : `${row.delta > 0 ? '+' : '−'}${row.format(Math.abs(row.delta))}`}
                   </td>
                 </tr>
               );

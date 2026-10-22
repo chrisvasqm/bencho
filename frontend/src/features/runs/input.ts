@@ -1,6 +1,14 @@
 // A stored run as the input that starts a run: Run again sends it as is, Change and run edits it.
 import type { CreateRunInput, Run } from '../../api/runs.ts';
 
+/** What the API returns in place of a secret header value (Authorization, cookies, keys...). */
+export const REDACTED = '[redacted]';
+
+/** True when a header value of the run was redacted: the run cannot be repeated as it is. */
+export function hasRedactedSecrets(run: Pick<Run, 'flow'>): boolean {
+  return run.flow.some((step) => Object.values(step.headers).includes(REDACTED));
+}
+
 /** The settings of a stored run, ready to start again as they were. */
 export function runToInput(run: Run): CreateRunInput {
   return {

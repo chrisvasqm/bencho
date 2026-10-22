@@ -94,7 +94,8 @@ export function App() {
 
   // Two ticked runs are compared in place of the selected run's results. Each has its own
   // query, so a run ticked on another page stays known after that page leaves the cache.
-  const comparedIds = checkedIds.size === 2 ? [...checkedIds].sort() : [];
+  const selectionKey = [...checkedIds].sort().join(',');
+  const comparedIds = checkedIds.size === 2 ? selectionKey.split(',') : [];
   const comparedQueries = useQueries({
     queries: comparedIds.map((id) => ({
       queryKey: ['run', id],
@@ -103,6 +104,8 @@ export function App() {
         const run = list.find((item) => item.id === id);
         return run ? { run } : undefined;
       },
+      // Only finished runs can be ticked, and a finished run never changes.
+      staleTime: Infinity,
     })),
   });
   const compared = comparedQueries
@@ -134,25 +137,25 @@ export function App() {
 
   // New run opens the form with the newest run's settings, or the defaults when there is none.
   // Page 1 is newest first, so it already holds that run; another page needs one fetch.
-  const opening = useRef(false);
+  // Each open or close of the form counts; a fetch for an earlier open gives up when a later
+  // action (Change and run, a close, another New run) came first.
+  const formRequest = useRef(0);
   const openNewRun = async () => {
-    if (opening.current) return;
-    opening.current = true;
-    try {
-      const newest =
-        page === 1 && runs.data && !runs.isPlaceholderData
-          ? list[0]
-          : await runsApi
-              .list(1, 1)
-              .then((result) => result.runs[0])
-              .catch(() => undefined);
-      setForm((current) => ({ open: true, initial: newest, key: current.key + 1 }));
-    } finally {
-      opening.current = false;
-    }
+    const request = ++formRequest.current;
+    const newest =
+      page === 1 && runs.data && !runs.isPlaceholderData
+        ? list[0]
+        : await runsApi
+            .list(1, 1)
+            .then((result) => result.runs[0])
+            .catch(() => undefined);
+    if (formRequest.current !== request) return;
+    setForm((current) => ({ open: true, initial: newest, key: current.key + 1 }));
   };
-  const openChange = (run: Run) =>
+  const openChange = (run: Run) => {
+    formRequest.current += 1;
     setForm((current) => ({ open: true, initial: run, key: current.key + 1 }));
+  };
 
   // Drop deleted runs from every cached list first: otherwise the next render still picks a
   // deleted run (the newest on the page) and fetches it again, which answers 404.
@@ -248,7 +251,7 @@ export function App() {
             <div className="flex items-center gap-2">
               <BulkDeleteBar
                 count={checkedIds.size}
-                selectionKey={[...checkedIds].sort().join(',')}
+                selectionKey={selectionKey}
                 deleting={removeMany.isPending}
                 onClear={() => setCheckedIds(new Set())}
                 onDelete={() => removeMany.mutate([...checkedIds])}
@@ -298,7 +301,7 @@ export function App() {
         <div className="flex min-w-0 flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           {comparing ? (
             <m.div
-              key={[...checkedIds].sort().join(',')}
+              key={selectionKey}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
@@ -335,7 +338,10 @@ export function App() {
       <RunFormDrawer
         key={form.key}
         open={form.open}
-        onOpenChange={(open) => setForm((current) => ({ ...current, open }))}
+        onOpenChange={(open) => {
+          formRequest.current += 1;
+          setForm((current) => ({ ...current, open }));
+        }}
         defaults={defaults.data}
         initial={form.initial}
         submitting={create.isPending}

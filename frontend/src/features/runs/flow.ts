@@ -1,6 +1,7 @@
 // Flow editing helpers: drafts the editor can hold mid-typing, the QuickPizza and SOAP examples and
 // checks that mirror the backend so the user sees which step to fix.
 import type { BodyFormat, FlowStep, HttpMethod } from '../../api/runs.ts';
+import { REDACTED } from './input.ts';
 import { i18n } from '../../i18n/index.ts';
 import { newId } from './ids.ts';
 import { isWellFormedXml } from './xml.ts';
@@ -71,12 +72,19 @@ export function toDraft(step: FlowStep): StepDraft {
   };
 }
 
-/** Exact duplicate header rows would merge into one entry; report them on the draft. */
+/**
+ * Exact duplicate header rows would merge into one entry; report them on the draft. A header
+ * value the API redacted (a run filled from a stored one) must be typed again.
+ */
 export function draftProblem(steps: StepDraft[]): FlowProblem | undefined {
   for (const [index, step] of steps.entries()) {
     const names = step.headers.map((pair) => pair.key.trim().toLowerCase()).filter(Boolean);
     if (new Set(names).size !== names.length) {
       return { message: i18n.t('flowProblem.duplicateHeader'), step: index };
+    }
+    const redacted = step.headers.find((pair) => pair.value === REDACTED);
+    if (redacted) {
+      return { message: i18n.t('flowProblem.redactedHeader', { name: redacted.key }), step: index };
     }
   }
   return undefined;

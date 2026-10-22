@@ -220,6 +220,8 @@ export const es: Translation = {
     duplicateHeader: 'Cada nombre de encabezado se puede usar una sola vez',
     headerNoName: 'Cada encabezado necesita un nombre',
     badHeaderName: '"{{name}}" no es un nombre de encabezado válido',
+    redactedHeader:
+      'Escribe de nuevo el valor del encabezado "{{name}}". Bencho no guarda secretos entre ejecuciones.',
     headerLength: 'Un valor de encabezado puede tener {{max}} caracteres como máximo',
     headerLineBreak: 'Los valores de encabezado no pueden tener saltos de línea',
     unknownPlaceholder: '{{placeholder}} no viene incluido y ningún paso anterior lo guarda',
@@ -289,6 +291,8 @@ export const es: Translation = {
   detail: {
     title: 'Ejecución de {{typeLower}} · {{time}}',
     runAgain: 'Repetir',
+    runAgainSecrets:
+      'Esta ejecución envió un encabezado secreto, que Bencho no guarda. Usa Cambiar y ejecutar y escríbelo de nuevo.',
     change: 'Cambiar y ejecutar',
     stop: 'Detener',
     stopConfirm: 'Detener ejecución',
