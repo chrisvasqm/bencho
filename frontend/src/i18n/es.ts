@@ -356,6 +356,15 @@ export const es: Translation = {
     unitUsers_many: '{{count}} usuarios',
     unitRate: '{{count}}/s',
   },
+  datePicker: {
+    placeholder: 'Cualquier día',
+    today: 'Hoy',
+    clear: 'Borrar',
+    previous: 'Anterior',
+    next: 'Siguiente',
+    chooseMonth: 'Elegir un mes',
+    chooseYear: 'Elegir un año',
+  },
   pagination: {
     label: 'Páginas',
     none: 'Sin ejecuciones',

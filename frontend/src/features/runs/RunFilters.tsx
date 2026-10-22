@@ -1,6 +1,6 @@
 // Filters above the run list: one test type or all, and a range of calendar days.
 import { RUN_TYPES } from '../../api/runs.ts';
-import { Input, SegmentedControl } from '../../components/ui/index.ts';
+import { DateRangePicker, SegmentedControl } from '../../components/ui/index.ts';
 import { useCopy } from '../../i18n/useCopy.ts';
 import { isRangeInverted, type RunFilterValues } from './filters.ts';
 
@@ -25,32 +25,13 @@ export function RunFilters({ values, onChange }: RunFiltersProps) {
           ...RUN_TYPES.map((type) => ({ value: type, label: t(`runType.${type}`) })),
         ]}
       />
-      <div className="flex items-center gap-2">
-        <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-fg-muted">
-          {t('runs.filterFrom')}
-          <Input
-            type="date"
-            data-testid="runs-filter-from"
-            className="h-8 px-2 text-xs"
-            value={values.fromDay}
-            max={values.toDay || undefined}
-            invalid={inverted}
-            onChange={(event) => onChange({ ...values, fromDay: event.target.value })}
-          />
-        </label>
-        <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-fg-muted">
-          {t('runs.filterTo')}
-          <Input
-            type="date"
-            data-testid="runs-filter-to"
-            className="h-8 px-2 text-xs"
-            value={values.toDay}
-            min={values.fromDay || undefined}
-            invalid={inverted}
-            onChange={(event) => onChange({ ...values, toDay: event.target.value })}
-          />
-        </label>
-      </div>
+      <DateRangePicker
+        labels={{ from: t('runs.filterFrom'), to: t('runs.filterTo') }}
+        testIds={{ from: 'runs-filter-from', to: 'runs-filter-to' }}
+        value={{ from: values.fromDay, to: values.toDay }}
+        invalid={inverted}
+        onChange={({ from, to }) => onChange({ ...values, fromDay: from, toDay: to })}
+      />
       {inverted && (
         <p role="alert" data-testid="runs-filter-range-error" className="text-xs text-danger">
           {t('runs.filterRangeInverted')}

@@ -345,6 +345,15 @@ export const en = {
     unitUsers_many: '{{count}} users',
     unitRate: '{{count}}/s',
   },
+  datePicker: {
+    placeholder: 'Any day',
+    today: 'Today',
+    clear: 'Clear',
+    previous: 'Previous',
+    next: 'Next',
+    chooseMonth: 'Choose a month',
+    chooseYear: 'Choose a year',
+  },
   pagination: {
     label: 'Pages',
     none: 'No runs',

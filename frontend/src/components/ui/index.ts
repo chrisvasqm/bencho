@@ -2,6 +2,8 @@ export { Badge, type BadgeProps, type BadgeTone } from './Badge.tsx';
 export { Button, type ButtonProps } from './Button.tsx';
 export { Card, type CardProps } from './Card.tsx';
 export { Checkbox, type CheckboxProps } from './Checkbox.tsx';
+export { DatePicker, type DatePickerProps } from './DatePicker.tsx';
+export { DateRangePicker, type DateRange, type DateRangePickerProps } from './DateRangePicker.tsx';
 export { Field, type FieldProps } from './Field.tsx';
 export { Input, type InputProps } from './Input.tsx';
 export { Learn, type LearnProps } from './Learn.tsx';

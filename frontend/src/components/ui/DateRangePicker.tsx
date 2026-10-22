@@ -1,0 +1,62 @@
+import { DatePicker } from './DatePicker.tsx';
+import { today } from './calendar.ts';
+
+export interface DateRange {
+  /** Calendar days as `YYYY-MM-DD`, empty when open-ended. */
+  from: string;
+  to: string;
+}
+
+export interface DateRangePickerProps {
+  value: DateRange;
+  onChange: (value: DateRange) => void;
+  labels: { from: string; to: string };
+  /** Latest day that can be picked; today unless set. */
+  max?: string;
+  invalid?: boolean;
+  testIds?: { from: string; to: string };
+}
+
+/**
+ * Two day fields that form a range: the start cannot pass the end, the end cannot come before
+ * the start, and neither can pass `max` (today by default, so no future days).
+ */
+export function DateRangePicker({
+  value,
+  onChange,
+  labels,
+  max = today(),
+  invalid,
+  testIds,
+}: DateRangePickerProps) {
+  return (
+    <div className="flex items-start gap-2">
+      <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-fg-muted">
+        {labels.from}
+        <DatePicker
+          label={labels.from}
+          testId={testIds?.from}
+          value={value.from}
+          max={value.to && value.to < max ? value.to : max}
+          range={value}
+          invalid={invalid}
+          onChange={(from) => onChange({ ...value, from })}
+        />
+      </label>
+      <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-fg-muted">
+        {labels.to}
+        <DatePicker
+          label={labels.to}
+          testId={testIds?.to}
+          value={value.to}
+          min={value.from || undefined}
+          max={max}
+          align="end"
+          range={value}
+          invalid={invalid}
+          onChange={(to) => onChange({ ...value, to })}
+        />
+      </label>
+    </div>
+  );
+}
