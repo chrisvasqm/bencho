@@ -11,6 +11,7 @@ export {
   type SegmentedControlProps,
   type SegmentedOption,
 } from './SegmentedControl.tsx';
+export { ScrollPane, type ScrollPaneProps } from './ScrollPane.tsx';
 export { Select, type SelectOption, type SelectProps } from './Select.tsx';
 export { FieldSkeleton, Skeleton, type SkeletonProps } from './Skeleton.tsx';
 export { Sparkline, type SparklineProps } from './Sparkline.tsx';

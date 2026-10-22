@@ -4,7 +4,7 @@ import { m } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ApiError, runsApi, type CreateRunInput, type Run, type RunsPage } from './api/runs.ts';
-import { Button, Card, Checkbox, Pagination, Skeleton } from './components/ui/index.ts';
+import { Button, Card, Checkbox, Pagination, ScrollPane, Skeleton } from './components/ui/index.ts';
 import { isActive, runTypeVars } from './features/runs/format.ts';
 import { LanguageSwitch } from './features/preferences/PreferenceSwitches.tsx';
 import { useCopy, type Copy } from './i18n/useCopy.ts';
@@ -324,7 +324,11 @@ export function App() {
           )}
         </Card>
 
-        <div className="flex min-w-0 flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+        <ScrollPane
+          className="min-w-0"
+          testId="results-pane"
+          labels={{ toTop: t('app.scrollToTop'), toBottom: t('app.scrollToBottom') }}
+        >
           {comparing ? (
             <m.div
               key={selectionKey}
@@ -358,7 +362,7 @@ export function App() {
               <Skeleton className="h-64 w-full" />
             </Card>
           ) : null}
-        </div>
+        </ScrollPane>
       </main>
 
       <RunFormDrawer

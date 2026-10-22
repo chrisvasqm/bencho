@@ -8,6 +8,8 @@
 //   response time · errors = requests that did not get the expected answer
 export const en = {
   app: {
+    scrollToTop: 'Jump to the top',
+    scrollToBottom: 'Jump to the end',
     backendDown: 'Bencho cannot reach its server',
     backendDownHint: 'Start Bencho with docker compose up, then reload this page.',
     runsTitle: 'Runs',

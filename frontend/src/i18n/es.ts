@@ -8,6 +8,8 @@ import type { Translation } from './en.ts';
 
 export const es: Translation = {
   app: {
+    scrollToTop: 'Ir al inicio',
+    scrollToBottom: 'Ir al final',
     backendDown: 'Bencho no puede conectarse a su servidor',
     backendDownHint: 'Inicia Bencho con docker compose up y luego recarga esta página.',
     runsTitle: 'Ejecuciones',
