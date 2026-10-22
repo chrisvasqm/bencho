@@ -172,7 +172,8 @@ export function RunDetailCard({
               setArmed(undefined);
               onRunAgain(run);
             }}
-            disabled={starting || secrets}
+            disabled={starting}
+            autoFocus
             data-testid="run-again-confirm"
           >
             <RotateCcw size={14} aria-hidden />
@@ -185,7 +186,7 @@ export function RunDetailCard({
           size="sm"
           onClick={() => setArmed('retry')}
           loading={starting}
-          disabled={secrets}
+          disabled={secrets || starting}
           title={secrets ? t('detail.runAgainSecrets') : undefined}
           data-testid="run-again"
         >
@@ -196,7 +197,10 @@ export function RunDetailCard({
       <Button
         variant="secondary"
         size="sm"
-        onClick={() => onChange(run)}
+        onClick={() => {
+          setArmed(undefined);
+          onChange(run);
+        }}
         disabled={starting || !canChange}
         data-testid="run-change"
       >
