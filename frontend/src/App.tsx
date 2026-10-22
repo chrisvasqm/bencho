@@ -13,7 +13,14 @@ import { BulkDeleteBar } from './features/runs/BulkDeleteBar.tsx';
 import { CompareCard } from './features/runs/CompareCard.tsx';
 import { RunDetailCard } from './features/runs/RunDetailCard.tsx';
 import { RunFormDrawer } from './features/runs/RunFormDrawer.tsx';
+import { RunFilters } from './features/runs/RunFilters.tsx';
 import { RunList } from './features/runs/RunList.tsx';
+import {
+  EMPTY_RUN_FILTERS,
+  hasListFilters,
+  toListFilters,
+  type RunFilterValues,
+} from './features/runs/filters.ts';
 import { runToInput } from './features/runs/input.ts';
 import { useRunWatcher } from './features/runs/useRunWatcher.ts';
 import { ThemeSwitch } from './features/theme/ThemeSwitch.tsx';
@@ -32,6 +39,10 @@ interface FormState {
 export function App() {
   const { t } = useCopy();
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<RunFilterValues>(EMPTY_RUN_FILTERS);
+  const listFilters = toListFilters(filters);
+  const filtering = hasListFilters(listFilters);
+  const listKey = JSON.stringify(listFilters);
   const [selectedId, setSelectedId] = useState<string>();
   const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(new Set());
   const [form, setForm] = useState<FormState>({ open: false, key: 0 });
@@ -56,8 +67,8 @@ export function App() {
   }, [defaults.isError]);
 
   const runs = useQuery({
-    queryKey: ['runs', 'page', page],
-    queryFn: () => runsApi.list(page, PAGE_SIZE),
+    queryKey: ['runs', 'page', listKey, page],
+    queryFn: () => runsApi.list(page, PAGE_SIZE, listFilters),
     placeholderData: (previous) => previous,
     refetchInterval: (query) =>
       query.state.data?.runs.some((run) => isActive(run.status)) ? POLL_INTERVAL_MS : false,
@@ -72,7 +83,8 @@ export function App() {
   }, [runs.data, page, lastPage]);
 
   // Fall back to the newest run on the page when nothing is picked (or the pick was deleted).
-  const effectiveId = selectedId ?? list[0]?.id;
+  // Not while the page shown is a placeholder: its runs may not match the new filters.
+  const effectiveId = selectedId ?? (runs.isPlaceholderData ? undefined : list[0]?.id);
   const selected = useQuery({
     queryKey: ['run', effectiveId],
     queryFn: () => runsApi.get(effectiveId!),
@@ -129,6 +141,8 @@ export function App() {
     onSuccess: ({ run }) => {
       watch(run.id);
       setForm((current) => ({ ...current, open: false }));
+      // The new run goes on top of the unfiltered list; filters could hide it.
+      setFilters(EMPTY_RUN_FILTERS);
       setPage(1);
       setSelectedId(run.id);
       setCheckedIds(new Set());
@@ -147,14 +161,15 @@ export function App() {
   });
 
   // New run opens the form with the newest run's settings, or the defaults when there is none.
-  // Page 1 is newest first, so it already holds that run; another page needs one fetch.
+  // Page 1 of the unfiltered list is newest first, so it already holds that run; another page
+  // or a filtered list needs one fetch.
   // Each open or close of the form counts; a fetch for an earlier open gives up when a later
   // action (Reuse, a close, another New run) came first.
   const formRequest = useRef(0);
   const openNewRun = async () => {
     const request = ++formRequest.current;
     const newest =
-      page === 1 && runs.data && !runs.isPlaceholderData
+      page === 1 && !filtering && runs.data && !runs.isPlaceholderData
         ? list[0]
         : await runsApi
             .list(1, 1)
@@ -271,6 +286,16 @@ export function App() {
                 <Plus size={16} aria-hidden />
                 {t('app.newRun')}
               </Button>
+              <RunFilters
+                values={filters}
+                onChange={(next) => {
+                  setFilters(next);
+                  setPage(1);
+                  setSelectedId(undefined);
+                  // Ticked runs hidden by the new filters would still be compared or deleted.
+                  setCheckedIds(new Set());
+                }}
+              />
               <div className="flex min-h-8 items-center gap-2 text-xs text-fg-muted">
                 <Checkbox
                   aria-label={t('runs.selectAll')}
@@ -318,7 +343,8 @@ export function App() {
               selectedId={comparing ? undefined : selectedRun?.id}
               onSelect={(run) => setSelectedId(run.id)}
               pageSize={PAGE_SIZE}
-              listKey={String(page)}
+              listKey={`${listKey}:${page}`}
+              emptyText={t(filtering ? 'runs.emptyFiltered' : 'runs.empty')}
               checkedIds={checkedIds}
               onCheckedChange={setCheckedIds}
             />

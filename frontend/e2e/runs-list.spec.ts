@@ -57,6 +57,50 @@ test.describe('runs list', () => {
   });
 });
 
+test.describe('runs list filters', () => {
+  test('shows only the chosen test type', async ({ page, api }) => {
+    await api.seedFinishedMany(2, 'load');
+    const [stress] = await api.seedFinishedMany(1, 'stress');
+    await openRuns(page);
+    const rows = page.getByTestId('run-row');
+    await expect(rows).toHaveCount(3);
+
+    await page.getByTestId('runs-filter-type-stress').click();
+
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toHaveAttribute('data-run-id', stress!.id);
+    await expect(page.getByTestId('pagination-range')).toHaveText('1–1 of 1');
+
+    await page.getByTestId('runs-filter-clear').click();
+    await expect(rows).toHaveCount(3);
+  });
+
+  test('shows only the runs created within the date range', async ({ page, api }) => {
+    await api.seedFinishedMany(2);
+    await openRuns(page);
+    const rows = page.getByTestId('run-row');
+    await expect(rows).toHaveCount(2);
+    const today = isoDay(new Date());
+    const tomorrow = isoDay(new Date(Date.now() + DAY_MS));
+
+    // A range that starts tomorrow holds nothing; one that starts today holds both runs.
+    await page.getByTestId('runs-filter-from').fill(tomorrow);
+    await expect(page.getByTestId('runs-empty')).toBeVisible();
+
+    await page.getByTestId('runs-filter-from').fill(today);
+    await page.getByTestId('runs-filter-to').fill(today);
+    await expect(rows).toHaveCount(2);
+  });
+});
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The browser's calendar day as `YYYY-MM-DD`, for `<input type="date">`. */
+function isoDay(date: Date): string {
+  const pad = (part: number) => String(part).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 test.describe('delete one run', () => {
   test('deletes the run after a confirm', async ({ page, api }) => {
     await api.seedFinished();

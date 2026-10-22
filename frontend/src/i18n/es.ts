@@ -331,6 +331,14 @@ export const es: Translation = {
   },
   runs: {
     empty: 'Todavía no hay ejecuciones. Inicia una con Nueva ejecución.',
+    emptyFiltered: 'Ninguna ejecución coincide con estos filtros.',
+    filterType: 'Tipo de prueba',
+    filterAllTypes: 'Todas',
+    filterFrom: 'Desde',
+    filterTo: 'Hasta',
+    filterClear: 'Quitar filtros',
+    filterRangeInverted:
+      'La fecha final es anterior a la inicial. Las fechas se ignoran hasta que se corrija.',
     selectAll: 'Seleccionar todas las ejecuciones terminadas de esta página',
     selectRun: 'Seleccionar la ejecución del {{time}}',
     openRun: '{{status}}, ejecución del {{time}}',
