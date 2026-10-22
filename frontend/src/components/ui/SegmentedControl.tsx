@@ -48,7 +48,7 @@ export function SegmentedControl<Value extends string>({
             onClick={() => onChange(option.value)}
             className={cn(
               'rounded-[5px] font-medium transition-colors',
-              fullWidth && 'flex-1',
+              fullWidth && 'min-w-0 flex-1 truncate',
               size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm',
               selected ? 'bg-surface text-fg' : 'text-fg-muted hover:text-fg',
             )}
