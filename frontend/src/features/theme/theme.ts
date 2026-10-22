@@ -1,12 +1,15 @@
-// Theme choice: system (follow the OS), light or dark. Stored per browser; applied as data-theme on <html>.
+// Theme choice: system (follow the OS) until the user picks light or dark; then the choice stays. Stored per browser; applied as data-theme on <html>.
 // index.html applies the stored choice before first paint so the page never flashes the wrong theme.
 import { useCallback, useSyncExternalStore } from 'react';
 
 export const THEMES = ['system', 'light', 'dark'] as const;
 export type Theme = (typeof THEMES)[number];
+export type ResolvedTheme = Exclude<Theme, 'system'>;
 
 export const THEME_STORAGE_KEY = 'theme';
 const listeners = new Set<() => void>();
+// The choice when storage is blocked, so the toggle still flips within this page view.
+let memoryTheme: Theme = 'system';
 
 function isTheme(value: unknown): value is Theme {
   return THEMES.includes(value as Theme);
@@ -17,7 +20,7 @@ export function readTheme(): Theme {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     return isTheme(stored) ? stored : 'system';
   } catch {
-    return 'system';
+    return memoryTheme;
   }
 }
 
@@ -32,6 +35,7 @@ function writeTheme(theme: Theme): void {
     else localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch {
     // Storage blocked: the choice still applies for this page view.
+    memoryTheme = theme;
   }
   applyTheme(theme);
   for (const listener of listeners) listener();
@@ -50,6 +54,33 @@ function subscribe(listener: () => void): () => void {
     listeners.delete(listener);
     window.removeEventListener('storage', onStorage);
   };
+}
+
+let darkQuery: MediaQueryList | undefined;
+function systemQuery(): MediaQueryList {
+  darkQuery ??= window.matchMedia('(prefers-color-scheme: dark)');
+  return darkQuery;
+}
+
+function subscribeSystem(listener: () => void): () => void {
+  systemQuery().addEventListener('change', listener);
+  return () => systemQuery().removeEventListener('change', listener);
+}
+
+/** The theme on screen (the stored choice, else the OS preference) and a flip to the other one. */
+export function useResolvedTheme(): [ResolvedTheme, () => void] {
+  const [theme, setTheme] = useTheme();
+  const systemDark = useSyncExternalStore(
+    subscribeSystem,
+    () => systemQuery().matches,
+    () => false,
+  );
+  const resolved: ResolvedTheme = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
+  const toggle = useCallback(
+    () => setTheme(resolved === 'dark' ? 'light' : 'dark'),
+    [resolved, setTheme],
+  );
+  return [resolved, toggle];
 }
 
 export function useTheme(): [Theme, (theme: Theme) => void] {

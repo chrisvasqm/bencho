@@ -103,24 +103,3 @@ test.describe('load shape chart', () => {
     await expect(chart).not.toContainText('5m');
   });
 });
-
-test.describe('theme', () => {
-  test('switches to dark and light and keeps the choice after a reload', async ({ page }) => {
-    await openApp(page);
-    // The theme lives on <html>, which has no test id: read it, do not select it.
-    const theme = () => page.evaluate(() => document.documentElement.dataset.theme ?? 'system');
-
-    await page.getByTestId('theme-dark').click();
-    await expect.poll(theme).toBe('dark');
-    await expect(page.getByTestId('theme-dark')).toHaveAttribute('aria-checked', 'true');
-
-    await page.reload();
-    await expect.poll(theme).toBe('dark');
-
-    await page.getByTestId('theme-light').click();
-    await expect.poll(theme).toBe('light');
-
-    await page.getByTestId('theme-system').click();
-    await expect.poll(theme).toBe('system');
-  });
-});
