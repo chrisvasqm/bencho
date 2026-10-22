@@ -93,7 +93,7 @@ cd frontend && pnpm test:db && pnpm test:e2e # e2e (Playwright), happy paths onl
 
 The integration tests cover every endpoint, including validation and errors. The e2e tests cover only what a user does on a good day: the backend enforces every rule the form checks, so the form's own error messages have no e2e test.
 
-CI runs checks and both suites on every PR.
+There is no CI for now. Before you merge, run `pnpm check` and the test suites of each project you changed (see [decision](docs/decisions/2026-10-22-local-checks-no-ci.md)).
 
 ## API
 
