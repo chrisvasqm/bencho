@@ -18,6 +18,7 @@ const EDGE_PX = 4;
  */
 export function ScrollPane({ children, className, labels, testId }: ScrollPaneProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ above: false, below: false });
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export function ScrollPane({ children, className, labels, testId }: ScrollPanePr
     // Content changes height as charts load and runs finish.
     const observer = new ResizeObserver(measure);
     observer.observe(element);
-    for (const child of element.children) observer.observe(child);
+    if (contentRef.current) observer.observe(contentRef.current);
     return () => {
       element.removeEventListener('scroll', measure);
       observer.disconnect();
@@ -49,16 +50,18 @@ export function ScrollPane({ children, className, labels, testId }: ScrollPanePr
       <div
         ref={ref}
         data-testid={testId}
-        className="flex h-full min-w-0 flex-col gap-4 overflow-y-auto pr-1"
+        className="flex h-full min-w-0 flex-col overflow-y-auto pr-1"
       >
-        {children}
+        <div ref={contentRef} className="flex shrink-0 flex-col gap-4">
+          {children}
+        </div>
         {/* Inside the scroller, so it spans only the content box: never over the gutter or a
             scrollbar, square where the content is cut off. The negative margin cancels its
-            height and the gap, so it does not change the scroll height. */}
+            height, so it does not change the scroll height. */}
         <div
           aria-hidden="true"
           className={cn(
-            'pointer-events-none sticky bottom-0 -mt-14 h-10 shrink-0 bg-linear-to-t from-overlay/52 to-transparent transition-opacity',
+            'pointer-events-none sticky bottom-0 -mt-10 h-10 shrink-0 bg-linear-to-t from-overlay/52 to-transparent transition-opacity',
             edges.below ? 'opacity-100' : 'opacity-0',
           )}
         />
