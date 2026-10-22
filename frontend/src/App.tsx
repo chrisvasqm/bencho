@@ -53,7 +53,8 @@ export function App() {
         description: t('app.backendDownHint'),
       });
     }
-  }, [defaults.isError, t]);
+    // Not on `t`: a language switch must not bring back a toast the user closed.
+  }, [defaults.isError]);
 
   const runs = useQuery({
     queryKey: ['runs', type, page],

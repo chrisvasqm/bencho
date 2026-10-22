@@ -1,5 +1,5 @@
 // Ordered steps one virtual user runs per iteration. One step is open for editing at a time.
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   BODY_FORMATS,
   HTTP_METHODS,
@@ -258,8 +258,11 @@ function StepFields({
   className,
 }: StepFieldsProps) {
   const { t, advanced } = useCopy();
-  // Basic hides headers and saved values, but shows them while the step has a problem to fix.
-  const showMore = advanced || Boolean(error);
+  // Basic hides headers and saved values, but shows them once the step has a problem, and keeps
+  // them open while the user fixes it (the first edit clears the error).
+  const [revealed, setRevealed] = useState(false);
+  if (error && !revealed) setRevealed(true);
+  const showMore = advanced || revealed;
   const id = step.id;
   const soap = step.bodyFormat === 'soap';
   const errorRef = useRef<HTMLParagraphElement>(null);

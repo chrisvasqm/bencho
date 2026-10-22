@@ -225,6 +225,9 @@ function RunPanelForm({
     setMode('users');
   }
 
+  // Basic keeps to users, but once a rate run is set up the switch stays, so the user can go back.
+  const [rateSeen, setRateSeen] = useState(false);
+  if (mode === 'rate' && !rateSeen) setRateSeen(true);
   // Basic hides these settings, but shows them again while they hold a problem to fix.
   const showGrace = advanced || Boolean(errors.gracePeriod);
   const allLimits = advanced || Boolean(errors.latency);
@@ -341,8 +344,8 @@ function RunPanelForm({
                   <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
                     <LoadShapeChart stages={stages} mode={mode} />
                   </Suspense>
-                  {/* Basic keeps to users; the switch stays visible while a rate run is set up. */}
-                  {(advanced || mode === 'rate') && (
+                  {/* Basic keeps to users; the switch stays once a rate run was set up. */}
+                  {(advanced || rateSeen) && (
                     <div className="flex flex-col gap-1.5">
                       <span className="text-sm font-medium text-fg">{t('panel.targetsCount')}</span>
                       <SegmentedControl
