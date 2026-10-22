@@ -14,13 +14,14 @@ import {
 } from './failures.ts';
 import {
   DEFAULT_FLOW,
-  fillJsonBody,
+  fillBody,
   fillPlaceholders,
   stepUrl,
   waitSeconds,
   type FlowStep,
   type FlowValues,
 } from './flow.ts';
+import { parseXml, xmlShape, xmlValue, type XmlElement } from './xml.ts';
 
 // The backend writes the flow to a file: an env var would hit the OS size limit for large flows.
 // SharedArray parses it once and shares one read-only copy across VUs.
@@ -72,10 +73,20 @@ function jsonShape(value: unknown): unknown {
   return value === null ? null : `<${typeof value}>`;
 }
 
-/** What to store of a success response (2xx): it may hold tokens, so keys and no values. */
-function successBody(text: string): string {
+/**
+ * What to store of a success response (2xx): it may hold tokens, so keys (or element names for
+ * SOAP steps) and no values.
+ */
+function successBody(text: string, step: FlowStep, xml?: XmlElement): string {
   // Parsing a huge body in every VU at once would load the load generator itself.
   if (text.length > MAX_SHAPE_SOURCE_CHARS) return `(${text.length} characters)`;
+  if (step.bodyFormat === 'soap') {
+    try {
+      return xmlShape(xml ?? parseXml(text));
+    } catch {
+      return `(not XML, ${text.length} characters)`;
+    }
+  }
   try {
     return JSON.stringify(jsonShape(JSON.parse(text)));
   } catch {
@@ -88,17 +99,18 @@ function successBody(text: string): string {
  * also by error code, so a timeout does not hide a refused connection.
  */
 function reportFailure(
-  stepName: string,
+  step: FlowStep,
   reason: FailureSample['reason'],
   response: ReturnType<typeof http.request>,
+  xml?: XmlElement,
 ): void {
-  const key = `${stepName}|${reason}|${response.status}|${response.status === 0 ? response.error_code : ''}`;
+  const key = `${step.name}|${reason}|${response.status}|${response.status === 0 ? response.error_code : ''}`;
   if (reportedFailures.has(key)) return;
   reportedFailures.add(key);
   const text = (typeof response.body === 'string' ? response.body : response.error) || '';
   const success = response.status >= 200 && response.status < 300;
-  const body = (success ? successBody(text) : text).slice(0, MAX_FAILURE_BODY_CHARS);
-  const sample: FailureSample = { step: stepName, reason, status: response.status, body };
+  const body = (success ? successBody(text, step, xml) : text).slice(0, MAX_FAILURE_BODY_CHARS);
+  const sample: FailureSample = { step: step.name, reason, status: response.status, body };
   // Base64 keeps the line free of quotes and line breaks in k6's log format.
   console.log(FAILURE_LOG_PREFIX + encoding.b64encode(JSON.stringify(sample)));
 }
@@ -108,6 +120,15 @@ function randomUuid(): string {
     const random = Math.floor(Math.random() * 16);
     return (char === 'x' ? random : (random & 0x3) | 0x8).toString(16);
   });
+}
+
+/** The parsed XML response of a SOAP step, or undefined when it is not XML. */
+function xmlDocument(response: ReturnType<typeof http.request>): XmlElement | undefined {
+  try {
+    return typeof response.body === 'string' ? parseXml(response.body) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -125,8 +146,10 @@ function runStep(
     // A saved value with a line break would make the header invalid.
     headers[name] = fillPlaceholders(value, values).replace(/[\r\n]+/g, ' ');
   }
-  const body = step.body === null ? null : fillJsonBody(step.body, values);
-  if (body !== null && !hasContentType) headers['Content-Type'] = 'application/json';
+  const body = fillBody(step, values);
+  // SOAP 1.1; a SOAP 1.2 step sets Content-Type: application/soap+xml itself.
+  const contentType = step.bodyFormat === 'soap' ? 'text/xml; charset=utf-8' : 'application/json';
+  if (body !== null && !hasContentType) headers['Content-Type'] = contentType;
   const response = http.request(
     step.method,
     stepUrl(config.baseUrl, fillPlaceholders(step.path, values, encodeURIComponent)),
@@ -148,22 +171,25 @@ function runStep(
       checked.status === step.expectedStatus,
   });
   if (!statusOk) {
-    if (sampled) reportFailure(step.name, 'status', response);
+    if (sampled) reportFailure(step, 'status', response);
     return false;
   }
+  const soap = step.bodyFormat === 'soap';
+  // Parsed once for all values; undefined when the response is not XML.
+  const xml = soap && step.extract.length > 0 ? xmlDocument(response) : undefined;
   for (const extract of step.extract) {
     let value: unknown;
     try {
-      value = response.json(extract.path);
+      value = soap ? xml && xmlValue(xml, extract.path) : response.json(extract.path);
     } catch {
-      value = undefined; // not a JSON response
+      value = undefined; // not a JSON response (xmlValue never throws)
     }
     const saved = check(value, {
       [`${step.name}: saves ${extract.name}`]: (checked) =>
         checked !== undefined && checked !== null,
     });
     if (!saved) {
-      reportFailure(step.name, 'extract', response);
+      reportFailure(step, 'extract', response, xml);
       return false;
     }
     values[extract.name] = value;

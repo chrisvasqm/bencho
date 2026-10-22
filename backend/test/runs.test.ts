@@ -10,6 +10,7 @@ import {
   longRunPayload,
   PASSING_LIMITS,
   runPayload,
+  soapStep,
   TARGET_BASE_URL,
 } from './helpers/payloads.ts';
 import { expectError, useTestApp } from './helpers/test-app.ts';
@@ -202,6 +203,33 @@ describe('POST /api/v1/runs', () => {
       expect((await app.repository.findById(id))?.flow[0]?.headers).toEqual(headers);
     });
 
+    it('stores a SOAP step with its body format', async () => {
+      const body = [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        '<!-- A comment -->',
+        '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">',
+        '  <soap:Body><Order id="{{uuid}}"><User>user-{{shortId}}</User>',
+        '  <Note><![CDATA[<b>&</b>]]></Note><Count>{{iter}}</Count></Order></soap:Body>',
+        '</soap:Envelope>',
+      ].join('\n');
+      const flow = [soapStep(body, { extract: [{ name: 'orderId', path: 'OrderResponse.Id' }] })];
+
+      const response = await createRun(runPayload({ flow }));
+
+      expect(response.status).toBe(202);
+      expect(response.body.run.flow).toEqual(flow);
+    });
+
+    it('accepts a SOAP body with a byte order mark and non-ASCII element names', async () => {
+      const flow = [
+        soapStep('\uFEFF<?xml version="1.0"?><Pedido><Descripción>{{uuid}}</Descripción></Pedido>'),
+      ];
+
+      const response = await createRun(runPayload({ flow }));
+
+      expect(response.status).toBe(202);
+    });
+
     it('stores the grace period', async () => {
       const response = await createRun(runPayload({ gracePeriodSeconds: 0 }));
 
@@ -381,6 +409,15 @@ describe('POST /api/v1/runs', () => {
         ],
       ],
       ['a body that is not JSON', [flowStep({ method: 'POST', body: '{name: pizza}' })]],
+      ['an unknown body format', [flowStep({ bodyFormat: 'xml' as 'soap' })]],
+      ['a SOAP body with an unclosed tag', [soapStep('<Envelope><Body></Envelope>')]],
+      ['a SOAP body with two root elements', [soapStep('<A/><B/>')]],
+      ['a SOAP body with a bare &', [soapStep('<Name>Salt & pepper</Name>')]],
+      ['a SOAP body with a DOCTYPE', [soapStep('<!DOCTYPE a [<!ENTITY x "y">]><a>&x;</a>')]],
+      ['a JSON body sent as SOAP', [soapStep('{"name": "pizza"}')]],
+      ['an unknown placeholder in a SOAP body', [soapStep('<Id>{{userId}}</Id>')]],
+      ['a SOAP body with a NUL character reference', [soapStep('<a>&#0;</a>')]],
+      ['a placeholder as a SOAP tag name', [soapStep('<{{iter}}/>')]],
       ['an invalid header name', [flowStep({ headers: { 'Bad Header': 'x' } })]],
       ['a line break in a header value', [flowStep({ headers: { 'X-Test': 'a\r\nInjected: 1' } })]],
       [

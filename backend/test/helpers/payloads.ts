@@ -43,3 +43,8 @@ export function flowStep(overrides: Partial<FlowStepInput> = {}): FlowStepInput 
     ...overrides,
   };
 }
+
+/** A POST step with an XML body, sent as SOAP. */
+export function soapStep(body: string, overrides: Partial<FlowStepInput> = {}): FlowStepInput {
+  return flowStep({ name: 'Soap', method: 'POST', body, bodyFormat: 'soap', ...overrides });
+}

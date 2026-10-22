@@ -215,8 +215,8 @@ function FailureList({ run }: { run: Run }) {
         <p className="m-0 text-xs text-fg-muted">
           Bodies are read in 1 of every 20 flow runs, and in every flow run for steps that save
           values, so these are examples, not every failure. A success response (2xx) shows its JSON
-          keys only, since it may hold tokens. Each step shows up to 10 different responses, at most
-          3 per status.
+          keys (or XML element names) only, since it may hold tokens. Each step shows up to 10
+          different responses, at most 3 per status.
         </p>
       </div>
       <ul className="m-0 flex list-none flex-col gap-3 p-0">

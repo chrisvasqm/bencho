@@ -1,12 +1,20 @@
 // Multi-step flows: the requests one virtual user sends per iteration, in order.
 // No k6 imports: the backend validates flows with the same rules.
+import { escapeXml, parseXml } from './xml.ts';
+
 export const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 export type HttpMethod = (typeof HTTP_METHODS)[number];
+/** json: JSON bodies and values read with gjson paths. soap: XML bodies and element paths. */
+export const BODY_FORMATS = ['json', 'soap'] as const;
+export type BodyFormat = (typeof BODY_FORMATS)[number];
 
 export interface FlowExtract {
   /** Placeholder name later steps use as {{name}}. */
   name: string;
-  /** Response JSON selector (k6 gjson syntax), for example token, pizza.id or ratings.0.id. */
+  /**
+   * JSON steps: response selector (k6 gjson syntax), for example token, pizza.id or ratings.0.id.
+   * SOAP steps: element path (xmlValue), for example Token or LoginResponse.Token.
+   */
   path: string;
 }
 
@@ -16,8 +24,10 @@ export interface FlowStep {
   /** '' sends to the base URL as is; '/api/x' is appended to it; a full URL is used as is. */
   path: string;
   headers: Record<string, string>;
-  /** JSON text with placeholders, or null for no body. */
+  /** JSON or XML text with placeholders, by bodyFormat, or null for no body. */
   body: string | null;
+  /** Format of the body and of the response values to save. Without it the step uses JSON. */
+  bodyFormat?: BodyFormat;
   expectedStatus: number;
   extract: FlowExtract[];
   /** Random wait after the step, picked each iteration. Without it the step waits the think time. */
@@ -111,6 +121,14 @@ function placeholdersIn(text: string): string[] {
   return [...text.matchAll(PLACEHOLDER_PATTERN)].map((match) => match[1] ?? '');
 }
 
+/** The body to send: placeholders filled as JSON values or as escaped XML text. */
+export function fillBody(step: FlowStep, values: FlowValues): string | null {
+  if (step.body === null) return null;
+  return step.bodyFormat === 'soap'
+    ? fillPlaceholders(step.body, values, escapeXml)
+    : fillJsonBody(step.body, values);
+}
+
 /** Seconds to wait after a step: a random value in its wait range, or the run's think time. */
 export function waitSeconds(step: FlowStep, thinkTimeSeconds: number): number {
   if (!step.wait) return thinkTimeSeconds;
@@ -144,7 +162,7 @@ export function stepUrl(baseUrl: string, path: string): string {
 
 /**
  * Returns the first problem in the flow, or null when it is valid: placeholders must be built in
- * or saved by an earlier step, and a body must be JSON once placeholders are filled.
+ * or saved by an earlier step, and a body must be JSON (or XML) once placeholders are filled.
  */
 export function flowProblem(steps: FlowStep[]): string | null {
   const known = new Set<string>(BUILTIN_PLACEHOLDERS);
@@ -167,7 +185,17 @@ export function flowProblem(steps: FlowStep[]): string | null {
     if (unknown !== undefined) {
       return `${label}: {{${unknown}}} is not built in and no earlier step saves it`;
     }
-    if (step.body !== null) {
+    if (step.body !== null && step.bodyFormat === 'soap') {
+      try {
+        // A string and a number, as for JSON: <{{x}}> is a valid tag with x, not with 0.
+        for (const sampleValue of ['x', 0]) {
+          const sample = Object.fromEntries([...known].map((name) => [name, sampleValue]));
+          parseXml(fillBody(step, sample) ?? '');
+        }
+      } catch {
+        return `${label}: the body must be well-formed XML`;
+      }
+    } else if (step.body !== null) {
       try {
         // Fill as the run will, with a string and a number: values can be either, and each
         // sample catches misuse the other misses (1{{x}} for strings, {{{x}}: 1} for numbers).

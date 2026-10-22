@@ -32,6 +32,8 @@ export type RunLimits = z.infer<typeof limitsSchema>;
 
 export const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 export type HttpMethod = (typeof HTTP_METHODS)[number];
+export const BODY_FORMATS = ['json', 'soap'] as const;
+export type BodyFormat = (typeof BODY_FORMATS)[number];
 
 const flowStepSchema = z.object({
   name: z.string(),
@@ -39,6 +41,8 @@ const flowStepSchema = z.object({
   path: z.string(),
   headers: z.record(z.string(), z.string()),
   body: z.string().nullable(),
+  /** Without it the step sends JSON and reads JSON paths. */
+  bodyFormat: z.enum(BODY_FORMATS).optional(),
   expectedStatus: z.number(),
   extract: z.array(z.object({ name: z.string(), path: z.string() })),
   wait: z.object({ minSeconds: z.number(), maxSeconds: z.number() }).optional(),

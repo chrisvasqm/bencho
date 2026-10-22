@@ -1,7 +1,8 @@
 // Flow editing helpers: drafts the editor can hold mid-typing, the QuickPizza example and
 // checks that mirror the backend so the user sees which step to fix.
-import type { FlowStep, HttpMethod } from '../../api/runs.ts';
+import type { BodyFormat, FlowStep, HttpMethod } from '../../api/runs.ts';
 import { newId } from './ids.ts';
+import { isWellFormedXml } from './xml.ts';
 
 export interface Pair {
   /** Stable React key, so removing a row never moves focus to another one. */
@@ -18,6 +19,8 @@ export interface StepDraft {
   path: string;
   headers: Pair[];
   body: string;
+  /** JSON, or SOAP: an XML body and element paths to save values. */
+  bodyFormat: BodyFormat;
   expectedStatus: number;
   extract: Pair[];
   /** Wait range in seconds as typed; both empty means the step waits the think time. */
@@ -59,6 +62,7 @@ export function toDraft(step: FlowStep): StepDraft {
     path: step.path,
     headers: Object.entries(step.headers).map(([key, value]) => newPair(key, value)),
     body: step.body ?? '',
+    bodyFormat: step.bodyFormat ?? 'json',
     expectedStatus: step.expectedStatus,
     extract: step.extract.map(({ name, path }) => newPair(name, path)),
     waitMin: step.wait ? String(step.wait.minSeconds) : '',
@@ -88,6 +92,7 @@ export function fromDraft(draft: StepDraft): FlowStep {
     path: draft.path.trim(),
     headers: Object.fromEntries(filled(draft.headers).map((pair) => [pair.key.trim(), pair.value])),
     body: draft.body.trim() === '' ? null : draft.body,
+    bodyFormat: draft.bodyFormat,
     expectedStatus: draft.expectedStatus,
     extract: filled(draft.extract).map((pair) => ({
       name: pair.key.trim(),
@@ -231,7 +236,14 @@ function stepProblem(step: FlowStep, known: Set<string>): string | undefined {
   if (step.body !== null && step.body.length > MAX_BODY_LENGTH) {
     return `the body must be at most ${MAX_BODY_LENGTH} characters`;
   }
-  if (step.body !== null) {
+  const soap = step.bodyFormat === 'soap';
+  if (step.body !== null && soap) {
+    // Values are escaped as XML text; a string and a number catch <{{x}}>, a valid tag only with x.
+    const wellFormed = ['x', '0'].every((sample) =>
+      isWellFormedXml(step.body?.replace(PLACEHOLDER_PATTERN, sample) ?? ''),
+    );
+    if (!wellFormed) return 'the body must be well-formed XML';
+  } else if (step.body !== null) {
     try {
       // Values can be strings or numbers; each sample catches misuse the other misses.
       JSON.parse(sampleBody(step.body, known, '"x"'));
@@ -255,9 +267,10 @@ function stepProblem(step: FlowStep, known: Set<string>): string | undefined {
     (item) => !NAME_PATTERN.test(item.name) || builtIn.has(item.name),
   );
   if (badSave) return `"${badSave.name}" cannot be a saved value name`;
-  if (step.extract.some((item) => item.path === '')) return 'every saved value needs a JSON path';
+  const pathName = soap ? 'element path' : 'JSON path';
+  if (step.extract.some((item) => item.path === '')) return `every saved value needs a ${pathName}`;
   if (step.extract.some((item) => item.path.length > MAX_EXTRACT_PATH_LENGTH)) {
-    return `a JSON path must be at most ${MAX_EXTRACT_PATH_LENGTH} characters`;
+    return `a ${pathName} must be at most ${MAX_EXTRACT_PATH_LENGTH} characters`;
   }
   return undefined;
 }
