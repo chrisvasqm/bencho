@@ -53,12 +53,15 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-const darkQuery = '(prefers-color-scheme: dark)';
+let darkQuery: MediaQueryList | undefined;
+function systemQuery(): MediaQueryList {
+  darkQuery ??= window.matchMedia('(prefers-color-scheme: dark)');
+  return darkQuery;
+}
 
 function subscribeSystem(listener: () => void): () => void {
-  const query = window.matchMedia(darkQuery);
-  query.addEventListener('change', listener);
-  return () => query.removeEventListener('change', listener);
+  systemQuery().addEventListener('change', listener);
+  return () => systemQuery().removeEventListener('change', listener);
 }
 
 /** The theme on screen: the stored choice, else the OS preference. */
@@ -66,11 +69,16 @@ export function useResolvedTheme(): ResolvedTheme {
   const [theme] = useTheme();
   const systemDark = useSyncExternalStore(
     subscribeSystem,
-    () => window.matchMedia(darkQuery).matches,
+    () => systemQuery().matches,
     () => false,
   );
   if (theme !== 'system') return theme;
   return systemDark ? 'dark' : 'light';
+}
+
+/** Picking the theme the OS already asks for goes back to 'system', so the app follows the OS again. */
+export function chooseTheme(next: ResolvedTheme): Theme {
+  return systemQuery().matches === (next === 'dark') ? 'system' : next;
 }
 
 export function useTheme(): [Theme, (theme: Theme) => void] {

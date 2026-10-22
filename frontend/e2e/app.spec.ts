@@ -123,17 +123,20 @@ test.describe('theme', () => {
     await page.reload();
     await expect.poll(theme).toBe('dark');
 
+    // Back to the OS theme: the stored choice clears and the app follows the OS again.
     await toggle.click();
-    await expect.poll(theme).toBe('light');
+    await expect.poll(theme).toBe('system');
     await expect(toggle).toHaveAttribute('data-theme', 'light');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(toggle).toHaveAttribute('data-theme', 'dark');
   });
 
   test('keeps the same width when the language changes', async ({ page }) => {
     await openApp(page);
     const toggle = page.getByTestId('theme');
-    const before = await toggle.boundingBox();
+    const before = (await toggle.boundingBox())?.width;
     await page.getByTestId('language').click();
     await expect(page.getByTestId('language')).not.toHaveAttribute('data-language', 'en');
-    expect(await toggle.boundingBox()).toEqual(before);
+    expect((await toggle.boundingBox())?.width).toBe(before);
   });
 });
