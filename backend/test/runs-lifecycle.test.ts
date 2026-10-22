@@ -37,7 +37,12 @@ describe('run lifecycle', () => {
   it('passes when every limit holds, and stores the summary and points', async () => {
     const run = await runToEnd(shortRunPayload());
 
-    expect(run).toMatchObject({ status: 'passed', exitCode: 0, errorMessage: null });
+    expect(run).toMatchObject({
+      status: 'passed',
+      exitCode: 0,
+      errorMessage: null,
+      stoppedEarly: false,
+    });
     expect(run.summary).toHaveProperty('metrics');
     expect(new Date(run.startedAt).getTime()).toBeLessThanOrEqual(
       new Date(run.finishedAt).getTime(),
@@ -58,7 +63,7 @@ describe('run lifecycle', () => {
       }),
     );
 
-    expect(run).toMatchObject({ status: 'failed', errorMessage: null });
+    expect(run).toMatchObject({ status: 'failed', errorMessage: null, stoppedEarly: true });
     expect(run.summary.metrics.checks.value).toBe(0);
     const elapsedSeconds =
       (new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000;
@@ -87,7 +92,12 @@ describe('run lifecycle', () => {
     );
 
     // A missing token fails the extract check, so the checks limit (rate>0.99) fails: exit code 99.
-    expect(run).toMatchObject({ status: 'passed', exitCode: 0, errorMessage: null });
+    expect(run).toMatchObject({
+      status: 'passed',
+      exitCode: 0,
+      errorMessage: null,
+      stoppedEarly: false,
+    });
   });
 
   it('passes a rate run that starts flow runs per second up to its VU cap', async () => {
@@ -99,7 +109,12 @@ describe('run lifecycle', () => {
       }),
     );
 
-    expect(run).toMatchObject({ status: 'passed', exitCode: 0, errorMessage: null });
+    expect(run).toMatchObject({
+      status: 'passed',
+      exitCode: 0,
+      errorMessage: null,
+      stoppedEarly: false,
+    });
     // 0 → 4 runs per second over 2 s is about 4 flow runs.
     expect(run.summary.metrics.iterations.count).toBeGreaterThan(0);
     expect(run.summary.metrics.vus_max.max).toBe(2);
@@ -306,7 +321,12 @@ describe('run lifecycle', () => {
       );
 
       // A wrong token or content type gets a 500, which fails the status check: exit code 99.
-      expect(run).toMatchObject({ status: 'passed', exitCode: 0, errorMessage: null });
+      expect(run).toMatchObject({
+      status: 'passed',
+      exitCode: 0,
+      errorMessage: null,
+      stoppedEarly: false,
+    });
       expect(received.some((request) => request.path === '/order')).toBe(true);
       expect(received[0]?.contentType).toBe('text/xml; charset=utf-8');
     });

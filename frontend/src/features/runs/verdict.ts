@@ -2,15 +2,7 @@
 // with. Mirrors the k6 thresholds the backend sets (backend/k6/lib/options.ts).
 import type { Run } from '../../api/runs.ts';
 import type { Copy } from '../../i18n/useCopy.ts';
-import {
-  LATENCY_KEYS,
-  durationSeconds,
-  formatMs,
-  formatPercent,
-  formatSeconds,
-  plannedRuns,
-  plannedSeconds,
-} from './format.ts';
+import { LATENCY_KEYS, formatMs, formatPercent, plannedRuns } from './format.ts';
 
 /** k6 `checks: rate>0.99`: a run fails once 1 in 100 steps or more miss their check. */
 const MIN_CHECK_RATE = 0.99;
@@ -62,17 +54,7 @@ export function verdictReason(run: Run, t: Copy): string {
     case 'failed': {
       const broken = brokenLimits(run, t);
       const reasons = broken.length > 0 ? broken.join(' · ') : t('verdict.failedUnknown');
-      // k6 does not say it aborted; a run that stops on a limit and ended before its stages did,
-      // stopped early.
-      const elapsed = durationSeconds(run);
-      const planned = plannedSeconds(run.stages);
-      return run.limits.stopOnLimit && elapsed !== undefined && elapsed < planned
-        ? t('verdict.stoppedEarly', {
-            elapsed: formatSeconds(Math.round(elapsed)),
-            planned: formatSeconds(planned),
-            reasons,
-          })
-        : reasons;
+      return run.stoppedEarly ? t('verdict.stoppedEarly', { reasons }) : reasons;
     }
     case 'passed': {
       const p95 = run.summary?.metrics.http_req_duration?.['p(95)'];

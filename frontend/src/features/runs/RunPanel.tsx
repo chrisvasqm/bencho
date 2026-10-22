@@ -186,7 +186,7 @@ function RunPanelForm({
   );
   const [latency, setLatency] = useState(limits.latencyLimitsMs);
   const [stopOnLimit, setStopOnLimit] = useState(
-    initial?.limits.stopOnLimit ?? defaults.stopOnLimit[type],
+    initial ? initial.limits.stopOnLimit : defaults.stopOnLimit[type],
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const currentInput = (): CreateRunInput => ({
@@ -535,7 +535,9 @@ function RunPanelForm({
               />
               <span className="flex flex-col gap-0.5">
                 <span className="font-medium">{t('panel.stopOnLimit')}</span>
-                <span className="text-xs text-fg-muted">{t('panel.stopOnLimitHint')}</span>
+                <span className="text-xs text-fg-muted">
+                  {t('panel.stopOnLimitHint', { seconds: defaults.stopOnLimitDelaySeconds })}
+                </span>
               </span>
             </label>
             <fieldset

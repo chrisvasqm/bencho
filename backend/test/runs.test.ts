@@ -2,7 +2,12 @@
 // the rest cover what that flow cannot: variants, limits and errors of each endpoint.
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DEFAULT_LIMITS, DEFAULT_MAX_VIRTUAL_USERS, DEFAULT_STAGES } from '../k6/lib/defaults.ts';
+import {
+  DEFAULT_LIMITS,
+  DEFAULT_MAX_VIRTUAL_USERS,
+  DEFAULT_STAGES,
+  DEFAULT_STOP_ON_LIMIT,
+} from '../k6/lib/defaults.ts';
 import { DEFAULT_FLOW, MAX_STEPS } from '../k6/lib/flow.ts';
 import { MAX_BULK_DELETE, MAX_STAGES, RUN_STATUSES, type Run } from '../src/modules/runs/schema.ts';
 import {
@@ -242,7 +247,7 @@ describe('POST /api/v1/runs', () => {
       expect(response.body.run.limits).toEqual({
         ...DEFAULT_LIMITS,
         maxErrorRate: 0.2,
-        stopOnLimit: true,
+        stopOnLimit: DEFAULT_STOP_ON_LIMIT.load,
       });
     });
 

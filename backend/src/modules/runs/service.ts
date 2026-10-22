@@ -7,6 +7,7 @@ import { AppError } from '../../core/errors.ts';
 import {
   DEFAULT_LIMITS,
   DEFAULT_STOP_ON_LIMIT,
+  STOP_ON_LIMIT_DELAY_SECONDS,
   DEFAULT_MAX_VIRTUAL_USERS,
   DEFAULT_STAGES,
   stagesToEnv,
@@ -33,6 +34,8 @@ import {
 } from './schema.ts';
 
 const K6_THRESHOLD_FAILED_EXIT_CODE = 99;
+/** What k6 logs when a threshold with abortOnFail ends the run (checked on k6 v2.2.0). */
+const K6_ABORT_ON_FAIL_LOG = 'abortOnFail enabled, stopping test prematurely';
 /** After SIGINT, k6 gets this long to stop gracefully (and write its summary) before SIGKILL. */
 const STOP_GRACE_MS = 10_000;
 const MAX_CONCURRENT_RUNS = 3;
@@ -75,6 +78,7 @@ export class RunsService {
       maxVirtualUsers: DEFAULT_MAX_VIRTUAL_USERS,
       limits: DEFAULT_LIMITS,
       stopOnLimit: DEFAULT_STOP_ON_LIMIT,
+      stopOnLimitDelaySeconds: STOP_ON_LIMIT_DELAY_SECONDS,
       flow: DEFAULT_FLOW,
     };
   }
@@ -239,6 +243,11 @@ export class RunsService {
         failures,
         errorMessage:
           stopped || exitCode === 0 || exitCode === K6_THRESHOLD_FAILED_EXIT_CODE ? null : stderr,
+        // The exit code is the same as for limits broken at the end; only the log tells them apart.
+        stoppedEarly:
+          !stopped &&
+          exitCode === K6_THRESHOLD_FAILED_EXIT_CODE &&
+          stderr.includes(K6_ABORT_ON_FAIL_LOG),
         finishedAt: new Date(),
       };
     } finally {

@@ -1,4 +1,5 @@
 import {
+  boolean,
   doublePrecision,
   index,
   integer,
@@ -76,6 +77,8 @@ export const runs = pgTable(
     /** Sampled failed responses, distinct per step (see k6/lib/failures.ts). */
     failures: jsonb('failures').$type<FailureSample[]>().notNull().default([]),
     errorMessage: text('error_message'),
+    /** k6 ended the run before its stages did, because a limit broke (stop on limit). */
+    stoppedEarly: boolean('stopped_early').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     startedAt: timestamp('started_at', { withTimezone: true }),
     finishedAt: timestamp('finished_at', { withTimezone: true }),
