@@ -150,8 +150,8 @@ export class RunsService {
     return this.repository.failUnfinished('The backend restarted while this run was in progress.');
   }
 
-  async list({ type, active, page, pageSize }: ListRunsQuery) {
-    const { runs, total } = await this.repository.listPage(type, active, page, pageSize);
+  async list({ page, pageSize, ...filters }: ListRunsQuery) {
+    const { runs, total } = await this.repository.listPage(filters, page, pageSize);
     return { runs: runs.map(redactSecrets), total, page, pageSize };
   }
 

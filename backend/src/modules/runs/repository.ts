@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, notInArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, lte, notInArray } from 'drizzle-orm';
 import type { Database } from '../../core/db.ts';
 import {
   ACTIVE_RUN_STATUSES,
@@ -11,6 +11,16 @@ import {
 } from './schema.ts';
 import type { RunPointValues } from './timeseries.ts';
 import type { RunType } from '../../../k6/lib/defaults.ts';
+
+export interface RunListFilters {
+  type?: RunType | undefined;
+  /** Only runs still queued or running. */
+  active?: boolean;
+  /** Created at or after. */
+  from?: Date | undefined;
+  /** Created at or before. */
+  to?: Date | undefined;
+}
 
 export class RunsRepository {
   constructor(private readonly db: Database) {}
@@ -26,14 +36,15 @@ export class RunsRepository {
   }
 
   async listPage(
-    type: RunType | undefined,
-    active: boolean,
+    { type, active, from, to }: RunListFilters,
     page: number,
     pageSize: number,
   ): Promise<{ runs: RunListItem[]; total: number }> {
     const where = and(
       type ? eq(runs.type, type) : undefined,
       active ? inArray(runs.status, [...ACTIVE_RUN_STATUSES]) : undefined,
+      from ? gte(runs.createdAt, from) : undefined,
+      to ? lte(runs.createdAt, to) : undefined,
     );
     const [rows, [totals]] = await Promise.all([
       this.db.query.runs.findMany({

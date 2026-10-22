@@ -23,6 +23,8 @@ export interface RunListProps {
   pageSize: number;
   /** Changes when a different page is shown: the list cross-fades as one. */
   listKey: string;
+  /** Shown when there are no rows; defaults to the no-runs-yet copy. */
+  emptyText?: string;
   /** Ids ticked to compare or delete. Runs in progress cannot be ticked. */
   checkedIds: ReadonlySet<string>;
   onCheckedChange: (ids: ReadonlySet<string>) => void;
@@ -38,6 +40,7 @@ export function RunList({
   onSelect,
   pageSize,
   listKey,
+  emptyText,
   checkedIds,
   onCheckedChange,
 }: RunListProps) {
@@ -57,7 +60,7 @@ export function RunList({
           data-testid="runs-empty"
           className="absolute inset-x-0 top-1/2 -translate-y-1/2 px-4 text-center text-sm text-fg-muted"
         >
-          {t('runs.empty')}
+          {emptyText ?? t('runs.empty')}
         </p>
       )}
       <m.ul

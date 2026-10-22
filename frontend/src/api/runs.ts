@@ -165,6 +165,13 @@ export interface CreateRunInput {
   latencyLimitsMs: LatencyLimitsMs;
 }
 
+export interface RunListFilters {
+  type?: RunType;
+  /** ISO 8601 instants: created at or after `from`, at or before `to`. */
+  from?: string;
+  to?: string;
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -200,9 +207,14 @@ async function request<Output>(path: string, schema: z.ZodType<Output>, init?: R
 export const runsApi = {
   defaults: () => request('/defaults', defaultsSchema),
   capacity: () => request('/capacity', capacitySchema),
-  /** Every type, newest first. */
-  list: (page: number, pageSize: number) =>
-    request(`/runs?page=${page}&pageSize=${pageSize}`, runsPageSchema),
+  /** Newest first; every type unless `type` is given, within [from, to] when they are given. */
+  list: (page: number, pageSize: number, filters: RunListFilters = {}) => {
+    const query = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (filters.type) query.set('type', filters.type);
+    if (filters.from) query.set('from', filters.from);
+    if (filters.to) query.set('to', filters.to);
+    return request(`/runs?${query.toString()}`, runsPageSchema);
+  },
   active: () => request('/runs?active=true&pageSize=10', runsPageSchema),
   points: (id: string) => request(`/runs/${id}/points`, z.object({ points: z.array(pointSchema) })),
   remove: (id: string) => request(`/runs/${id}`, z.undefined(), { method: 'DELETE' }),

@@ -226,16 +226,28 @@ export const createRunSchema = z
   });
 export type CreateRunInput = z.infer<typeof createRunSchema>;
 
-export const listRunsQuerySchema = z.object({
-  type: z.enum(RUN_TYPES).optional(),
-  /** Only runs still queued or running, across types when `type` is not given. */
-  active: z
-    .enum(['true', 'false'])
-    .optional()
-    .transform((value) => value === 'true'),
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(50).default(10),
-});
+/** An ISO 8601 date-time with an offset or `Z`, parsed to a Date. */
+const instantSchema = z.iso.datetime({ offset: true }).transform((value) => new Date(value));
+
+export const listRunsQuerySchema = z
+  .object({
+    type: z.enum(RUN_TYPES).optional(),
+    /** Only runs still queued or running, across types when `type` is not given. */
+    active: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((value) => value === 'true'),
+    /** Only runs created at or after this instant. */
+    from: instantSchema.optional(),
+    /** Only runs created at or before this instant. */
+    to: instantSchema.optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(50).default(10),
+  })
+  .refine((query) => !query.from || !query.to || query.from <= query.to, {
+    message: '`to` must not be before `from`',
+    path: ['to'],
+  });
 export type ListRunsQuery = z.infer<typeof listRunsQuerySchema>;
 export const runIdParamsSchema = z.object({ id: z.uuid() });
 
