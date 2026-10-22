@@ -105,6 +105,8 @@ export const runPoints = pgTable(
     second: integer('second').notNull(),
     virtualUsers: integer('virtual_users').notNull(),
     requestsPerSecond: integer('requests_per_second').notNull(),
+    iterationsPerSecond: integer('iterations_per_second').notNull().default(0),
+    droppedPerSecond: integer('dropped_per_second').notNull().default(0),
     errorRate: doublePrecision('error_rate').notNull(),
     p50: doublePrecision('p50'),
     p90: doublePrecision('p90'),

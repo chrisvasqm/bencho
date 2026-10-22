@@ -7,6 +7,10 @@ export interface RunPointValues {
   second: number;
   virtualUsers: number;
   requestsPerSecond: number;
+  /** Flow runs (k6 iterations) that finished in this second. */
+  iterationsPerSecond: number;
+  /** Rate runs only: flow runs k6 skipped in this second because every allowed VU was busy. */
+  droppedPerSecond: number;
   errorRate: number;
   p50: number | null;
   p90: number | null;
@@ -17,6 +21,8 @@ export interface RunPointValues {
 interface Bucket {
   durations: number[];
   requests: number;
+  iterations: number;
+  dropped: number;
   failed: number;
   failedSamples: number;
   virtualUsers: number;
@@ -39,9 +45,13 @@ export class TimeseriesAggregator {
   private latestSecond = 0;
   private lastVirtualUsers = 0;
   private closedUpTo = Number.NEGATIVE_INFINITY;
-
-  /** `startSecond`: unix second the run started; points count seconds from there. */
-  constructor(private readonly startSecond: number) {}
+  /**
+   * Unix second of k6's earliest sample: point second 0 is when the test itself started, after k6
+   * loaded the script and created its VUs, so the points line up with the planned stages. Rows can
+   * arrive out of order, so it keeps the earliest one seen until the first points are drained.
+   */
+  private startSecond: number | undefined;
+  private startFixed = false;
 
   /** Adds raw CSV text. Lines may be split across chunks. */
   consume(chunk: string): void {
@@ -60,6 +70,7 @@ export class TimeseriesAggregator {
     const ready = [...this.buckets.keys()]
       .filter((second) => second <= cutoff)
       .sort((a, b) => a - b);
+    if (ready.length > 0) this.startFixed = true;
     const last = ready.at(-1);
     if (last !== undefined) this.closedUpTo = Math.max(this.closedUpTo, last);
     return ready.map((second) => {
@@ -69,9 +80,11 @@ export class TimeseriesAggregator {
       if (bucket.sawVirtualUsers) this.lastVirtualUsers = bucket.virtualUsers;
       const sorted = bucket.durations.sort((a, b) => a - b);
       return {
-        second: Math.max(0, second - this.startSecond),
+        second: Math.max(0, second - (this.startSecond ?? second)),
         virtualUsers: this.lastVirtualUsers,
         requestsPerSecond: bucket.requests,
+        iterationsPerSecond: bucket.iterations,
+        droppedPerSecond: bucket.dropped,
         errorRate: bucket.failedSamples ? bucket.failed / bucket.failedSamples : 0,
         p50: percentile(sorted, 0.5),
         p90: percentile(sorted, 0.9),
@@ -87,10 +100,13 @@ export class TimeseriesAggregator {
     const value = Number(rawValue);
     if (!metric || !Number.isFinite(second) || !Number.isFinite(value)) return; // header or junk
     if (second <= this.closedUpTo) return; // too late: that second is already stored
+    if (!this.startFixed) this.startSecond = Math.min(this.startSecond ?? second, second);
     this.latestSecond = Math.max(this.latestSecond, second);
     const bucket = this.bucketFor(second);
     if (metric === 'http_req_duration') bucket.durations.push(value);
     else if (metric === 'http_reqs') bucket.requests += value;
+    else if (metric === 'iterations') bucket.iterations += value;
+    else if (metric === 'dropped_iterations') bucket.dropped += value;
     else if (metric === 'vus') {
       bucket.virtualUsers = bucket.sawVirtualUsers ? Math.max(bucket.virtualUsers, value) : value;
       bucket.sawVirtualUsers = true;
@@ -106,6 +122,8 @@ export class TimeseriesAggregator {
       bucket = {
         durations: [],
         requests: 0,
+        iterations: 0,
+        dropped: 0,
         failed: 0,
         failedSamples: 0,
         virtualUsers: 0,

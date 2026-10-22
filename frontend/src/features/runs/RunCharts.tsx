@@ -1,12 +1,12 @@
 // Per-second charts for one run. Latency, load and errors have different units, so each gets
 // its own chart on one axis instead of a shared dual-axis chart.
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { runsApi, type Run } from '../../api/runs.ts';
 import { Note, Tabs } from '../../components/ui/index.ts';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
-import { formatMs, formatSeconds, isActive } from './format.ts';
+import { formatMs, formatSeconds, isActive, plannedShape, targetAt } from './format.ts';
 import { LATENCY_SERIES } from './series.ts';
 
 type ChartTab = 'latency' | 'load' | 'errors';
@@ -37,7 +37,13 @@ export function RunCharts({ run }: { run: Run }) {
     refetchInterval: active ? POLL_INTERVAL_MS : false,
     placeholderData: (previous) => previous,
   });
-  const data = points.data?.points ?? [];
+  const data = useMemo(() => points.data?.points ?? [], [points.data]);
+  // Rate runs only: each point with the rate the stages planned for that second.
+  const rateData = useMemo(() => {
+    if (run.mode !== 'rate') return [];
+    const shape = plannedShape(run.stages);
+    return data.map((point) => ({ ...point, target: targetAt(shape, point.second) }));
+  }, [data, run.mode, run.stages]);
   const empty = active
     ? 'Waiting for the first seconds of data…'
     : 'No per-second data for this run.';
@@ -52,7 +58,13 @@ export function RunCharts({ run }: { run: Run }) {
 
   return (
     <div className="flex flex-col gap-4" data-testid="run-charts">
-      <Tabs label="Run charts" value={tab} onChange={setTab} items={CHART_TABS} />
+      <Tabs
+        label="Run charts"
+        testId="chart-tab"
+        value={tab}
+        onChange={setTab}
+        items={CHART_TABS}
+      />
       {tab === 'latency' && (
         <LineChart
           integerX
@@ -66,6 +78,25 @@ export function RunCharts({ run }: { run: Run }) {
       )}
       {tab === 'load' && (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          {run.mode === 'rate' && (
+            <div className="xl:col-span-2">
+              <LineChart
+                integerX
+                {...shared}
+                data={rateData}
+                title="Flow runs per second"
+                testId="rate-chart"
+                // The plan is straight lines between stage targets; values up to 2 decimals.
+                curve="linear"
+                formatY={(value) => String(Math.round(value * 100) / 100)}
+                series={[
+                  { key: 'target', label: 'Planned', color: 'var(--series-2)', dash: '4 3' },
+                  { key: 'iterationsPerSecond', label: 'Finished', color: 'var(--series-1)' },
+                  { key: 'droppedPerSecond', label: 'Dropped', color: 'var(--danger)' },
+                ]}
+              />
+            </div>
+          )}
           <LineChart
             integerX
             {...shared}
@@ -94,6 +125,13 @@ export function RunCharts({ run }: { run: Run }) {
       {data.length > 0 && (
         <Note>
           <p className="m-0">{CHART_NOTES[tab]}</p>
+          {tab === 'load' && run.mode === 'rate' && (
+            <p className="m-0">
+              Flow runs per second compares the planned rate with the flow runs that finished and
+              the ones k6 dropped because every allowed VU was busy. A flow run counts in the second
+              it ends, so Finished trails Planned by about the length of one flow run.
+            </p>
+          )}
         </Note>
       )}
     </div>

@@ -67,6 +67,10 @@ test('a rate run that cannot keep its rate fails and shows the dropped runs', as
 
   await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'failed');
   await expect(page.getByTestId('run-dropped')).toBeVisible();
+  await page.getByTestId('chart-tab-load').click();
+  const chart = page.getByTestId('rate-chart');
+  await expect(chart).toContainText('Planned');
+  await expect(chart).toContainText('Dropped');
 });
 
 test('refuses a VU cap below 1 without starting a run', async ({ page }) => {
