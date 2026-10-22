@@ -26,13 +26,15 @@ import {
   LOAD_MODE_LABELS,
   RUN_TYPE_DESCRIPTIONS,
   RUN_TYPE_LABELS,
+  MODE_HINTS,
   TARGET_LABELS,
   durationToSeconds,
+  isValidTarget,
   peakTarget,
 } from './format.ts';
 import { CapacityHint } from './CapacityHint.tsx';
 import { StagesEditor } from './StagesEditor.tsx';
-import { toStageRow, type StageRow } from './stages.ts';
+import { parseTarget, toStageRow, type StageRow } from './stages.ts';
 import { FlowEditor } from './FlowEditor.tsx';
 import { draftProblem, flowProblem, fromDraft, toDraft, type StepDraft } from './flow.ts';
 
@@ -88,10 +90,11 @@ function validate(input: CreateRunInput, steps: StepDraft[]): Record<string, str
   const seconds = input.stages.map((stage) => durationToSeconds(stage.duration));
   if (seconds.some((value) => !Number.isFinite(value))) {
     errors.stages = 'Durations use k6 units: 10s, 1m, 1h30m';
-  } else if (
-    input.stages.some((stage) => !Number.isSafeInteger(stage.target) || stage.target < 0)
-  ) {
-    errors.stages = `${TARGET_LABELS[input.mode]} must be a whole number of 0 or more`;
+  } else if (input.stages.some((stage) => !isValidTarget(stage.target, input.mode))) {
+    errors.stages =
+      input.mode === 'rate'
+        ? `${TARGET_LABELS.rate} must be 0 or more, with at most 2 decimals`
+        : `${TARGET_LABELS.users} must be a whole number of 0 or more`;
   } else if (input.stages.length > MAX_STAGES) {
     errors.stages = `Use at most ${MAX_STAGES} stages`;
   } else if (seconds.reduce((total, value) => total + value, 0) > MAX_RUN_SECONDS) {
@@ -317,12 +320,26 @@ function RunPanelForm({
                       label="Stage targets count"
                       testId="load-mode"
                       value={mode}
-                      onChange={setMode}
+                      onChange={(next) => {
+                        setMode(next);
+                        // An error for the other mode no longer applies; the next start checks again.
+                        setErrors(({ stages: _stale, ...rest }) => rest);
+                        // The same text can be valid in one mode and not the other ("0,5").
+                        setStages(
+                          stages.map((stage) => ({
+                            ...stage,
+                            target: parseTarget(stage.targetText, next === 'rate'),
+                          })),
+                        );
+                      }}
                       options={LOAD_MODES.map((value) => ({
                         value,
                         label: LOAD_MODE_LABELS[value],
                       }))}
                     />
+                    <p className="m-0 text-xs text-fg-muted" data-testid="load-mode-hint">
+                      {MODE_HINTS[mode]}
+                    </p>
                   </div>
                   <Field
                     label="Stages"
@@ -334,6 +351,7 @@ function RunPanelForm({
                       stages={stages}
                       onChange={setStages}
                       targetLabel={TARGET_LABELS[mode]}
+                      decimals={mode === 'rate'}
                     />
                   </Field>
                   {mode === 'rate' && (

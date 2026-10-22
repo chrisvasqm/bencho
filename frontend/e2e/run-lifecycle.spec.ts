@@ -73,6 +73,37 @@ test('a rate run that cannot keep its rate fails and shows the dropped runs', as
   await expect(chart).toContainText('Dropped');
 });
 
+test('accepts a rate below 1 per second and refuses unclear targets', async ({ page }) => {
+  await page.getByTestId('panel-tab-shape').click();
+  // "1,000" users is a thousands separator, not 1: refused, never sent as 1 VU.
+  await page.getByTestId('stage-0-target').fill('1,000');
+  await page.getByTestId('start-run').click();
+  await expect(page.getByTestId('stages-error')).toBeVisible();
+
+  await page.getByTestId('load-mode-rate').click();
+  await expect(page.getByTestId('load-mode-hint')).toContainText('flow runs started per second');
+  await page.getByTestId('stage-0-target').fill('0.125');
+
+  await page.getByTestId('start-run').click();
+
+  await expect(page.getByTestId('stages-error')).toBeVisible();
+  await expect(page.getByTestId('run-row')).toHaveCount(0);
+
+  await setSingleStage(page, '2s');
+  // A comma decimal, as Spanish keyboards type it.
+  await page.getByTestId('stage-0-target').fill('0,5');
+  await setLooseLimits(page);
+  const post = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith('/api/v1/runs'),
+  );
+
+  await startRun(page);
+
+  const body = (await post).postDataJSON() as { stages: { target: number }[] };
+  expect(body.stages[0]?.target).toBe(0.5);
+  await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
+});
+
 test('refuses a VU cap below 1 without starting a run', async ({ page }) => {
   await page.getByTestId('panel-tab-shape').click();
   await page.getByTestId('load-mode-rate').click();

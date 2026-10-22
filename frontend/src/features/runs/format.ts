@@ -41,6 +41,20 @@ export const TARGET_LABELS: Record<LoadMode, string> = {
   rate: 'Flow runs per second',
 };
 
+/** Whole VUs, or a rate with at most 2 decimals (0.25 = one flow run every 4 s). Same as the API. */
+export function isValidTarget(target: number, mode: LoadMode): boolean {
+  if (!Number.isFinite(target) || target < 0) return false;
+  if (mode === 'users') return Number.isSafeInteger(target);
+  // toFixed compares at any size, where a fixed tolerance fails on large rates.
+  return Number(target.toFixed(2)) === target && Number.isSafeInteger(Math.round(target * 3600));
+}
+
+/** What the stage targets mean in each mode, shown under the switch. */
+export const MODE_HINTS: Record<LoadMode, string> = {
+  users: 'Each target is a number of virtual users running at the same time.',
+  rate: 'Each target is flow runs started per second, up to 2 decimals (0.25 = one every 4 seconds). Switching keeps the numbers as they are, so check them.',
+};
+
 const TARGET_UNITS: Record<LoadMode, string> = { users: ' VUs', rate: '/s' };
 
 export function formatStages(stages: Stage[], mode: LoadMode): string {
@@ -50,7 +64,8 @@ export function formatStages(stages: Stage[], mode: LoadMode): string {
 }
 
 export function peakTarget(stages: Stage[]): number {
-  return Math.max(0, ...stages.map((stage) => stage.target));
+  // A target still being typed (NaN) must not hide the others, such as in the capacity warning.
+  return Math.max(0, ...stages.map((stage) => stage.target).filter(Number.isFinite));
 }
 
 /** The largest stage target with its unit: "20 VUs", or "50/s" for a rate run. */
@@ -107,7 +122,11 @@ export function plannedShape(stages: Stage[]): PlannedPoint[] {
     const seconds = durationToSeconds(stage.duration);
     if (!Number.isFinite(seconds)) return points;
     elapsed += seconds;
-    points.push({ second: elapsed, virtualUsers: stage.target });
+    // A target still being typed (not a number yet) draws as 0.
+    points.push({
+      second: elapsed,
+      virtualUsers: Number.isFinite(stage.target) ? stage.target : 0,
+    });
   }
   return points;
 }

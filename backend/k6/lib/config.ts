@@ -5,6 +5,7 @@ import {
   DEFAULT_MAX_VIRTUAL_USERS,
   DURATION_PATTERN,
   LOAD_MODES,
+  isValidTarget,
   type LoadMode,
 } from './defaults.ts';
 
@@ -18,13 +19,16 @@ function numberFromEnv(name: string, fallback: number): number {
   return value;
 }
 
-function parseStage(entry: string): Stage {
-  const [duration = '', target = ''] = entry.trim().split(':');
-  const virtualUsers = Number(target);
-  if (!DURATION_PATTERN.test(duration) || !Number.isInteger(virtualUsers) || virtualUsers < 0) {
-    throw new Error(`STAGES entry "${entry}" must be <duration>:<VUs>, for example 30s:10`);
+function parseStage(entry: string, mode: LoadMode): Stage {
+  const [duration = '', rawTarget = ''] = entry.trim().split(':');
+  const target = Number(rawTarget);
+  if (!DURATION_PATTERN.test(duration) || !isValidTarget(target, mode)) {
+    const rule = mode === 'rate' ? 'a rate with at most 2 decimals' : 'whole VUs';
+    throw new Error(
+      `STAGES entry "${entry}" must be <duration>:<target> (${rule}), such as 30s:10`,
+    );
   }
-  return { duration, target: virtualUsers };
+  return { duration, target };
 }
 
 /** MODE=rate starts a set number of flow runs per second; MODE=users (default) ramps VUs. */
@@ -58,7 +62,7 @@ function gracePeriodFromEnv(): number {
 /** STAGES="30s:10,1m:10,30s:0" replaces the test's default load shape. */
 export function stagesFromEnv(defaultStages: Stage[]): Stage[] {
   const raw = __ENV.STAGES;
-  return raw ? raw.split(',').map(parseStage) : defaultStages;
+  return raw ? raw.split(',').map((entry) => parseStage(entry, config.mode)) : defaultStages;
 }
 
 const { thinkTimeSeconds, gracePeriodSeconds, maxErrorRate, latencyLimitsMs } = DEFAULT_LIMITS;

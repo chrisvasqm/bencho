@@ -16,6 +16,7 @@ import {
   LOAD_MODES,
   RUN_TYPES,
   durationToSeconds,
+  isValidTarget,
   type LoadMode,
   type LoadStage,
   type RunLimits,
@@ -124,7 +125,8 @@ export const MAX_GRACE_PERIOD_SECONDS = 300;
 
 const stageSchema = z.object({
   duration: z.string().regex(DURATION_PATTERN, 'Use a k6 duration such as 30s or 1m'),
-  target: z.number().int().min(0),
+  // Whole for users, up to 2 decimals for rate: checked with the mode below.
+  target: z.number().min(0),
 });
 
 const positiveMs = z.number().int().positive();
@@ -205,6 +207,20 @@ export const createRunSchema = z
   .refine((input) => input.maxVirtualUsers === undefined || input.mode === 'rate', {
     message: 'Max virtual users applies only to rate runs',
     path: ['maxVirtualUsers'],
+  })
+  .superRefine((input, context) => {
+    for (const [index, stage] of (input.stages ?? []).entries()) {
+      const mode = input.mode ?? 'users';
+      if (isValidTarget(stage.target, mode)) continue;
+      context.addIssue({
+        code: 'custom',
+        message:
+          mode === 'rate'
+            ? 'Use a rate of 0 or more with at most 2 decimals'
+            : 'Use a whole number of virtual users',
+        path: ['stages', index, 'target'],
+      });
+    }
   });
 export type CreateRunInput = z.infer<typeof createRunSchema>;
 

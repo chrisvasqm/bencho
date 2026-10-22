@@ -23,7 +23,7 @@ Stop with `docker compose down` (add `-v` to delete stored runs).
 | Postgres   | localhost:10002        | `POSTGRES_PORT`   |
 | QuickPizza | http://localhost:10001 | `QUICKPIZZA_PORT` |
 
-Each run counts its stage targets as virtual users (k6 `ramping-vus`) or as a rate of flow runs started per second (k6 `ramping-arrival-rate`, with a max VUs cap; default 100). A rate run keeps its rate as the server slows down, and reports the flow runs it dropped when every allowed VU was busy.
+Each run counts its stage targets as virtual users (k6 `ramping-vus`) or as a rate of flow runs started per second (k6 `ramping-arrival-rate`, with a max VUs cap; default 100). Rates take up to 2 decimals, so 0.25 is one flow run every 4 seconds. A rate run keeps its rate as the server slows down, and reports the flow runs it dropped when every allowed VU was busy.
 
 When the last stage ends (and, with Users, when the load shape removes a VU), a VU may finish its flow run during the grace period (Limits tab, default 30 s, 0–300 s; k6 `gracefulStop` and `gracefulRampDown`). After that, k6 cuts it off.
 

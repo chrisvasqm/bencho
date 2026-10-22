@@ -214,6 +214,15 @@ describe('POST /api/v1/runs', () => {
       expect(response.body.run.limits).toEqual({ ...DEFAULT_LIMITS, maxErrorRate: 0.2 });
     });
 
+    it('accepts a rate below 1 per second, with up to 2 decimals', async () => {
+      // 0.07 × 3600 is not exact in floating point; it must still be accepted.
+      const stages = [{ duration: '1m', target: 0.07 }];
+      const response = await createRun(runPayload({ mode: 'rate', stages }));
+
+      expect(response.status).toBe(202);
+      expect(response.body.run.stages).toEqual(stages);
+    });
+
     it('stores users mode with no VU cap by default', async () => {
       const response = await createRun(runPayload());
 
@@ -324,6 +333,10 @@ describe('POST /api/v1/runs', () => {
       ],
       ['a negative target', runPayload({ stages: [{ duration: '1s', target: -1 }] })],
       ['a fractional target', runPayload({ stages: [{ duration: '1s', target: 1.5 }] })],
+      [
+        'a rate with more than 2 decimals',
+        runPayload({ mode: 'rate', stages: [{ duration: '1s', target: 0.125 }] }),
+      ],
       ['a negative think time', runPayload({ thinkTimeSeconds: -1 })],
       ['a negative grace period', runPayload({ gracePeriodSeconds: -1 })],
       ['a grace period over 5 minutes', runPayload({ gracePeriodSeconds: 301 })],
