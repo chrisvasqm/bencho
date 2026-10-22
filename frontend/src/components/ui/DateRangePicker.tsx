@@ -13,7 +13,6 @@ export interface DateRangePickerProps {
   labels: { from: string; to: string };
   /** Latest day that can be picked; today unless set. */
   max?: string;
-  invalid?: boolean;
   testIds?: { from: string; to: string };
 }
 
@@ -26,7 +25,6 @@ export function DateRangePicker({
   onChange,
   labels,
   max = today(),
-  invalid,
   testIds,
 }: DateRangePickerProps) {
   return (
@@ -40,7 +38,6 @@ export function DateRangePicker({
           value={value.from}
           max={value.to && value.to < max ? value.to : max}
           range={value}
-          invalid={invalid}
           onChange={(from) => onChange({ ...value, from })}
         />
       </div>
@@ -54,7 +51,6 @@ export function DateRangePicker({
           max={max}
           align="end"
           range={value}
-          invalid={invalid}
           onChange={(to) => onChange({ ...value, to })}
         />
       </div>

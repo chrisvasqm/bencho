@@ -47,6 +47,8 @@ export interface DatePickerProps {
 type View = 'days' | 'months' | 'years';
 
 const YEARS_PER_PAGE = 12;
+/** Floor when no min is set: day strings need a 4-digit year, and nothing older is useful. */
+const EARLIEST_DAY = '1900-01-01';
 
 const DAY_KEYS: Record<string, number> = {
   ArrowLeft: -1,
@@ -63,7 +65,7 @@ const DAY_KEYS: Record<string, number> = {
 export function DatePicker({
   value,
   onChange,
-  min,
+  min = EARLIEST_DAY,
   max,
   label,
   invalid,
@@ -122,14 +124,13 @@ export function DatePicker({
   // Keyboard focus follows the focused day when asked; in the month and year grids it goes to
   // the chosen one, since the header button that opened the grid is gone.
   useEffect(() => {
-    if (!open) return;
-    if (view !== 'days') {
-      dialogRef.current
-        ?.querySelector<HTMLButtonElement>('[data-grid] [aria-pressed="true"]')
-        ?.focus();
-      return;
-    }
-    if (!focusGridRef.current) return;
+    if (!open || view === 'days') return;
+    dialogRef.current
+      ?.querySelector<HTMLButtonElement>('[data-grid] [aria-pressed="true"]')
+      ?.focus();
+  }, [open, view]);
+  useEffect(() => {
+    if (!open || view !== 'days' || !focusGridRef.current) return;
     focusGridRef.current = false;
     gridRef.current?.querySelector<HTMLButtonElement>(`[data-day="${focusDay}"]`)?.focus();
   }, [open, view, focusDay]);
@@ -205,7 +206,17 @@ export function DatePicker({
   );
 
   return (
-    <div ref={rootRef} className="relative" onBlur={onBlur}>
+    <div
+      ref={rootRef}
+      className="relative"
+      onBlur={onBlur}
+      // On the field too: Shift+Tab from the calendar lands there with it still open.
+      onKeyDown={(event) => {
+        if (!open || event.key !== 'Escape') return;
+        event.stopPropagation();
+        close(true);
+      }}
+    >
       <button
         ref={triggerRef}
         type="button"
@@ -240,11 +251,6 @@ export function DatePicker({
           tabIndex={-1}
           aria-label={label}
           data-testid={id('calendar')}
-          onKeyDown={(event) => {
-            if (event.key !== 'Escape') return;
-            event.stopPropagation();
-            close(true);
-          }}
           className={cn(
             'absolute top-full z-30 mt-1.5 w-72 rounded-lg border border-line bg-surface p-3 text-fg shadow-raised',
             align === 'end' ? 'right-0' : 'left-0',
@@ -520,9 +526,11 @@ function IconButton({
       aria-label={label}
       title={label}
       data-testid={testId}
-      disabled={disabled}
-      onClick={onClick}
-      className="inline-flex size-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-sunken hover:text-fg disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+      // aria-disabled, not disabled: a button disabled under focus drops focus to the page,
+      // where Escape no longer reaches the calendar.
+      aria-disabled={disabled}
+      onClick={disabled ? undefined : onClick}
+      className="inline-flex size-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-sunken hover:text-fg aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:hover:bg-transparent"
     >
       {children}
     </button>
@@ -530,7 +538,9 @@ function IconButton({
 }
 
 /** Built once per language: Intl formatters are costly to create on every render. */
-function formatsFor(language: string) {
+function formatsFor(requested: string) {
+  // i18next can report tags Intl rejects (cimode in tests); fall back rather than crash.
+  const language = Intl.DateTimeFormat.supportedLocalesOf(requested).length > 0 ? requested : 'en';
   const weekStart = firstWeekday(language);
   const weekday = new Intl.DateTimeFormat(language, { weekday: 'narrow' });
   return {
