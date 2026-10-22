@@ -303,34 +303,41 @@ function RunPanelForm({
             >
               {tab === 'setup' && (
                 <>
-                  <Field label={t('panel.testType')} htmlFor="run-type">
-                    <Select
-                      id="run-type"
-                      data-testid="run-type"
-                      value={type}
-                      onChange={onTypeChange}
-                      options={RUN_TYPES.map((value) => ({
-                        value,
-                        label: t(`runType.${value}`),
-                      }))}
-                    />
-                  </Field>
-                  <Field
-                    label={t('panel.baseUrl')}
-                    htmlFor="base-url"
-                    hint={t('panel.baseUrlHint')}
-                    error={errors.baseUrl}
-                  >
-                    <Input
-                      id="base-url"
-                      data-testid="base-url"
-                      mono
-                      value={baseUrl}
-                      onChange={(event) => setBaseUrl(event.target.value)}
-                      placeholder="https://api.example.com/health"
-                      invalid={Boolean(errors.baseUrl)}
-                    />
-                  </Field>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <Field
+                      label={t('panel.testType')}
+                      htmlFor="run-type"
+                      className="sm:w-44 sm:shrink-0"
+                    >
+                      <Select
+                        id="run-type"
+                        data-testid="run-type"
+                        value={type}
+                        onChange={onTypeChange}
+                        options={RUN_TYPES.map((value) => ({
+                          value,
+                          label: t(`runType.${value}`),
+                        }))}
+                      />
+                    </Field>
+                    <Field
+                      label={t('panel.baseUrl')}
+                      htmlFor="base-url"
+                      className="min-w-0 flex-1"
+                      hint={t('panel.baseUrlHint')}
+                      error={errors.baseUrl}
+                    >
+                      <Input
+                        id="base-url"
+                        data-testid="base-url"
+                        mono
+                        value={baseUrl}
+                        onChange={(event) => setBaseUrl(event.target.value)}
+                        placeholder="https://api.example.com/health"
+                        invalid={Boolean(errors.baseUrl)}
+                      />
+                    </Field>
+                  </div>
                   <h3 className="m-0 border-t border-line pt-4 text-sm font-semibold text-fg">
                     {t('panel.loadShape')}
                   </h3>
