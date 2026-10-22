@@ -212,15 +212,12 @@ export const es: Translation = {
     chartTitle: '{{label}} planeados',
     chartEmpty: 'Corrige las duraciones de las etapas para ver la forma.',
     shapeNoteTitle: 'Cómo funcionan usuarios y etapas',
-    thinkTime: 'Pausa entre pasos',
-    thinkTimeHint:
-      'Segundos que cada usuario espera después de un paso, como una persona leyendo la página.',
     maxErrorRate: 'Errores permitidos (%)',
     maxErrorRateHint:
       'La ejecución falla si más solicitudes que esto reciben una respuesta incorrecta.',
     gracePeriod: 'Periodo de gracia',
     gracePeriodHint:
-      'Segundos que un usuario puede usar para terminar su flujo después de la última etapa (y, con Usuarios, cuando la forma de la carga lo quita). Pasado este tiempo, k6 corta el flujo.',
+      'Segundos que un usuario puede usar para terminar su flujo cuando la prueba termina o baja el número de usuarios. Después, k6 lo detiene.',
     stopOnLimit: 'Detener cuando se supere un límite',
     stopOnLimitHint:
       'Termina la ejecución en el primer límite superado, después de los primeros {{seconds}} segundos. Activado por defecto en pruebas de carga. Las pruebas de estrés y de picos siguen hasta el final para mostrar cuánto empeora el destino.',
@@ -236,7 +233,6 @@ export const es: Translation = {
     maxStages: 'Usa {{max}} etapas como máximo',
     maxDuration: 'Todas las etapas juntas pueden durar 60 minutos como máximo',
     maxUsers: 'Usa un número entero de 1 o más',
-    thinkTime: 'Usa un número de segundos, 0 o más',
     gracePeriod: 'Usa un número entero de segundos entre 0 y {{max}}',
     maxErrorRate: 'Usa un porcentaje entre 0 y 100',
     latency: 'Cada límite debe ser mayor que 0 ms',
@@ -280,7 +276,7 @@ export const es: Translation = {
     },
     wait: 'Espera después de este paso',
     waitHint:
-      'Segundos, de 0 a {{max}}. Cada vez, el usuario espera un tiempo al azar en este rango, como una persona real que lee o escribe. Deja ambos vacíos para usar la pausa entre pasos.',
+      'Segundos, de 0 a {{max}}. Cada vez, el usuario espera un tiempo al azar en este rango, como una persona real que lee o escribe. Deja ambos vacíos para usar la pausa entre pasos por defecto.',
     shortest: 'Mínima',
     longest: 'Máxima',
     waitPlaceholder: 'Pausa',

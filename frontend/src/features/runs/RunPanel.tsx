@@ -52,7 +52,6 @@ const ERROR_TAB: Record<string, PanelTab> = {
   flowStepLabel: 'flow',
   stages: 'setup',
   maxVirtualUsers: 'setup',
-  thinkTime: 'limits',
   gracePeriod: 'limits',
   maxErrorRate: 'limits',
   latency: 'limits',
@@ -103,9 +102,6 @@ function validate(input: CreateRunInput, steps: StepDraft[], t: Copy): Record<st
     (!Number.isSafeInteger(input.maxVirtualUsers) || input.maxVirtualUsers < 1)
   ) {
     errors.maxVirtualUsers = t('validation.maxUsers');
-  }
-  if (!Number.isFinite(input.thinkTimeSeconds) || input.thinkTimeSeconds < 0) {
-    errors.thinkTime = t('validation.thinkTime');
   }
   if (
     !Number.isSafeInteger(input.gracePeriodSeconds) ||
@@ -178,7 +174,6 @@ function RunPanelForm({
   const [shownErrorRevision, setShownErrorRevision] = useState(0);
   const markErrorShown = useCallback(() => setShownErrorRevision(submitCount), [submitCount]);
   const limits = initial?.limits ?? defaults.limits;
-  const [thinkTime, setThinkTime] = useState(limits.thinkTimeSeconds);
   const [gracePeriod, setGracePeriod] = useState(limits.gracePeriodSeconds);
   // Rounded: 0.07 * 100 is 7.000000000000001 in floating point.
   const [maxErrorPercent, setMaxErrorPercent] = useState(
@@ -196,7 +191,8 @@ function RunPanelForm({
     ...(mode === 'rate' && { maxVirtualUsers }),
     stages: stages.map(({ duration, target }) => ({ duration, target })),
     flow: flowSteps.map(fromDraft),
-    thinkTimeSeconds: thinkTime,
+    // No field: a new run takes the default pause, a copy keeps its own like Retry.
+    thinkTimeSeconds: limits.thinkTimeSeconds,
     gracePeriodSeconds: gracePeriod,
     maxErrorRate: maxErrorPercent / 100,
     latencyLimitsMs: latency,
@@ -465,81 +461,6 @@ function RunPanelForm({
             className={tab === 'limits' ? 'flex flex-col gap-5' : 'hidden'}
             data-testid="panel-section-limits"
           >
-            <div className="grid grid-cols-2 gap-3">
-              <Field
-                label={t('panel.thinkTime')}
-                htmlFor="think-time"
-                hint={t('panel.thinkTimeHint')}
-                error={errors.thinkTime}
-              >
-                <Input
-                  id="think-time"
-                  data-testid="think-time"
-                  mono
-                  type="number"
-                  min={0}
-                  step={0.1}
-                  value={thinkTime}
-                  onChange={(event) => setThinkTime(Number(event.target.value))}
-                />
-              </Field>
-              <Field
-                label={t('panel.maxErrorRate')}
-                htmlFor="max-error-rate"
-                hint={t('panel.maxErrorRateHint')}
-                error={errors.maxErrorRate}
-              >
-                <Input
-                  id="max-error-rate"
-                  data-testid="max-error-rate"
-                  mono
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  value={maxErrorPercent}
-                  onChange={(event) => setMaxErrorPercent(Number(event.target.value))}
-                />
-              </Field>
-            </div>
-            <Field
-              label={t('panel.gracePeriod')}
-              htmlFor="grace-period"
-              hint={t('panel.gracePeriodHint')}
-              error={errors.gracePeriod}
-            >
-              <Input
-                id="grace-period"
-                data-testid="grace-period"
-                mono
-                type="number"
-                min={0}
-                max={MAX_GRACE_PERIOD_SECONDS}
-                step={1}
-                value={Number.isNaN(gracePeriod) ? '' : gracePeriod}
-                // An empty field is not 0 seconds: NaN fails validation.
-                onChange={(event) =>
-                  setGracePeriod(
-                    event.target.value === '' ? Number.NaN : Number(event.target.value),
-                  )
-                }
-                invalid={Boolean(errors.gracePeriod)}
-              />
-            </Field>
-            <label className="flex cursor-pointer items-start gap-2.5 text-sm text-fg">
-              <Checkbox
-                className="mt-0.5"
-                data-testid="stop-on-limit"
-                checked={stopOnLimit}
-                onChange={(event) => setStopOnLimit(event.target.checked)}
-              />
-              <span className="flex flex-col gap-0.5">
-                <span className="font-medium">{t('panel.stopOnLimit')}</span>
-                <span className="text-xs text-fg-muted">
-                  {t('panel.stopOnLimitHint', { seconds: defaults.stopOnLimitDelaySeconds })}
-                </span>
-              </span>
-            </label>
             <fieldset
               // Named by the legend text only, not the Learn link inside it.
               aria-label={t('panel.latencyLimits')}
@@ -580,6 +501,64 @@ function RunPanelForm({
                 </p>
               )}
             </fieldset>
+            <label className="flex cursor-pointer items-start gap-2.5 text-sm text-fg">
+              <Checkbox
+                className="mt-0.5"
+                data-testid="stop-on-limit"
+                checked={stopOnLimit}
+                onChange={(event) => setStopOnLimit(event.target.checked)}
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className="font-medium">{t('panel.stopOnLimit')}</span>
+                <span className="text-xs text-fg-muted">
+                  {t('panel.stopOnLimitHint', { seconds: defaults.stopOnLimitDelaySeconds })}
+                </span>
+              </span>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <Field
+                label={t('panel.maxErrorRate')}
+                htmlFor="max-error-rate"
+                hint={t('panel.maxErrorRateHint')}
+                error={errors.maxErrorRate}
+              >
+                <Input
+                  id="max-error-rate"
+                  data-testid="max-error-rate"
+                  mono
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  value={maxErrorPercent}
+                  onChange={(event) => setMaxErrorPercent(Number(event.target.value))}
+                />
+              </Field>
+              <Field
+                label={t('panel.gracePeriod')}
+                htmlFor="grace-period"
+                hint={t('panel.gracePeriodHint')}
+                error={errors.gracePeriod}
+              >
+                <Input
+                  id="grace-period"
+                  data-testid="grace-period"
+                  mono
+                  type="number"
+                  min={0}
+                  max={MAX_GRACE_PERIOD_SECONDS}
+                  step={1}
+                  value={Number.isNaN(gracePeriod) ? '' : gracePeriod}
+                  // An empty field is not 0 seconds: NaN fails validation.
+                  onChange={(event) =>
+                    setGracePeriod(
+                      event.target.value === '' ? Number.NaN : Number(event.target.value),
+                    )
+                  }
+                  invalid={Boolean(errors.gracePeriod)}
+                />
+              </Field>
+            </div>
           </div>
         </fieldset>
       </form>
