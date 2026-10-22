@@ -27,16 +27,17 @@ export function LearnMore({ title, items, testId, className }: LearnMoreProps) {
       className={className}
     >
       <dl className="m-0 flex flex-col gap-4">
-        {items.map(({ term, points }) => (
-          <div key={term} className="flex flex-col gap-1">
+        {/* Fixed order per drawer, and two lines may share the same text. */}
+        {items.map(({ term, points }, index) => (
+          <div key={index} className="flex flex-col gap-1">
             <dt className="font-semibold text-fg">{term}</dt>
             <dd className="m-0">
               {points.length === 1 ? (
                 points[0]
               ) : (
                 <ul className="m-0 flex list-disc flex-col gap-1 pl-5">
-                  {points.map((point) => (
-                    <li key={point}>{point}</li>
+                  {points.map((point, pointIndex) => (
+                    <li key={pointIndex}>{point}</li>
                   ))}
                 </ul>
               )}

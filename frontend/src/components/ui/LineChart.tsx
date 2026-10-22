@@ -101,7 +101,12 @@ export function LineChart<Row extends object>({
       .map((item) => item.label.length * 7 + 10),
   );
   return (
-    <figure className="m-0 flex min-w-0 flex-col gap-2" data-testid={testId}>
+    <figure
+      // Named by the title only, not the action next to it.
+      aria-label={title}
+      className="m-0 flex min-w-0 flex-col gap-2"
+      data-testid={testId}
+    >
       <figcaption className="flex items-center justify-between gap-3 text-sm font-medium text-fg">
         {title}
         {action}

@@ -29,7 +29,7 @@ import {
   Skeleton,
   Tabs,
 } from '../../components/ui/index.ts';
-import { failItem, percentileItems } from '../learn/items.ts';
+import { rulesItems, shapeItems } from '../learn/items.ts';
 import { LearnMore } from '../learn/LearnMore.tsx';
 import { useCopy, type Copy } from '../../i18n/useCopy.ts';
 import { durationToSeconds, formatTime, isValidTarget, peakTarget, runTypeVars } from './format.ts';
@@ -341,33 +341,7 @@ function RunPanelForm({
               <LearnMore
                 testId="learn-shape"
                 title={t('panel.shapeNoteTitle')}
-                items={[
-                  {
-                    term: t('learn.shape.userTerm'),
-                    points: [
-                      t('learn.shape.user1'),
-                      t('learn.shape.user2'),
-                      t('learn.shape.user3'),
-                    ],
-                  },
-                  {
-                    term: t('learn.shape.stageTerm'),
-                    points: [
-                      t('learn.shape.stage1'),
-                      t('learn.shape.stage2'),
-                      t('learn.shape.stage3'),
-                    ],
-                  },
-                  {
-                    term: t('learn.shape.modeTerm'),
-                    points: [
-                      t('learn.shape.users'),
-                      t('learn.shape.rate'),
-                      t('learn.shape.flowRun'),
-                      t('learn.shape.goal'),
-                    ],
-                  },
-                ]}
+                items={shapeItems(t)}
               />
             </div>
             <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
@@ -546,17 +520,17 @@ function RunPanelForm({
                 invalid={Boolean(errors.gracePeriod)}
               />
             </Field>
-            <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
+            <fieldset
+              // Named by the legend text only, not the Learn link inside it.
+              aria-label={t('panel.latencyLimits')}
+              className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0"
+            >
               <legend className="mb-1.5 flex w-full items-center justify-between gap-3 text-sm font-medium text-fg">
                 {t('panel.latencyLimits')}
                 <LearnMore
                   testId="learn-rules"
                   title={t('panel.rulesNoteTitle')}
-                  items={[
-                    failItem(t, mode),
-                    ...percentileItems(t),
-                    { term: t('learn.rules.errorTerm'), points: [t('learn.rules.error')] },
-                  ]}
+                  items={rulesItems(t, mode)}
                 />
               </legend>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

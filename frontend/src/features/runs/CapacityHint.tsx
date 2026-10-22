@@ -1,10 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { runsApi } from '../../api/runs.ts';
 import { useCopy } from '../../i18n/useCopy.ts';
+import { capacityItems } from '../learn/items.ts';
 import { LearnMore } from '../learn/LearnMore.tsx';
 
-const GIGABYTE = 1024 ** 3;
-const MEGABYTE = 1024 ** 2;
 // Free memory changes as runs start and stop.
 const REFRESH_MS = 10_000;
 
@@ -24,8 +23,7 @@ export function CapacityHint({ peakTarget, rate }: CapacityHintProps) {
     refetchInterval: REFRESH_MS,
   });
   if (!capacity.data) return null;
-  const { estimatedVirtualUsers, availableMemoryBytes, memoryPerVirtualUserBytes, cpuCount } =
-    capacity.data;
+  const { estimatedVirtualUsers } = capacity.data;
   const estimate = estimatedVirtualUsers.toLocaleString(language);
   return (
     <div className="flex flex-col gap-1 text-xs text-fg-muted">
@@ -37,22 +35,7 @@ export function CapacityHint({ peakTarget, rate }: CapacityHintProps) {
           testId="learn-capacity"
           className="shrink-0"
           title={t('capacity.title')}
-          items={[
-            {
-              term: t('learn.capacity.howTerm'),
-              points: [
-                t('learn.capacity.memory', {
-                  memory: (availableMemoryBytes / GIGABYTE).toFixed(1),
-                }),
-                t('learn.capacity.cpus', { cpus: cpuCount }),
-                t('learn.capacity.perUser', {
-                  perUser: Math.round(memoryPerVirtualUserBytes / MEGABYTE),
-                }),
-              ],
-            },
-            { term: t('learn.capacity.lowerTerm'), points: [t('learn.capacity.lower')] },
-            { term: t('learn.capacity.dockerTerm'), points: [t('learn.capacity.docker')] },
-          ]}
+          items={capacityItems(t, capacity.data)}
         />
       </div>
       {/* Always mounted (hidden when empty), so screen readers announce changes politely. */}

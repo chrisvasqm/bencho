@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { runsApi, type Run } from '../../api/runs.ts';
+import { chartItems } from '../learn/items.ts';
 import { LearnMore } from '../learn/LearnMore.tsx';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
@@ -75,38 +76,7 @@ export function RunCharts({ run }: { run: Run }) {
             <LearnMore
               testId="learn-chart"
               title={t('charts.learnTitle')}
-              items={[
-                {
-                  term: t('learn.chart.latencyTerm'),
-                  points: [
-                    t('learn.chart.latency1'),
-                    t('learn.chart.latency2'),
-                    t('learn.chart.latency3'),
-                    t('learn.chart.latency4'),
-                    t('learn.chart.latency5'),
-                  ],
-                },
-                ...(run.mode === 'rate'
-                  ? [
-                      {
-                        term: t('learn.chart.rateTerm'),
-                        points: [
-                          t('learn.chart.rate1'),
-                          t('learn.chart.rate2'),
-                          t('learn.chart.rate3'),
-                        ],
-                      },
-                    ]
-                  : []),
-                {
-                  term: t('learn.chart.loadTerm'),
-                  points: [t('learn.chart.load1'), t('learn.chart.load2'), t('learn.chart.load3')],
-                },
-                {
-                  term: t('learn.chart.errorTerm'),
-                  points: [t('learn.chart.error1'), t('learn.chart.error2')],
-                },
-              ]}
+              items={chartItems(t, run.mode)}
             />
           )
         }
