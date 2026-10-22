@@ -257,6 +257,7 @@ export function App() {
           ref={runsCardRef}
           className="lg:min-h-0"
           bodyClassName="p-0"
+          scrollBody
           headerExtra={
             <div className="flex flex-col gap-2">
               <h2 className="sr-only">{t('app.runsTitle')}</h2>
