@@ -27,6 +27,8 @@ const limitsSchema = z.object({
   gracePeriodSeconds: z.number().default(30),
   maxErrorRate: z.number(),
   latencyLimitsMs: latencyLimitsSchema,
+  // Runs stored before the setting existed ran to the end.
+  stopOnLimit: z.boolean().default(false),
 });
 export type RunLimits = z.infer<typeof limitsSchema>;
 
@@ -139,6 +141,8 @@ const defaultsSchema = z.object({
   stages: z.record(z.enum(RUN_TYPES), z.array(stageSchema)),
   maxVirtualUsers: z.number(),
   limits: limitsSchema,
+  /** Per type: whether a broken limit ends the run early. */
+  stopOnLimit: z.record(z.enum(RUN_TYPES), z.boolean()),
   flow: z.array(flowStepSchema),
 });
 export type RunDefaults = z.infer<typeof defaultsSchema>;
@@ -163,6 +167,7 @@ export interface CreateRunInput {
   gracePeriodSeconds: number;
   maxErrorRate: number;
   latencyLimitsMs: LatencyLimitsMs;
+  stopOnLimit: boolean;
 }
 
 export interface RunListFilters {

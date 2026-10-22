@@ -210,6 +210,9 @@ export const en = {
     gracePeriod: 'Grace period',
     gracePeriodHint:
       'Seconds a user may finish its flow run after the last stage (and, with Users, when the load shape removes it). Past this, k6 cuts the flow run off.',
+    stopOnLimit: 'Stop when a limit breaks',
+    stopOnLimitHint:
+      'Ends the run at the first broken limit, after the first 30 seconds. On by default for load tests. Stress and spike tests run to the end to show how far the target degrades.',
     latencyLimits: 'Latency limits (ms)',
     rulesNoteTitle: 'How pass rules work',
   },
@@ -406,6 +409,7 @@ export const en = {
     dropped_other: '{{count}} planned flow runs were dropped because all users were busy',
     dropped_many: '{{count}} planned flow runs were dropped because all users were busy',
     failedUnknown: 'A limit was crossed.',
+    stoppedEarly: 'Stopped at {{elapsed}} of {{planned}}: {{reasons}}',
     passed: 'All limits held. p95 {{p95}}, limit {{limit}}.',
     passedNoTotals: 'All limits held.',
     stopped: 'You stopped this run. The results so far were kept.',
