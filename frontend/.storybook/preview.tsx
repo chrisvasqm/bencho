@@ -1,5 +1,6 @@
 import type { Decorator, Preview } from '@storybook/react-vite';
 import { useEffect } from 'react';
+import '../src/i18n/index.ts';
 import '../src/index.css';
 
 /** Applies the theme toolbar choice the same way the app does: data-theme on <html>. */

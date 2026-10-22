@@ -7,27 +7,23 @@ import { Note, Tabs } from '../../components/ui/index.ts';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
 import { formatMs, formatSeconds, isActive, plannedShape, targetAt } from './format.ts';
+import { useCopy } from '../../i18n/useCopy.ts';
 import { LATENCY_SERIES } from './series.ts';
 
 type ChartTab = 'latency' | 'load' | 'errors';
 
-const CHART_TABS: ReadonlyArray<{ value: ChartTab; label: string }> = [
-  { value: 'latency', label: 'Latency' },
-  { value: 'load', label: 'Load' },
-  { value: 'errors', label: 'Errors' },
-];
+const CHART_TABS: readonly ChartTab[] = ['latency', 'load', 'errors'];
 
-const CHART_NOTES: Record<ChartTab, string> = {
-  latency:
-    'Each point is one second of the run. Each line shows one percentile (p50, p90, p95, p99) of the requests that ended in that second: p95 is the time 95 of every 100 of them stayed at or under. With only a few requests in a second, p90, p95 and p99 often equal the slowest one. Lines that climb as users are added mean the API is slowing down.',
-  load: 'Virtual users is how many simulated users were running. Requests per second is how many requests they sent. When users keep rising but requests per second stops rising, the API has reached its limit.',
-  errors:
-    'The share of requests in each second that did not get the status their step expects. Errors that start when the load peaks mean the API cannot handle that load.',
-};
+const CHART_NOTES = {
+  latency: 'charts.noteLatency',
+  load: 'charts.noteLoad',
+  errors: 'charts.noteErrors',
+} as const;
 
 const POLL_INTERVAL_MS = 2000;
 
 export function RunCharts({ run }: { run: Run }) {
+  const { t } = useCopy();
   const [tab, setTab] = useState<ChartTab>('latency');
   const active = isActive(run.status);
   const points = useQuery({
@@ -44,9 +40,7 @@ export function RunCharts({ run }: { run: Run }) {
     const shape = plannedShape(run.stages);
     return data.map((point) => ({ ...point, target: targetAt(shape, point.second) }));
   }, [data, run.mode, run.stages]);
-  const empty = active
-    ? 'Waiting for the first seconds of data…'
-    : 'No per-second data for this run.';
+  const empty = active ? t('charts.waiting') : t('charts.none');
   const shared = {
     data,
     xKey: 'second' as const,
@@ -59,17 +53,17 @@ export function RunCharts({ run }: { run: Run }) {
   return (
     <div className="flex flex-col gap-4" data-testid="run-charts">
       <Tabs
-        label="Run charts"
+        label={t('charts.label')}
         testId="chart-tab"
         value={tab}
         onChange={setTab}
-        items={CHART_TABS}
+        items={CHART_TABS.map((value) => ({ value, label: t(`charts.tabs.${value}`) }))}
       />
       {tab === 'latency' && (
         <LineChart
           integerX
           {...shared}
-          title="Response time per second"
+          title={t('charts.latencyTitle')}
           series={LATENCY_SERIES}
           minYStep={0.1}
           formatY={(value) => formatMs(value)}
@@ -84,15 +78,24 @@ export function RunCharts({ run }: { run: Run }) {
                 integerX
                 {...shared}
                 data={rateData}
-                title="Flow runs per second"
+                title={t('charts.rateTitle')}
                 testId="rate-chart"
                 // The plan is straight lines between stage targets; values up to 2 decimals.
                 curve="linear"
                 formatY={(value) => String(Math.round(value * 100) / 100)}
                 series={[
-                  { key: 'target', label: 'Planned', color: 'var(--series-2)', dash: '4 3' },
-                  { key: 'iterationsPerSecond', label: 'Finished', color: 'var(--series-1)' },
-                  { key: 'droppedPerSecond', label: 'Dropped', color: 'var(--danger)' },
+                  {
+                    key: 'target',
+                    label: t('charts.planned'),
+                    color: 'var(--series-2)',
+                    dash: '4 3',
+                  },
+                  {
+                    key: 'iterationsPerSecond',
+                    label: t('charts.finished'),
+                    color: 'var(--series-1)',
+                  },
+                  { key: 'droppedPerSecond', label: t('charts.dropped'), color: 'var(--danger)' },
                 ]}
               />
             </div>
@@ -100,15 +103,17 @@ export function RunCharts({ run }: { run: Run }) {
           <LineChart
             integerX
             {...shared}
-            title="Virtual users"
-            series={[{ key: 'virtualUsers', label: 'Virtual users', color: 'var(--series-1)' }]}
+            title={t('charts.users')}
+            series={[{ key: 'virtualUsers', label: t('charts.users'), color: 'var(--series-1)' }]}
             integerY
           />
           <LineChart
             integerX
             {...shared}
-            title="Requests per second"
-            series={[{ key: 'requestsPerSecond', label: 'Requests/s', color: 'var(--series-3)' }]}
+            title={t('charts.requestsTitle')}
+            series={[
+              { key: 'requestsPerSecond', label: t('charts.requests'), color: 'var(--series-3)' },
+            ]}
           />
         </div>
       )}
@@ -116,22 +121,16 @@ export function RunCharts({ run }: { run: Run }) {
         <LineChart
           integerX
           {...shared}
-          title="Failed requests (share of each second)"
-          series={[{ key: 'errorRate', label: 'Error rate', color: 'var(--danger)' }]}
+          title={t('charts.errorsTitle')}
+          series={[{ key: 'errorRate', label: t('charts.errorRate'), color: 'var(--danger)' }]}
           minYStep={0.001}
           formatY={(value) => `${(value * 100).toFixed(1)}%`}
         />
       )}
       {data.length > 0 && (
         <Note>
-          <p className="m-0">{CHART_NOTES[tab]}</p>
-          {tab === 'load' && run.mode === 'rate' && (
-            <p className="m-0">
-              Flow runs per second compares the planned rate with the flow runs that finished and
-              the ones k6 dropped because every allowed VU was busy. A flow run counts in the second
-              it ends, so Finished trails Planned by about the length of one flow run.
-            </p>
-          )}
+          <p className="m-0">{t(CHART_NOTES[tab])}</p>
+          {tab === 'load' && run.mode === 'rate' && <p className="m-0">{t('charts.noteRate')}</p>}
         </Note>
       )}
     </div>

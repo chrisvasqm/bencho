@@ -27,6 +27,8 @@ import {
   toDraft,
   type StepDraft,
 } from './flow.ts';
+import { Trans } from 'react-i18next';
+import { useCopy } from '../../i18n/useCopy.ts';
 import { PairsEditor } from './PairsEditor.tsx';
 
 export interface FlowEditorProps {
@@ -72,6 +74,7 @@ export function FlowEditor({
   hasSoapExample,
   onExampleLoad,
 }: FlowEditorProps) {
+  const { t, advanced } = useCopy();
   // A problem with no step, or with its step closed, shows under the list instead.
   const listError = error && (!errorStepId || errorStepId !== openId) ? error : undefined;
   const listErrorRef = useRef<HTMLParagraphElement>(null);
@@ -104,14 +107,20 @@ export function FlowEditor({
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs text-fg-muted">
-        Each user runs these steps in order, again and again. Use{' '}
-        {BUILTIN_PLACEHOLDERS.map((name, index) => (
-          <span key={name}>
-            {index > 0 && ', '}
-            <code className="font-mono text-fg">{`{{${name}}}`}</code>
-          </span>
-        ))}{' '}
-        or a value an earlier step saves, in the path, headers or body.
+        {t('flow.intro')}
+        {advanced && (
+          <>
+            {' '}
+            {t('flow.introUse')}{' '}
+            {BUILTIN_PLACEHOLDERS.map((name, index) => (
+              <span key={name}>
+                {index > 0 && ', '}
+                <code className="font-mono text-fg">{`{{${name}}}`}</code>
+              </span>
+            ))}{' '}
+            {t('flow.introAfter')}
+          </>
+        )}
       </p>
       <ol className="m-0 flex list-none flex-col gap-2 p-0">
         {steps.map((step, index) => (
@@ -135,23 +144,23 @@ export function FlowEditor({
                   {step.method}
                 </span>
                 <span className="flex min-w-0 items-center gap-1.5 font-medium text-fg">
-                  <span className="min-w-0 truncate">{step.name || 'Untitled'}</span>
+                  <span className="min-w-0 truncate">{step.name || t('flow.untitled')}</span>
                   {step.id === errorStepId && (
                     <span
                       role="img"
-                      aria-label="has a problem"
+                      aria-label={t('flow.hasProblem')}
                       className="size-1.5 shrink-0 rounded-full bg-danger"
                     />
                   )}
                 </span>
                 <span className="col-start-3 truncate font-mono text-xs text-fg-muted">
-                  {step.path || <span className="font-sans italic">base URL</span>}
+                  {step.path || <span className="font-sans italic">{t('flow.emptyPath')}</span>}
                 </span>
               </button>
               <Button
                 variant="ghost"
                 size="sm"
-                aria-label={`Move step ${index + 1} up`}
+                aria-label={t('flow.moveUp', { number: index + 1 })}
                 disabled={index === 0}
                 onClick={() => move(index, -1)}
                 className="w-7 px-0"
@@ -161,7 +170,7 @@ export function FlowEditor({
               <Button
                 variant="ghost"
                 size="sm"
-                aria-label={`Move step ${index + 1} down`}
+                aria-label={t('flow.moveDown', { number: index + 1 })}
                 disabled={index === steps.length - 1}
                 onClick={() => move(index, 1)}
                 className="w-7 px-0"
@@ -171,7 +180,7 @@ export function FlowEditor({
               <Button
                 variant="ghost"
                 size="sm"
-                aria-label={`Remove step ${index + 1}`}
+                aria-label={t('flow.remove', { number: index + 1 })}
                 disabled={steps.length === 1}
                 onClick={() => remove(step.id)}
                 className="w-7 px-0"
@@ -200,7 +209,7 @@ export function FlowEditor({
       )}
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" size="sm" onClick={add}>
-          Add step
+          {t('flow.add')}
         </Button>
         <Button
           variant="ghost"
@@ -211,7 +220,7 @@ export function FlowEditor({
             onExampleLoad('quickPizza');
           }}
         >
-          Load QuickPizza example
+          {t('flow.loadExample')}
         </Button>
         {hasSoapExample && (
           <Button
@@ -223,7 +232,7 @@ export function FlowEditor({
               onExampleLoad('soap');
             }}
           >
-            Load SOAP example
+            {t('flow.loadSoapExample')}
           </Button>
         )}
       </div>
@@ -248,6 +257,7 @@ function StepFields({
   onChange,
   className,
 }: StepFieldsProps) {
+  const { t, advanced } = useCopy();
   const id = step.id;
   const soap = step.bodyFormat === 'soap';
   const errorRef = useRef<HTMLParagraphElement>(null);
@@ -270,7 +280,7 @@ function StepFields({
         </p>
       )}
       <div className="grid grid-cols-[1fr_6rem] gap-2">
-        <Field label="Name" htmlFor={`${id}-name`}>
+        <Field label={t('flow.name')} htmlFor={`${id}-name`}>
           <Input
             id={`${id}-name`}
             value={step.name}
@@ -278,7 +288,7 @@ function StepFields({
             onChange={(event) => onChange({ name: event.target.value })}
           />
         </Field>
-        <Field label="Status" htmlFor={`${id}-status`}>
+        <Field label={t('flow.status')} htmlFor={`${id}-status`}>
           <Input
             id={`${id}-status`}
             data-testid="step-expected-status"
@@ -292,13 +302,13 @@ function StepFields({
         </Field>
       </div>
       <Field
-        label="Request"
+        label={t('flow.request')}
         htmlFor={`${id}-path`}
-        hint="A path such as /api/items/{{itemId}} is added to the base URL. Leave it empty to use the base URL."
+        hint={t('flow.requestHint', { example: '{{itemId}}' })}
       >
         <div className="grid grid-cols-[6.5rem_1fr] gap-2">
           <Select
-            aria-label="Method"
+            aria-label={t('flow.method')}
             value={step.method}
             onChange={(method: HttpMethod) => onChange({ method })}
             options={METHOD_OPTIONS}
@@ -307,29 +317,31 @@ function StepFields({
             id={`${id}-path`}
             mono
             value={step.path}
-            placeholder="Empty: the base URL"
+            placeholder={t('flow.pathPlaceholder')}
             onChange={(event) => onChange({ path: event.target.value })}
           />
         </div>
       </Field>
-      <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-fg">Headers</span>
-        <PairsEditor
-          id={`${id}-header`}
-          pairs={step.headers}
-          onChange={(headers) => onChange({ headers })}
-          keyLabel="Header"
-          valueLabel="Value"
-          keyPlaceholder="Authorization"
-          valuePlaceholder="Token {{token}}"
-          addLabel="Add header"
-        />
-      </div>
+      {advanced && (
+        <div className="flex flex-col gap-1.5" data-testid="step-headers">
+          <span className="text-sm font-medium text-fg">{t('flow.headers')}</span>
+          <PairsEditor
+            id={`${id}-header`}
+            pairs={step.headers}
+            onChange={(headers) => onChange({ headers })}
+            keyLabel={t('flow.header')}
+            valueLabel={t('flow.value')}
+            keyPlaceholder="Authorization"
+            valuePlaceholder="Token {{token}}"
+            addLabel={t('flow.addHeader')}
+          />
+        </div>
+      )}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium text-fg">Format</span>
+          <span className="text-sm font-medium text-fg">{t('flow.format')}</span>
           <SegmentedControl
-            label="Body and response format"
+            label={t('flow.formatLabel')}
             testId="step-body-format"
             options={BODY_FORMAT_OPTIONS}
             value={step.bodyFormat}
@@ -337,19 +349,13 @@ function StepFields({
           />
         </div>
         <p className="m-0 text-xs text-fg-muted">
-          {soap
-            ? 'The body is XML and saved values come from the XML response. Values in {{name}} are escaped as XML text.'
-            : 'The body is JSON and saved values come from the JSON response.'}
+          {soap ? t('flow.formatHint.soap', { example: '{{name}}' }) : t('flow.formatHint.json')}
         </p>
       </div>
       <Field
-        label={soap ? 'SOAP body' : 'JSON body'}
+        label={t(soap ? 'flow.body.soap' : 'flow.body.json')}
         htmlFor={`${id}-body-text`}
-        hint={
-          soap
-            ? 'Leave empty for no body. Sent as text/xml (SOAP 1.1) unless a header says otherwise: for SOAP 1.2 set Content-Type to application/soap+xml. Add a SOAPAction header if the service needs one.'
-            : 'Leave empty for no body. Sent as application/json unless a header says otherwise.'
-        }
+        hint={t(soap ? 'flow.bodyHint.soap' : 'flow.bodyHint.json')}
       >
         <Textarea
           id={`${id}-body-text`}
@@ -364,65 +370,56 @@ function StepFields({
         />
       </Field>
       <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-fg">Wait after this step</span>
-        <p className="m-0 text-xs text-fg-muted">
-          Seconds, 0 to {MAX_WAIT_SECONDS}. Each time, the user waits a random time in this range,
-          like a real person reading or typing. Leave both empty to use the think time.
-        </p>
+        <span className="text-sm font-medium text-fg">{t('flow.wait')}</span>
+        <p className="m-0 text-xs text-fg-muted">{t('flow.waitHint', { max: MAX_WAIT_SECONDS })}</p>
         {/* Text, not number: a number input reads unparseable text as empty. */}
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Shortest" htmlFor={`${id}-wait-min`}>
+          <Field label={t('flow.shortest')} htmlFor={`${id}-wait-min`}>
             <Input
               id={`${id}-wait-min`}
               data-testid="step-wait-min"
               mono
               inputMode="decimal"
-              placeholder="Think time"
+              placeholder={t('flow.waitPlaceholder')}
               value={step.waitMin}
               onChange={(event) => onChange({ waitMin: event.target.value })}
             />
           </Field>
-          <Field label="Longest" htmlFor={`${id}-wait-max`}>
+          <Field label={t('flow.longest')} htmlFor={`${id}-wait-max`}>
             <Input
               id={`${id}-wait-max`}
               data-testid="step-wait-max"
               mono
               inputMode="decimal"
-              placeholder="Think time"
+              placeholder={t('flow.waitPlaceholder')}
               value={step.waitMax}
               onChange={(event) => onChange({ waitMax: event.target.value })}
             />
           </Field>
         </div>
       </div>
-      <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-fg">Save from response</span>
-        {soap ? (
+      {advanced && (
+        <div className="flex flex-col gap-1.5" data-testid="step-saves">
+          <span className="text-sm font-medium text-fg">{t('flow.save')}</span>
           <p className="m-0 text-xs text-fg-muted">
-            Later steps use a saved value as {'{{name}}'}. The path names elements of the XML
-            response, at any depth and without prefixes, for example{' '}
-            <code className="font-mono">Token</code> or{' '}
-            <code className="font-mono">LoginResponse.Token</code>. A number picks one of many:{' '}
-            <code className="font-mono">Item.1.Id</code>.
+            <Trans
+              i18nKey={soap ? 'flow.saveHint.soap' : 'flow.saveHint.json'}
+              values={{ example: '{{name}}' }}
+              components={{ code: <code className="font-mono" /> }}
+            />
           </p>
-        ) : (
-          <p className="m-0 text-xs text-fg-muted">
-            Later steps use a saved value as {'{{name}}'}. The path reads the JSON response, for
-            example <code className="font-mono">pizza.id</code> or{' '}
-            <code className="font-mono">items.0.id</code>.
-          </p>
-        )}
-        <PairsEditor
-          id={`${id}-save`}
-          pairs={step.extract}
-          onChange={(extract) => onChange({ extract })}
-          keyLabel="Name"
-          valueLabel={soap ? 'Element path' : 'JSON path'}
-          keyPlaceholder="token"
-          valuePlaceholder={soap ? 'LoginResponse.Token' : 'token'}
-          addLabel="Add value"
-        />
-      </div>
+          <PairsEditor
+            id={`${id}-save`}
+            pairs={step.extract}
+            onChange={(extract) => onChange({ extract })}
+            keyLabel={t('flow.name')}
+            valueLabel={t(soap ? 'flow.savePath.soap' : 'flow.savePath.json')}
+            keyPlaceholder="token"
+            valuePlaceholder={soap ? 'LoginResponse.Token' : 'token'}
+            addLabel={t('flow.addValue')}
+          />
+        </div>
+      )}
     </div>
   );
 }

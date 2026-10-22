@@ -1,4 +1,5 @@
 import { Button, Input } from '../../components/ui/index.ts';
+import { useCopy } from '../../i18n/useCopy.ts';
 import { newPair, type Pair } from './flow.ts';
 
 export interface PairsEditorProps {
@@ -24,6 +25,7 @@ export function PairsEditor({
   valuePlaceholder,
   addLabel,
 }: PairsEditorProps) {
+  const { t } = useCopy();
   const update = (index: number, patch: Partial<Pair>) =>
     onChange(pairs.map((pair, position) => (position === index ? { ...pair, ...patch } : pair)));
   const remove = (index: number) => onChange(pairs.filter((_pair, position) => position !== index));
@@ -58,7 +60,7 @@ export function PairsEditor({
           <Button
             variant="ghost"
             size="sm"
-            aria-label={`Remove ${keyLabel.toLowerCase()} ${index + 1}`}
+            aria-label={t('flow.removePair', { label: keyLabel.toLowerCase(), number: index + 1 })}
             onClick={() => remove(index)}
             className="w-8 px-0"
           >

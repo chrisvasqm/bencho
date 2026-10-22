@@ -21,17 +21,8 @@ import {
   Skeleton,
   Tabs,
 } from '../../components/ui/index.ts';
-import {
-  EXPLAIN,
-  LOAD_MODE_LABELS,
-  RUN_TYPE_DESCRIPTIONS,
-  RUN_TYPE_LABELS,
-  MODE_HINTS,
-  TARGET_LABELS,
-  durationToSeconds,
-  isValidTarget,
-  peakTarget,
-} from './format.ts';
+import { useCopy, type Copy } from '../../i18n/useCopy.ts';
+import { durationToSeconds, isValidTarget, peakTarget, runTypeVars } from './format.ts';
 import { CapacityHint } from './CapacityHint.tsx';
 import { StagesEditor } from './StagesEditor.tsx';
 import { parseTarget, toStageRow, type StageRow } from './stages.ts';
@@ -40,11 +31,7 @@ import { draftProblem, flowProblem, fromDraft, toDraft, type StepDraft } from '.
 
 type PanelTab = 'setup' | 'flow' | 'limits';
 
-const PANEL_TABS: ReadonlyArray<{ value: PanelTab; label: string }> = [
-  { value: 'setup', label: 'Setup' },
-  { value: 'flow', label: 'Flow' },
-  { value: 'limits', label: 'Limits' },
-];
+const PANEL_TABS: readonly PanelTab[] = ['setup', 'flow', 'limits'];
 
 const ERROR_TAB: Record<string, PanelTab> = {
   baseUrl: 'setup',
@@ -76,14 +63,14 @@ const MAX_STAGES = 20;
 const MAX_GRACE_PERIOD_SECONDS = 300;
 const FORM_ID = 'run-form';
 
-function validate(input: CreateRunInput, steps: StepDraft[]): Record<string, string> {
+function validate(input: CreateRunInput, steps: StepDraft[], t: Copy): Record<string, string> {
   const errors: Record<string, string> = {};
   const baseUrl = URL.canParse(input.baseUrl) ? new URL(input.baseUrl) : undefined;
   if (!baseUrl || !/^https?:$/.test(baseUrl.protocol)) {
-    errors.baseUrl = 'Enter a full URL, including http:// or https://';
+    errors.baseUrl = t('validation.baseUrl');
   } else if (baseUrl.username !== '' || baseUrl.password !== '') {
     // Every reader of the runs list would see them; the backend refuses them too.
-    errors.baseUrl = 'Put credentials in a header, not in the URL';
+    errors.baseUrl = t('validation.credentials');
   }
   const problem = draftProblem(steps) ?? flowProblem(input.flow);
   if (problem) errors.flow = problem.message;
@@ -91,46 +78,46 @@ function validate(input: CreateRunInput, steps: StepDraft[]): Record<string, str
   const problemStepId = problem?.step === undefined ? undefined : steps[problem.step]?.id;
   if (problemStepId && problem?.step !== undefined) {
     errors.flowStep = problemStepId;
-    errors.flowStepLabel = `Step ${problem.step + 1} (${steps[problem.step]?.name.trim() || 'Untitled'})`;
+    errors.flowStepLabel = t('validation.stepLabel', {
+      number: problem.step + 1,
+      name: steps[problem.step]?.name.trim() || t('validation.untitled'),
+    });
   }
   const seconds = input.stages.map((stage) => durationToSeconds(stage.duration));
   if (seconds.some((value) => !Number.isFinite(value))) {
-    errors.stages = 'Durations use k6 units: 10s, 1m, 1h30m';
+    errors.stages = t('validation.durations');
   } else if (input.stages.some((stage) => !isValidTarget(stage.target, input.mode))) {
-    errors.stages =
-      input.mode === 'rate'
-        ? `${TARGET_LABELS.rate} must be 0 or more, with at most 2 decimals`
-        : `${TARGET_LABELS.users} must be a whole number of 0 or more`;
+    errors.stages = t(input.mode === 'rate' ? 'validation.targetRate' : 'validation.targetUsers');
   } else if (input.stages.length > MAX_STAGES) {
-    errors.stages = `Use at most ${MAX_STAGES} stages`;
+    errors.stages = t('validation.maxStages', { max: MAX_STAGES });
   } else if (seconds.reduce((total, value) => total + value, 0) > MAX_RUN_SECONDS) {
-    errors.stages = 'All stages together must last at most 60 minutes';
+    errors.stages = t('validation.maxDuration');
   }
   if (
     input.maxVirtualUsers !== undefined &&
     (!Number.isSafeInteger(input.maxVirtualUsers) || input.maxVirtualUsers < 1)
   ) {
-    errors.maxVirtualUsers = 'Use a whole number of 1 or more';
+    errors.maxVirtualUsers = t('validation.maxUsers');
   }
   if (!Number.isFinite(input.thinkTimeSeconds) || input.thinkTimeSeconds < 0) {
-    errors.thinkTime = 'Use a number of seconds, 0 or more';
+    errors.thinkTime = t('validation.thinkTime');
   }
   if (
     !Number.isSafeInteger(input.gracePeriodSeconds) ||
     input.gracePeriodSeconds < 0 ||
     input.gracePeriodSeconds > MAX_GRACE_PERIOD_SECONDS
   ) {
-    errors.gracePeriod = `Use a whole number of seconds from 0 to ${MAX_GRACE_PERIOD_SECONDS}`;
+    errors.gracePeriod = t('validation.gracePeriod', { max: MAX_GRACE_PERIOD_SECONDS });
   }
   if (!Number.isFinite(input.maxErrorRate) || input.maxErrorRate < 0 || input.maxErrorRate > 1) {
-    errors.maxErrorRate = 'Use a percentage between 0 and 100';
+    errors.maxErrorRate = t('validation.maxErrorRate');
   }
   if (
     PERCENTILES.some(
       (key) => !Number.isFinite(input.latencyLimitsMs[key]) || input.latencyLimitsMs[key] <= 0,
     )
   ) {
-    errors.latency = 'Every limit must be above 0 ms';
+    errors.latency = t('validation.latency');
   }
   return errors;
 }
@@ -163,6 +150,7 @@ function RunPanelForm({
   submitting,
   className,
 }: RunPanelProps & { defaults: RunDefaults }) {
+  const { t, advanced } = useCopy();
   const [tab, setTab] = useState<PanelTab>('setup');
   const [baseUrl, setBaseUrl] = useState(defaults.baseUrl);
   const [stages, setStages] = useState<StageRow[]>(() => defaults.stages[type].map(toStageRow));
@@ -227,11 +215,11 @@ function RunPanelForm({
       maxErrorRate: maxErrorPercent / 100,
       latencyLimitsMs: latency,
     };
-    const nextErrors = validate(input, flowSteps);
+    const nextErrors = validate(input, flowSteps, t);
     setErrors(nextErrors);
     // The first tab, in tab order, that has an error.
     const errorTabs = new Set(Object.keys(nextErrors).map((key) => ERROR_TAB[key]));
-    const firstErrorTab = PANEL_TABS.find((item) => errorTabs.has(item.value))?.value;
+    const firstErrorTab = PANEL_TABS.find((value) => errorTabs.has(value));
     const revision = submitCount + 1;
     setSubmitCount(revision);
     // Scroll to a flow problem only when this submit opens the Flow tab, not on a later visit.
@@ -251,14 +239,14 @@ function RunPanelForm({
 
   return (
     <Card
-      title="New run"
-      description={RUN_TYPE_DESCRIPTIONS[type]}
+      title={t('panel.title')}
+      description={t(`runTypeDescription.${type}`)}
       scrollBody
       flushFooter
       className={className}
       headerExtra={
         <Tabs
-          label="Run settings"
+          label={t('panel.tabsLabel')}
           testId="panel-tab"
           value={tab}
           onChange={(next) => {
@@ -266,7 +254,11 @@ function RunPanelForm({
             // A scroll still waiting for Setup to appear no longer applies on another tab.
             setSetupErrorToShow(undefined);
           }}
-          items={PANEL_TABS.map((item) => ({ ...item, alert: tabsWithErrors.has(item.value) }))}
+          items={PANEL_TABS.map((value) => ({
+            value,
+            label: t(`panel.tabs.${value}`),
+            alert: tabsWithErrors.has(value),
+          }))}
         />
       }
       footer={
@@ -277,7 +269,7 @@ function RunPanelForm({
           size="block"
           data-testid="start-run"
         >
-          {submitting ? 'Starting…' : `Start ${RUN_TYPE_LABELS[type].toLowerCase()} test`}
+          {submitting ? t('panel.starting') : t('panel.start', runTypeVars(type, t))}
         </Button>
       }
     >
@@ -294,7 +286,7 @@ function RunPanelForm({
             >
               {tab === 'setup' && (
                 <>
-                  <Field label="Test type" htmlFor="run-type">
+                  <Field label={t('panel.testType')} htmlFor="run-type">
                     <Select
                       id="run-type"
                       data-testid="run-type"
@@ -302,14 +294,14 @@ function RunPanelForm({
                       onChange={onTypeChange}
                       options={RUN_TYPES.map((value) => ({
                         value,
-                        label: RUN_TYPE_LABELS[value],
+                        label: t(`runType.${value}`),
                       }))}
                     />
                   </Field>
                   <Field
-                    label="Base URL"
+                    label={t('panel.baseUrl')}
                     htmlFor="base-url"
-                    hint="The steps in the Flow tab send their requests to paths under this URL."
+                    hint={t('panel.baseUrlHint')}
                     error={errors.baseUrl}
                   >
                     <Input
@@ -323,40 +315,43 @@ function RunPanelForm({
                     />
                   </Field>
                   <h3 className="m-0 border-t border-line pt-4 text-sm font-semibold text-fg">
-                    Load shape
+                    {t('panel.loadShape')}
                   </h3>
                   <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
                     <LoadShapeChart stages={stages} mode={mode} />
                   </Suspense>
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-sm font-medium text-fg">Stage targets count</span>
-                    <SegmentedControl
-                      label="Stage targets count"
-                      testId="load-mode"
-                      value={mode}
-                      onChange={(next) => {
-                        setMode(next);
-                        // An error for the other mode no longer applies; the next start checks again.
-                        setErrors(({ stages: _stale, ...rest }) => rest);
-                        // The same text can be valid in one mode and not the other ("0,5").
-                        setStages(
-                          stages.map((stage) => ({
-                            ...stage,
-                            target: parseTarget(stage.targetText, next === 'rate'),
-                          })),
-                        );
-                      }}
-                      options={LOAD_MODES.map((value) => ({
-                        value,
-                        label: LOAD_MODE_LABELS[value],
-                      }))}
-                    />
-                    <p className="m-0 text-xs text-fg-muted" data-testid="load-mode-hint">
-                      {MODE_HINTS[mode]}
-                    </p>
-                  </div>
+                  {/* Basic keeps to users; the switch stays visible while a rate run is set up. */}
+                  {(advanced || mode === 'rate') && (
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-sm font-medium text-fg">{t('panel.targetsCount')}</span>
+                      <SegmentedControl
+                        label={t('panel.targetsCount')}
+                        testId="load-mode"
+                        value={mode}
+                        onChange={(next) => {
+                          setMode(next);
+                          // An error for the other mode no longer applies; the next start checks again.
+                          setErrors(({ stages: _stale, ...rest }) => rest);
+                          // The same text can be valid in one mode and not the other ("0,5").
+                          setStages(
+                            stages.map((stage) => ({
+                              ...stage,
+                              target: parseTarget(stage.targetText, next === 'rate'),
+                            })),
+                          );
+                        }}
+                        options={LOAD_MODES.map((value) => ({
+                          value,
+                          label: t(`panel.modes.${value}`),
+                        }))}
+                      />
+                      <p className="m-0 text-xs text-fg-muted" data-testid="load-mode-hint">
+                        {t(`panel.modeHint.${mode}`)}
+                      </p>
+                    </div>
+                  )}
                   <Field
-                    label="Stages"
+                    label={t('panel.stages')}
                     htmlFor="stage-0-duration"
                     error={errors.stages}
                     errorTestId="stages-error"
@@ -364,15 +359,15 @@ function RunPanelForm({
                     <StagesEditor
                       stages={stages}
                       onChange={setStages}
-                      targetLabel={TARGET_LABELS[mode]}
+                      targetLabel={t(`panel.target.${mode}`)}
                       decimals={mode === 'rate'}
                     />
                   </Field>
                   {mode === 'rate' && (
                     <Field
-                      label="Max virtual users"
+                      label={t('panel.maxUsers')}
                       htmlFor="max-virtual-users"
-                      hint="k6 adds VUs up to this number to keep the rate. Past it, flow runs are dropped."
+                      hint={t('panel.maxUsersHint')}
                       error={errors.maxVirtualUsers}
                       errorTestId="max-virtual-users-error"
                     >
@@ -391,25 +386,12 @@ function RunPanelForm({
                   )}
                   <CapacityHint
                     peakTarget={mode === 'rate' ? maxVirtualUsers : peakTarget(stages)}
-                    peakSource={mode === 'rate' ? 'Max virtual users is' : 'Your stages go up to'}
+                    rate={mode === 'rate'}
                   />
-                  <Note title="How the load shape works">
-                    <p className="m-0">
-                      A virtual user (VU) is one simulated user. It runs the steps in the Flow tab
-                      in order, waits after each step (the step's own random wait, or the think
-                      time), then starts again until the run ends. When a step fails, the VU waits,
-                      skips the remaining steps and starts again.
-                    </p>
-                    <p className="m-0">
-                      Stages run in order. During each stage, the number of VUs changes steadily to
-                      the stage's target. For example, 30s → 20 VUs, then 1m → 20 VUs adds users for
-                      30 seconds, then holds 20 users for 1 minute.
-                    </p>
-                    <p className="m-0">
-                      Users counts concurrent users. Rate counts flow runs started per second, no
-                      matter how slow the server gets: use it for a goal such as 50 sign-ins per
-                      second. Each flow run sends one request per step.
-                    </p>
+                  <Note title={t('panel.shapeNoteTitle')}>
+                    <p className="m-0">{t('panel.shapeNote1')}</p>
+                    <p className="m-0">{t('panel.shapeNote2')}</p>
+                    {advanced && <p className="m-0">{t('panel.shapeNote3')}</p>}
                   </Note>
                 </>
               )}
@@ -460,9 +442,9 @@ function RunPanelForm({
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <Field
-                      label="Think time"
+                      label={t('panel.thinkTime')}
                       htmlFor="think-time"
-                      hint="Seconds a user waits after each step with no wait of its own"
+                      hint={t('panel.thinkTimeHint')}
                       error={errors.thinkTime}
                     >
                       <Input
@@ -477,9 +459,9 @@ function RunPanelForm({
                       />
                     </Field>
                     <Field
-                      label="Max error rate"
+                      label={t('panel.maxErrorRate')}
                       htmlFor="max-error-rate"
-                      hint="Percent of requests without the expected status"
+                      hint={t('panel.maxErrorRateHint')}
                       error={errors.maxErrorRate}
                     >
                       <Input
@@ -495,40 +477,49 @@ function RunPanelForm({
                       />
                     </Field>
                   </div>
-                  <Field
-                    label="Grace period"
-                    htmlFor="grace-period"
-                    hint="Seconds a user may finish its flow run after the last stage (and, with Users, when the load shape removes it). Past this, k6 cuts the flow run off."
-                    error={errors.gracePeriod}
-                  >
-                    <Input
-                      id="grace-period"
-                      data-testid="grace-period"
-                      mono
-                      type="number"
-                      min={0}
-                      max={MAX_GRACE_PERIOD_SECONDS}
-                      step={1}
-                      value={Number.isNaN(gracePeriod) ? '' : gracePeriod}
-                      // An empty field is not 0 seconds: NaN fails validation.
-                      onChange={(event) =>
-                        setGracePeriod(
-                          event.target.value === '' ? Number.NaN : Number(event.target.value),
-                        )
-                      }
-                      invalid={Boolean(errors.gracePeriod)}
-                    />
-                  </Field>
+                  {advanced && (
+                    <Field
+                      label={t('panel.gracePeriod')}
+                      htmlFor="grace-period"
+                      hint={t('panel.gracePeriodHint')}
+                      error={errors.gracePeriod}
+                    >
+                      <Input
+                        id="grace-period"
+                        data-testid="grace-period"
+                        mono
+                        type="number"
+                        min={0}
+                        max={MAX_GRACE_PERIOD_SECONDS}
+                        step={1}
+                        value={Number.isNaN(gracePeriod) ? '' : gracePeriod}
+                        // An empty field is not 0 seconds: NaN fails validation.
+                        onChange={(event) =>
+                          setGracePeriod(
+                            event.target.value === '' ? Number.NaN : Number(event.target.value),
+                          )
+                        }
+                        invalid={Boolean(errors.gracePeriod)}
+                      />
+                    </Field>
+                  )}
                   <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
                     <legend className="mb-1.5 text-sm font-medium text-fg">
-                      Latency limits (ms)
+                      {advanced ? t('panel.latencyLimits') : t('panel.maxResponseTime')}
                     </legend>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      {PERCENTILES.map((key) => (
+                    <div
+                      className={
+                        advanced ? 'grid grid-cols-2 gap-2 sm:grid-cols-4' : 'flex flex-col gap-1'
+                      }
+                    >
+                      {/* Basic sets one limit: p95. The others keep their values. */}
+                      {(advanced ? PERCENTILES : (['p95'] as const)).map((key) => (
                         <div key={key} className="flex flex-col gap-1">
-                          <label htmlFor={`limit-${key}`} className="text-xs text-fg-muted">
-                            {key}
-                          </label>
+                          {advanced && (
+                            <label htmlFor={`limit-${key}`} className="text-xs text-fg-muted">
+                              {key}
+                            </label>
+                          )}
                           <Input
                             id={`limit-${key}`}
                             data-testid={`limit-${key}`}
@@ -544,22 +535,24 @@ function RunPanelForm({
                         </div>
                       ))}
                     </div>
+                    {!advanced && (
+                      <p className="m-0 text-xs text-fg-muted">{t('panel.maxResponseTimeHint')}</p>
+                    )}
                     {errors.latency && (
                       <p role="alert" data-testid="latency-error" className="text-xs text-danger">
                         {errors.latency}
                       </p>
                     )}
                   </fieldset>
-                  <Note title="What do p50, p90, p95 and p99 mean?">
-                    <p className="m-0">{EXPLAIN.percentile}</p>
-                    <p className="m-0">
-                      p50 is the typical request. p99 is the line the slowest 1% of requests are
-                      above. An average hides these slow requests, so the limits use percentiles.
-                    </p>
-                  </Note>
-                  <Note title="When does a run fail?">
-                    <p className="m-0">{EXPLAIN.failRule}</p>
-                    <p className="m-0">{EXPLAIN.errorRate}</p>
+                  {advanced && (
+                    <Note title={t('panel.percentileNoteTitle')}>
+                      <p className="m-0">{t('explain.percentile')}</p>
+                      <p className="m-0">{t('panel.percentileNote2')}</p>
+                    </Note>
+                  )}
+                  <Note title={t('panel.failNoteTitle')}>
+                    <p className="m-0">{t('explain.failRule')}</p>
+                    {advanced && <p className="m-0">{t('explain.errorRate')}</p>}
                   </Note>
                 </>
               )}
@@ -572,23 +565,24 @@ function RunPanelForm({
 }
 
 function RunPanelSkeleton({ className }: { className?: string }) {
+  const { t } = useCopy();
   return (
     <Card
-      title="New run"
+      title={t('panel.title')}
       description={<Skeleton className="mt-1 h-4 w-56" />}
       scrollBody
       flushFooter
       className={className}
       headerExtra={
         <div className="flex gap-4 pb-2">
-          {PANEL_TABS.map((item) => (
-            <Skeleton key={item.value} className="h-5 w-16" />
+          {PANEL_TABS.map((value) => (
+            <Skeleton key={value} className="h-5 w-16" />
           ))}
         </div>
       }
       footer={
         <Button loading disabled size="block">
-          Loading settings…
+          {t('panel.loading')}
         </Button>
       }
       aria-busy="true"

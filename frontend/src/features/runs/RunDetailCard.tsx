@@ -9,10 +9,8 @@ import {
   Stat,
   type StatTone,
 } from '../../components/ui/index.ts';
+import { useCopy } from '../../i18n/useCopy.ts';
 import {
-  EXPLAIN,
-  RUN_TYPE_LABELS,
-  STATUS_LABELS,
   STATUS_TONES,
   durationSeconds,
   formatMs,
@@ -20,6 +18,7 @@ import {
   formatStages,
   formatTime,
   isActive,
+  runTypeVars,
 } from './format.ts';
 
 export interface RunDetailCardProps {
@@ -50,6 +49,7 @@ function toneFor(value: number | undefined, limit: number): StatTone {
 }
 
 export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: RunDetailCardProps) {
+  const { t, advanced, language } = useCopy();
   const [confirming, setConfirming] = useState(false);
   const [confirmingFor, setConfirmingFor] = useState(run.status);
   if (confirmingFor !== run.status) {
@@ -71,8 +71,22 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
 
   // Same two-step confirm for both: stop while active, delete once finished.
   const action = active
-    ? { label: 'Stop', confirm: 'Stop run', busy: stopping, run: () => onStop(run) }
-    : { label: 'Delete', confirm: 'Delete run', busy: deleting, run: () => onDelete(run) };
+    ? {
+        label: t('detail.stop'),
+        confirm: t('detail.stopConfirm'),
+        busy: stopping,
+        run: () => onStop(run),
+      }
+    : {
+        label: t('detail.delete'),
+        confirm: t('detail.deleteConfirm'),
+        busy: deleting,
+        run: () => onDelete(run),
+      };
+  // Basic shows one response time (p95); Advanced shows all four percentiles.
+  const percentiles = advanced
+    ? PERCENTILE_KEYS
+    : PERCENTILE_KEYS.filter(([label]) => label === 'p95');
   const actionButtons = confirming ? (
     <div className="flex items-center gap-2">
       <Button
@@ -81,7 +95,7 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
         onClick={() => setConfirming(false)}
         data-testid="run-action-keep"
       >
-        Keep
+        {t('detail.keep')}
       </Button>
       <Button
         variant="danger"
@@ -106,7 +120,10 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
 
   return (
     <Card
-      title={`${RUN_TYPE_LABELS[run.type]} run · ${formatTime(run.createdAt)}`}
+      title={t('detail.title', {
+        ...runTypeVars(run.type, t),
+        time: formatTime(run.createdAt, language),
+      })}
       description={<span className="text-xs">{run.baseUrl}</span>}
       actions={actionButtons}
       data-testid="run-detail"
@@ -116,30 +133,35 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
       <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
           <Badge tone={STATUS_TONES[run.status]} pulse={active}>
-            {STATUS_LABELS[run.status]}
+            {t(`status.${run.status}`)}
           </Badge>
-          <span className="text-xs text-fg-muted">{formatStages(run.stages, run.mode)}</span>
+          <span className="text-xs text-fg-muted">{formatStages(run.stages, run.mode, t)}</span>
           {run.mode === 'rate' && (
             <span className="text-xs text-fg-muted" data-testid="run-rate-cap">
-              rate, up to {run.maxVirtualUsers} VUs
+              {t('detail.rateCap', { count: run.maxVirtualUsers })}
               {dropped > 0 && (
                 <span className="text-warning" data-testid="run-dropped">
-                  {' '}
-                  · {dropped} flow {dropped === 1 ? 'run' : 'runs'} dropped (all VUs busy)
+                  {' · '}
+                  {t('detail.dropped', { count: dropped })}
                 </span>
               )}
             </span>
           )}
           <span className="text-xs text-fg-muted">
-            {run.flow.length === 1 ? '1 step' : `${run.flow.length} steps`}:{' '}
+            {t('detail.steps', { count: run.flow.length })}:{' '}
             {run.flow.map((step) => step.name).join(' → ')}
           </span>
           <span className="text-xs text-fg-muted">
-            think time {run.limits.thinkTimeSeconds}s, grace {run.limits.gracePeriodSeconds}s
-            {run.flow.some((step) => step.wait) && ', some steps wait their own range'}
+            {t('detail.pauses', {
+              think: run.limits.thinkTimeSeconds,
+              grace: run.limits.gracePeriodSeconds,
+            })}
+            {run.flow.some((step) => step.wait) && t('detail.ownWaits')}
           </span>
           {elapsed !== undefined && (
-            <span className="text-xs text-fg-faint">took {elapsed.toFixed(0)}s</span>
+            <span className="text-xs text-fg-faint">
+              {t('detail.took', { seconds: elapsed.toFixed(0) })}
+            </span>
           )}
         </div>
 
@@ -148,42 +170,35 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
             data-testid="run-summary"
             className="grid grid-cols-2 gap-4 sm:grid-cols-3 2xl:grid-cols-6"
           >
-            {PERCENTILE_KEYS.map(([label, metricKey]) => (
+            {percentiles.map(([label, metricKey]) => (
               <Stat
                 key={label}
-                label={label}
+                label={advanced ? label : t('detail.responseTime')}
                 value={formatMs(duration?.[metricKey])}
                 limit={`< ${run.limits.latencyLimitsMs[label]} ms`}
                 tone={toneFor(duration?.[metricKey], run.limits.latencyLimitsMs[label])}
               />
             ))}
             <Stat
-              label="Error rate"
+              label={t('detail.errorRate')}
               value={formatPercent(failed?.value)}
               limit={`< ${(run.limits.maxErrorRate * 100).toFixed(2)}%`}
               tone={toneFor(failed?.value, run.limits.maxErrorRate)}
             />
             <Stat
-              label="Requests"
+              label={t('detail.requests')}
               value={requests ? String(requests.count) : '–'}
               unit={requests ? `${requests.rate.toFixed(1)}/s` : undefined}
             />
-            <Note title="How to read these numbers" className="col-span-full">
-              <p className="m-0">
-                Green means below its limit, red means it reached the limit. p50, p90, p95 and p99:{' '}
-                {EXPLAIN.percentile}
-              </p>
-              <p className="m-0">
-                {EXPLAIN.errorRate} Requests is the total sent, with the average per second.
-              </p>
-              <p className="m-0">{EXPLAIN.failRule}</p>
+            <Note title={t('detail.readTitle')} className="col-span-full">
+              <p className="m-0">{t('detail.read1')}</p>
+              <p className="m-0">{t('detail.read2')}</p>
+              <p className="m-0">{t('explain.failRule')}</p>
             </Note>
           </div>
         ) : (
           <p className="text-sm text-fg-muted">
-            {active
-              ? 'Totals appear when the run finishes. The charts below update every 2 seconds.'
-              : 'No totals were recorded.'}
+            {active ? t('detail.waiting') : t('detail.noTotals')}
           </p>
         )}
 
@@ -208,16 +223,12 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
 
 /** Sampled failed responses: what the target answered when a step failed. */
 function FailureList({ run }: { run: Run }) {
+  const { t } = useCopy();
   return (
     <section className="flex flex-col gap-3" data-testid="run-failures">
       <div className="flex flex-col gap-1">
-        <h3 className="m-0 text-sm font-medium text-fg">Failed responses (sample)</h3>
-        <p className="m-0 text-xs text-fg-muted">
-          Bodies are read in 1 of every 20 flow runs, and in every flow run for steps that save
-          values, so these are examples, not every failure. A success response (2xx) shows its JSON
-          keys (or XML element names) only, since it may hold tokens. Each step shows up to 10
-          different responses, at most 3 per status.
-        </p>
+        <h3 className="m-0 text-sm font-medium text-fg">{t('failures.title')}</h3>
+        <p className="m-0 text-xs text-fg-muted">{t('failures.hint')}</p>
       </div>
       <ul className="m-0 flex list-none flex-col gap-3 p-0">
         {run.failures.map((failure, index) => {
@@ -234,14 +245,16 @@ function FailureList({ run }: { run: Run }) {
                 <span className="text-fg-muted">
                   {' · '}
                   {failure.reason === 'extract'
-                    ? `status ${failure.status}, a value to save was missing`
+                    ? t('failures.extract', { status: failure.status })
                     : failure.status === 0
-                      ? 'no response (network error)'
-                      : `status ${failure.status}${expected === undefined ? '' : `, expected ${expected}`}`}
+                      ? t('failures.network')
+                      : expected === undefined
+                        ? t('failures.status', { status: failure.status })
+                        : t('failures.statusExpected', { status: failure.status, expected })}
                 </span>
               </p>
               <pre className="m-0 max-h-40 overflow-auto rounded-md bg-surface-sunken p-3 font-mono text-xs whitespace-pre-wrap break-all text-fg-muted">
-                {failure.body || '(empty body)'}
+                {failure.body || t('failures.emptyBody')}
               </pre>
             </li>
           );

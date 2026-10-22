@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Button } from './Button.tsx';
 
 export interface PaginationProps {
@@ -9,13 +10,17 @@ export interface PaginationProps {
 }
 
 export function Pagination({ page, pageSize, total, onPageChange, loading }: PaginationProps) {
+  const { t } = useTranslation();
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const first = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const last = Math.min(total, page * pageSize);
   return (
-    <nav aria-label="Pagination" className="flex flex-wrap items-center justify-between gap-3">
+    <nav
+      aria-label={t('pagination.label')}
+      className="flex flex-wrap items-center justify-between gap-3"
+    >
       <p data-testid="pagination-range" className="text-xs text-fg-muted tabular-nums">
-        {total === 0 ? 'No runs' : `${first}–${last} of ${total}`}
+        {total === 0 ? t('pagination.none') : t('pagination.range', { first, last, total })}
       </p>
       <div className="flex items-center gap-2">
         <Button
@@ -25,10 +30,10 @@ export function Pagination({ page, pageSize, total, onPageChange, loading }: Pag
           disabled={page <= 1 || loading}
           onClick={() => onPageChange(page - 1)}
         >
-          Previous
+          {t('pagination.previous')}
         </Button>
         <span data-testid="pagination-page" className="text-xs text-fg-muted tabular-nums">
-          Page {page} of {pageCount}
+          {t('pagination.page', { page, count: pageCount })}
         </span>
         <Button
           variant="secondary"
@@ -37,7 +42,7 @@ export function Pagination({ page, pageSize, total, onPageChange, loading }: Pag
           disabled={page >= pageCount || loading}
           onClick={() => onPageChange(page + 1)}
         >
-          Next
+          {t('pagination.next')}
         </Button>
       </div>
     </nav>

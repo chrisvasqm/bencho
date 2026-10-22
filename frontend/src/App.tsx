@@ -12,7 +12,9 @@ import {
   type RunsPage,
 } from './api/runs.ts';
 import { Card, Pagination, Skeleton, Tabs } from './components/ui/index.ts';
-import { RUN_TYPE_LABELS, isActive } from './features/runs/format.ts';
+import { isActive, runTypeVars } from './features/runs/format.ts';
+import { DetailSwitch, LanguageSwitch } from './features/preferences/PreferenceSwitches.tsx';
+import { useCopy, type Copy } from './i18n/useCopy.ts';
 import { ActiveRunsWidget } from './features/runs/ActiveRunsWidget.tsx';
 import { BulkDeleteBar } from './features/runs/BulkDeleteBar.tsx';
 import { RunDetailCard } from './features/runs/RunDetailCard.tsx';
@@ -29,6 +31,7 @@ const TrendCard = lazy(() =>
 const PAGE_SIZE = 8;
 
 export function App() {
+  const { t } = useCopy();
   const [type, setType] = useState<RunType>('load');
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string>();
@@ -44,10 +47,10 @@ export function App() {
   });
   useEffect(() => {
     if (defaults.isError) {
-      toast.error('Bencho cannot reach the backend', {
+      toast.error(t('app.backendDown'), {
         id: 'backend-down',
         testId: 'toast-backend-down',
-        description: 'Start the stack with docker compose up, then reload.',
+        description: t('app.backendDownHint'),
       });
     }
   }, [defaults.isError]);
@@ -97,14 +100,14 @@ export function App() {
       setSelectedId(run.id);
       void queryClient.invalidateQueries({ queryKey: ['runs', run.type] });
       void queryClient.invalidateQueries({ queryKey: ['runs', 'active'] });
-      toast.info(`${RUN_TYPE_LABELS[run.type]} test started`, {
-        description: 'You will get a message when it finishes.',
+      toast.info(t('toast.started', runTypeVars(run.type, t)), {
+        description: t('toast.startedHint'),
         testId: 'toast-run-started',
       });
     },
     onError: (error) => {
-      toast.error('The run did not start', {
-        description: describeError(error),
+      toast.error(t('toast.startFailed'), {
+        description: describeError(error, t),
         testId: 'toast-run-start-error',
       });
     },
@@ -138,10 +141,10 @@ export function App() {
       forgetRuns(new Set([run.id]));
       void queryClient.invalidateQueries({ queryKey: ['runs', run.type] });
       void queryClient.invalidateQueries({ queryKey: ['trend', run.type] });
-      toast.success('Run deleted', { testId: 'toast-run-deleted' });
+      toast.success(t('toast.deleted'), { testId: 'toast-run-deleted' });
     },
     onError: (error) => {
-      toast.error('The run was not deleted', { description: describeError(error) });
+      toast.error(t('toast.deleteFailed'), { description: describeError(error, t) });
     },
   });
 
@@ -150,11 +153,11 @@ export function App() {
     onSuccess: ({ run }) => {
       // The watcher toasts once k6 has exited and the outcome is stored.
       watch(run.id);
-      toast.info(`Stopping ${RUN_TYPE_LABELS[run.type].toLowerCase()} test…`);
+      toast.info(t('toast.stopping', runTypeVars(run.type, t)));
       void queryClient.invalidateQueries({ queryKey: ['run', run.id] });
     },
     onError: (error) => {
-      toast.error('The run did not stop', { description: describeError(error) });
+      toast.error(t('toast.stopFailed'), { description: describeError(error, t) });
     },
   });
 
@@ -167,17 +170,17 @@ export function App() {
       forgetRuns(gone);
       void queryClient.invalidateQueries({ queryKey: ['runs', type] });
       void queryClient.invalidateQueries({ queryKey: ['trend', type] });
-      const label = `${deleted.length} ${deleted.length === 1 ? 'run' : 'runs'} deleted`;
+      const label = t('toast.bulkDeleted', { count: deleted.length });
       if (skipped.length === 0) toast.success(label, { testId: 'toast-runs-deleted' });
       else {
         toast.warning(label, {
-          description: `${skipped.length} could not be deleted: still running or already gone.`,
+          description: t('toast.bulkSkipped', { count: skipped.length }),
           testId: 'toast-runs-partly-deleted',
         });
       }
     },
     onError: (error) => {
-      toast.error('The runs were not deleted', { description: describeError(error) });
+      toast.error(t('toast.bulkDeleteFailed'), { description: describeError(error, t) });
     },
   });
 
@@ -196,7 +199,11 @@ export function App() {
             <Logo />
             <h1 className="text-lg leading-tight font-semibold tracking-tight text-fg">Bencho</h1>
           </div>
-          <ThemeSwitch />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <DetailSwitch />
+            <LanguageSwitch />
+            <ThemeSwitch />
+          </div>
         </div>
       </header>
 
@@ -215,8 +222,8 @@ export function App() {
         <div className="flex min-w-0 flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           <Card
             ref={runsCardRef}
-            title="Runs"
-            description="Newest first. Select a run to see its numbers."
+            title={t('app.runsTitle')}
+            description={t('app.runsDescription')}
             actions={
               <BulkDeleteBar
                 count={checkedIds.size}
@@ -228,11 +235,11 @@ export function App() {
             }
             headerExtra={
               <Tabs
-                label="Test type"
+                label={t('panel.testType')}
                 testId="type-tab"
                 value={type}
                 onChange={selectType}
-                items={RUN_TYPES.map((value) => ({ value, label: RUN_TYPE_LABELS[value] }))}
+                items={RUN_TYPES.map((value) => ({ value, label: t(`runType.${value}`) }))}
               />
             }
             footer={
@@ -250,7 +257,7 @@ export function App() {
           >
             {runs.isError ? (
               <p role="alert" data-testid="runs-error" className="text-sm text-danger">
-                Could not load runs. Bencho tries again on the next update.
+                {t('app.runsLoadError')}
               </p>
             ) : (
               <RunsTable
@@ -290,7 +297,7 @@ export function App() {
 
           <Suspense
             fallback={
-              <Card title="Trend">
+              <Card title={t('app.trendTitle')}>
                 <Skeleton className="h-56 w-full" />
               </Card>
             }
@@ -324,10 +331,15 @@ function Logo() {
   );
 }
 
-function describeError(error: Error): string {
-  if (error instanceof ApiError) {
-    if (error.code === 'VALIDATION') return 'The backend rejected one of the values.';
-    return error.message;
-  }
-  return 'Bencho cannot reach the backend. Check that the stack is running.';
+// Mirrors the backend limit, for the TOO_MANY_RUNS message.
+const MAX_CONCURRENT_RUNS = 3;
+
+/** A translated message for a known error code, else the backend's own (English) message. */
+function describeError(error: Error, t: Copy): string {
+  if (!(error instanceof ApiError)) return t('errors.offline');
+  if (error.code === 'VALIDATION') return t('errors.validation');
+  return t(`errors.${error.code}` as 'errors.INTERNAL', {
+    defaultValue: error.message,
+    max: MAX_CONCURRENT_RUNS,
+  });
 }

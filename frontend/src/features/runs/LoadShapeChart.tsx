@@ -2,14 +2,16 @@ import { memo } from 'react';
 import type { LoadMode, Stage } from '../../api/runs.ts';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
-import { TARGET_LABELS, formatSeconds, plannedShape } from './format.ts';
+import { useCopy } from '../../i18n/useCopy.ts';
+import { formatSeconds, plannedShape } from './format.ts';
 
 /** Planned stage targets over time for the stages being edited. Default export for lazy(). */
 function LoadShapeChart({ stages, mode }: { stages: Stage[]; mode: LoadMode }) {
-  const label = TARGET_LABELS[mode];
+  const { t } = useCopy();
+  const label = t(`panel.target.${mode}`);
   return (
     <LineChart
-      title={`Planned ${label.toLowerCase()}`}
+      title={t('panel.chartTitle', { label, labelLower: label.toLowerCase() })}
       data={plannedShape(stages)}
       xTime
       curve="linear"
@@ -20,7 +22,7 @@ function LoadShapeChart({ stages, mode }: { stages: Stage[]; mode: LoadMode }) {
       height={140}
       integerY={mode === 'users'}
       integerX
-      empty="Fix the stage durations to see the shape."
+      empty={t('panel.chartEmpty')}
     />
   );
 }

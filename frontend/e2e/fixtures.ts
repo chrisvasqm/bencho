@@ -120,6 +120,8 @@ export class RunsApi {
 
 interface Fixtures {
   api: RunsApi;
+  /** Detail level a new page starts in. Most specs drive every setting, so Advanced. */
+  detail: 'basic' | 'advanced';
 }
 
 interface WorkerFixtures {
@@ -150,9 +152,15 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     await api.reset();
   },
 
-  page: async ({ page, api }, use) => {
+  detail: ['advanced', { option: true }],
+
+  page: async ({ page, api, detail }, use) => {
     // `api` first, so every test starts on an empty database.
     void api;
+    // Only when unset, so a choice made in the test survives a reload.
+    await page.addInitScript((value) => {
+      if (!localStorage.getItem('detail')) localStorage.setItem('detail', value);
+    }, detail);
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
     page.on('console', (message) => {

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { runsApi } from '../../api/runs.ts';
 import { Note } from '../../components/ui/Note.tsx';
+import { useCopy } from '../../i18n/useCopy.ts';
 
 const GIGABYTE = 1024 ** 3;
 const MEGABYTE = 1024 ** 2;
@@ -10,12 +11,13 @@ const REFRESH_MS = 10_000;
 export interface CapacityHintProps {
   /** The most VUs the run can use: the largest stage target, or a rate run's VU cap. */
   peakTarget: number;
-  /** Names where peakTarget comes from, in the warning. */
-  peakSource: string;
+  /** True when peakTarget is a rate run's VU cap, not a stage target. */
+  rate: boolean;
 }
 
 /** Rough VU estimate for the Bencho host, with a warning when the stages go above it. */
-export function CapacityHint({ peakTarget, peakSource }: CapacityHintProps) {
+export function CapacityHint({ peakTarget, rate }: CapacityHintProps) {
+  const { t, language } = useCopy();
   const capacity = useQuery({
     queryKey: ['capacity'],
     queryFn: runsApi.capacity,
@@ -24,19 +26,19 @@ export function CapacityHint({ peakTarget, peakSource }: CapacityHintProps) {
   if (!capacity.data) return null;
   const { estimatedVirtualUsers, availableMemoryBytes, memoryPerVirtualUserBytes, cpuCount } =
     capacity.data;
-  const estimate = estimatedVirtualUsers.toLocaleString();
+  const estimate = estimatedVirtualUsers.toLocaleString(language);
   return (
-    <Note title="How many VUs the Bencho server can run">
+    <Note title={t('capacity.title')}>
       <p className="m-0" data-testid="capacity-estimate">
-        Rough estimate: about {estimate} VUs. The Bencho server has{' '}
-        {(availableMemoryBytes / GIGABYTE).toFixed(1)} GB of free memory and {cpuCount} CPU cores,
-        and k6 uses up to about {Math.round(memoryPerVirtualUserBytes / MEGABYTE)} MB per VU. Long
-        flows, large bodies, short think times and other active runs lower this number.
+        {t('capacity.estimate', {
+          estimate,
+          memory: (availableMemoryBytes / GIGABYTE).toFixed(1),
+          cpus: cpuCount,
+          perUser: Math.round(memoryPerVirtualUserBytes / MEGABYTE),
+        })}
       </p>
       <p className="m-0" data-testid="capacity-docker">
-        On Docker Desktop, free memory comes from Docker's memory limit (Settings → Resources →
-        Advanced → Memory limit), which all running containers share, not from all of the computer's
-        memory. A <code>mem_limit</code> on the backend container lowers it too.
+        {t('capacity.docker')}
       </p>
       {/* Always mounted (hidden when empty), so screen readers announce changes politely. */}
       <p
@@ -45,7 +47,10 @@ export function CapacityHint({ peakTarget, peakSource }: CapacityHintProps) {
         data-testid="capacity-warning"
       >
         {peakTarget > estimatedVirtualUsers &&
-          `${peakSource} ${peakTarget.toLocaleString()} VUs, more than the estimate of ${estimate}. The run can slow down or stop the server.`}
+          t(rate ? 'capacity.warningRate' : 'capacity.warning', {
+            value: peakTarget.toLocaleString(language),
+            estimate,
+          })}
       </p>
     </Note>
   );

@@ -1,4 +1,5 @@
 import { Button, Input } from '../../components/ui/index.ts';
+import { useCopy } from '../../i18n/useCopy.ts';
 import { parseTarget, toStageRow, type StageRow } from './stages.ts';
 
 export interface StagesEditorProps {
@@ -12,6 +13,7 @@ export interface StagesEditorProps {
 
 /** Rows of duration + target users. The last row usually ramps down to 0. */
 export function StagesEditor({ stages, onChange, targetLabel, decimals }: StagesEditorProps) {
+  const { t } = useCopy();
   const update = (index: number, patch: Partial<StageRow>) =>
     onChange(
       stages.map((stage, position) => (position === index ? { ...stage, ...patch } : stage)),
@@ -23,7 +25,7 @@ export function StagesEditor({ stages, onChange, targetLabel, decimals }: Stages
   return (
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-xs text-fg-muted">
-        <span>Duration</span>
+        <span>{t('panel.duration')}</span>
         <span>{targetLabel}</span>
         <span className="w-8" />
       </div>
@@ -31,7 +33,7 @@ export function StagesEditor({ stages, onChange, targetLabel, decimals }: Stages
         <div key={stage.id} className="grid grid-cols-[1fr_1fr_auto] items-center gap-2">
           <Input
             id={`stage-${index}-duration`}
-            aria-label={`Stage ${index + 1} duration`}
+            aria-label={t('panel.stageDuration', { number: index + 1 })}
             data-testid={`stage-${index}-duration`}
             mono
             value={stage.duration}
@@ -40,7 +42,10 @@ export function StagesEditor({ stages, onChange, targetLabel, decimals }: Stages
           />
           <Input
             id={`stage-${index}-target`}
-            aria-label={`Stage ${index + 1} ${targetLabel.toLowerCase()}`}
+            aria-label={t('panel.stageTarget', {
+              number: index + 1,
+              label: targetLabel.toLowerCase(),
+            })}
             data-testid={`stage-${index}-target`}
             mono
             inputMode={decimals ? 'decimal' : 'numeric'}
@@ -55,7 +60,7 @@ export function StagesEditor({ stages, onChange, targetLabel, decimals }: Stages
           <Button
             variant="ghost"
             size="sm"
-            aria-label={`Remove stage ${index + 1}`}
+            aria-label={t('panel.removeStage', { number: index + 1 })}
             data-testid={`stage-${index}-remove`}
             disabled={stages.length === 1}
             onClick={() => remove(index)}
@@ -72,7 +77,7 @@ export function StagesEditor({ stages, onChange, targetLabel, decimals }: Stages
         className="self-start"
         data-testid="add-stage"
       >
-        Add stage
+        {t('panel.addStage')}
       </Button>
     </div>
   );

@@ -1,6 +1,7 @@
 // Flow editing helpers: drafts the editor can hold mid-typing, the QuickPizza and SOAP examples and
 // checks that mirror the backend so the user sees which step to fix.
 import type { BodyFormat, FlowStep, HttpMethod } from '../../api/runs.ts';
+import { i18n } from '../../i18n/index.ts';
 import { newId } from './ids.ts';
 import { isWellFormedXml } from './xml.ts';
 
@@ -75,7 +76,7 @@ export function draftProblem(steps: StepDraft[]): FlowProblem | undefined {
   for (const [index, step] of steps.entries()) {
     const names = step.headers.map((pair) => pair.key.trim().toLowerCase()).filter(Boolean);
     if (new Set(names).size !== names.length) {
-      return { message: 'Each header name can be used only once', step: index };
+      return { message: i18n.t('flowProblem.duplicateHeader'), step: index };
     }
   }
   return undefined;
@@ -106,7 +107,7 @@ export function fromDraft(draft: StepDraft): FlowStep {
 
 export function emptyStep(): StepDraft {
   return toDraft({
-    name: 'New step',
+    name: i18n.t('flow.newStep'),
     method: 'GET',
     path: '/',
     headers: {},
@@ -251,42 +252,46 @@ function placeholdersIn(text: string): string[] {
 }
 
 function stepProblem(step: FlowStep, known: Set<string>): string | undefined {
-  if (step.name === '') return 'give the step a name';
+  if (step.name === '') return i18n.t('flowProblem.noName');
   if (step.name.length > MAX_STEP_NAME_LENGTH) {
-    return `the name must be at most ${MAX_STEP_NAME_LENGTH} characters`;
+    return i18n.t('flowProblem.nameLength', { max: MAX_STEP_NAME_LENGTH });
   }
   if (step.path !== '' && !step.path.startsWith('/') && !/^https?:\/\//.test(step.path)) {
-    return 'the path must be empty, start with / or be a full URL';
+    return i18n.t('flowProblem.path');
   }
   const { expectedStatus } = step;
   if (!Number.isInteger(expectedStatus) || expectedStatus < 100 || expectedStatus > 599) {
-    return 'the expected status must be an HTTP status, such as 200';
+    return i18n.t('flowProblem.status');
   }
-  if (step.path.length > MAX_PATH_LENGTH)
-    return `the path must be at most ${MAX_PATH_LENGTH} characters`;
+  if (step.path.length > MAX_PATH_LENGTH) {
+    return i18n.t('flowProblem.pathLength', { max: MAX_PATH_LENGTH });
+  }
   const headerNames = Object.keys(step.headers);
-  if (headerNames.length > MAX_HEADERS) return `use at most ${MAX_HEADERS} headers`;
+  if (headerNames.length > MAX_HEADERS)
+    return i18n.t('flowProblem.maxHeaders', { max: MAX_HEADERS });
   const badHeader = headerNames.find((name) => !HEADER_NAME_PATTERN.test(name));
   if (badHeader !== undefined) {
     return badHeader === ''
-      ? 'every header needs a name'
-      : `"${badHeader}" is not a valid header name`;
+      ? i18n.t('flowProblem.headerNoName')
+      : i18n.t('flowProblem.badHeaderName', { name: badHeader });
   }
   if (new Set(headerNames.map((name) => name.toLowerCase())).size !== headerNames.length) {
-    return 'each header name can be used only once';
+    return i18n.t('flowProblem.duplicateHeader');
   }
   const headerValues = Object.values(step.headers);
   if (headerValues.some((value) => value.length > MAX_HEADER_VALUE_LENGTH)) {
-    return `a header value must be at most ${MAX_HEADER_VALUE_LENGTH} characters`;
+    return i18n.t('flowProblem.headerLength', { max: MAX_HEADER_VALUE_LENGTH });
   }
   if (headerValues.some((value) => /[\r\n]/.test(value))) {
-    return 'header values cannot contain line breaks';
+    return i18n.t('flowProblem.headerLineBreak');
   }
   const texts = [step.path, step.body ?? '', ...Object.values(step.headers)];
   const unknown = texts.flatMap(placeholdersIn).find((name) => !known.has(name));
-  if (unknown !== undefined) return `{{${unknown}}} is not built in and no earlier step saves it`;
+  if (unknown !== undefined) {
+    return i18n.t('flowProblem.unknownPlaceholder', { placeholder: `{{${unknown}}}` });
+  }
   if (step.body !== null && step.body.length > MAX_BODY_LENGTH) {
-    return `the body must be at most ${MAX_BODY_LENGTH} characters`;
+    return i18n.t('flowProblem.bodyLength', { max: MAX_BODY_LENGTH });
   }
   const soap = step.bodyFormat === 'soap';
   if (step.body !== null && soap) {
@@ -294,14 +299,14 @@ function stepProblem(step: FlowStep, known: Set<string>): string | undefined {
     const wellFormed = ['x', '0'].every((sample) =>
       isWellFormedXml(step.body?.replace(PLACEHOLDER_PATTERN, sample) ?? ''),
     );
-    if (!wellFormed) return 'the body must be well-formed XML';
+    if (!wellFormed) return i18n.t('flowProblem.xml');
   } else if (step.body !== null) {
     try {
       // Values can be strings or numbers; each sample catches misuse the other misses.
       JSON.parse(sampleBody(step.body, known, '"x"'));
       JSON.parse(sampleBody(step.body, known, '0'));
     } catch {
-      return 'the body must be valid JSON';
+      return i18n.t('flowProblem.json');
     }
   }
   if (step.wait) {
@@ -309,20 +314,21 @@ function stepProblem(step: FlowStep, known: Set<string>): string | undefined {
     const valid = (seconds: number) =>
       Number.isFinite(seconds) && seconds >= 0 && seconds <= MAX_WAIT_SECONDS;
     if (!valid(minSeconds) || !valid(maxSeconds)) {
-      return `set the shortest and longest wait as numbers from 0 to ${MAX_WAIT_SECONDS}, or leave both empty`;
+      return i18n.t('flowProblem.waitRange', { max: MAX_WAIT_SECONDS });
     }
-    if (maxSeconds < minSeconds) return 'the longest wait must be at least the shortest wait';
+    if (maxSeconds < minSeconds) return i18n.t('flowProblem.waitOrder');
   }
-  if (step.extract.length > MAX_EXTRACTS) return `save at most ${MAX_EXTRACTS} values`;
+  if (step.extract.length > MAX_EXTRACTS) {
+    return i18n.t('flowProblem.maxSaves', { max: MAX_EXTRACTS });
+  }
   const builtIn = new Set<string>(BUILTIN_PLACEHOLDERS);
   const badSave = step.extract.find(
     (item) => !NAME_PATTERN.test(item.name) || builtIn.has(item.name),
   );
-  if (badSave) return `"${badSave.name}" cannot be a saved value name`;
-  const pathName = soap ? 'element path' : 'JSON path';
-  if (step.extract.some((item) => item.path === '')) return `every saved value needs a ${pathName}`;
+  if (badSave) return i18n.t('flowProblem.badSaveName', { name: badSave.name });
+  if (step.extract.some((item) => item.path === '')) return i18n.t('flowProblem.savePath');
   if (step.extract.some((item) => item.path.length > MAX_EXTRACT_PATH_LENGTH)) {
-    return `a ${pathName} must be at most ${MAX_EXTRACT_PATH_LENGTH} characters`;
+    return i18n.t('flowProblem.savePathLength', { max: MAX_EXTRACT_PATH_LENGTH });
   }
   return undefined;
 }
@@ -333,22 +339,21 @@ export interface FlowProblem {
   step?: number;
 }
 
-const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
-
 /** The first problem in the flow, or undefined when the backend will accept it. */
 export function flowProblem(steps: FlowStep[]): FlowProblem | undefined {
-  if (steps.length === 0) return { message: 'Add at least one step' };
-  if (steps.length > MAX_STEPS) return { message: `Use at most ${MAX_STEPS} steps` };
-  // Empty names are a per-step problem ("give the step a name"), not a duplicate.
+  if (steps.length === 0) return { message: i18n.t('flowProblem.noSteps') };
+  if (steps.length > MAX_STEPS)
+    return { message: i18n.t('flowProblem.maxSteps', { max: MAX_STEPS }) };
+  // Empty names are a per-step problem (noName), not a duplicate.
   const names = steps.map((step) => step.name.toLowerCase());
   const duplicate = names.findIndex((name, index) => name !== '' && names.indexOf(name) !== index);
   if (duplicate !== -1) {
-    return { message: 'Another step has this name. Give each step its own name.', step: duplicate };
+    return { message: i18n.t('flowProblem.duplicateName'), step: duplicate };
   }
   const known = new Set<string>(BUILTIN_PLACEHOLDERS);
   for (const [index, step] of steps.entries()) {
     const problem = stepProblem(step, known);
-    if (problem) return { message: capitalize(problem), step: index };
+    if (problem) return { message: problem, step: index };
     for (const item of step.extract) known.add(item.name);
   }
   return undefined;
