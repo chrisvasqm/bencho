@@ -205,6 +205,7 @@ export const createRunSchema = z
     latencyLimitsMs: z
       .object({ p50: positiveMs, p90: positiveMs, p95: positiveMs, p99: positiveMs })
       .optional(),
+    stopOnLimit: z.boolean().optional(),
   })
   .refine((input) => input.maxVirtualUsers === undefined || input.mode === 'rate', {
     message: 'Max virtual users applies only to rate runs',

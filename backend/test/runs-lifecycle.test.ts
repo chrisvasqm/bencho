@@ -47,6 +47,24 @@ describe('run lifecycle', () => {
     expect(points[0]).toMatchObject({ runId: run.id, second: expect.any(Number) });
   });
 
+  it('stops a run early once a limit breaks, with stop on limit on', async () => {
+    const plannedSeconds = 60;
+    const run = await runToEnd(
+      shortRunPayload({
+        stages: [{ duration: `${plannedSeconds}s`, target: 1 }],
+        // Every request gets a 404 where 200 is expected, so limits break from the start.
+        flow: [flowStep({ path: '/no-such-page' })],
+        stopOnLimit: true,
+      }),
+    );
+
+    expect(run).toMatchObject({ status: 'failed', errorMessage: null });
+    expect(run.summary.metrics.checks.value).toBe(0);
+    const elapsedSeconds =
+      (new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000;
+    expect(elapsedSeconds).toBeLessThan(plannedSeconds - 10);
+  }, 90_000);
+
   it('still extracts values when response bodies are discarded by default', async () => {
     const run = await runToEnd(
       shortRunPayload({

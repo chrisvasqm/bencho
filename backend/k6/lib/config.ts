@@ -74,6 +74,8 @@ export const config = {
   maxVirtualUsers: modeFromEnv() === 'rate' ? maxVirtualUsersFromEnv() : DEFAULT_MAX_VIRTUAL_USERS,
   thinkTimeSeconds: numberFromEnv('THINK_TIME_SECONDS', thinkTimeSeconds),
   gracePeriodSeconds: gracePeriodFromEnv(),
+  /** STOP_ON_LIMIT=true ends the run once a limit breaks (after STOP_ON_LIMIT_DELAY_SECONDS). */
+  stopOnLimit: __ENV.STOP_ON_LIMIT === 'true',
   maxErrorRate: numberFromEnv('MAX_ERROR_RATE', maxErrorRate),
   latencyLimitsMs: {
     p50: numberFromEnv('P50_MS', latencyLimitsMs.p50),

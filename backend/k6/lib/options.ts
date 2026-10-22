@@ -1,7 +1,11 @@
 // Builds k6 options for a test: its load shape plus the shared pass/fail limits from config.
-import type { Options, Stage } from 'k6/options';
+import type { Options, Stage, Threshold } from 'k6/options';
 import { config, stagesFromEnv } from './config.ts';
-import { RATE_TIME_UNIT_SECONDS, durationToSeconds } from './defaults.ts';
+import {
+  RATE_TIME_UNIT_SECONDS,
+  STOP_ON_LIMIT_DELAY_SECONDS,
+  durationToSeconds,
+} from './defaults.ts';
 
 /** Flow runs a rate shape plans in total: the area under its straight-line ramps, from 0. */
 function plannedRuns(stages: Stage[]): number {
@@ -14,14 +18,24 @@ function plannedRuns(stages: Stage[]): number {
   return total;
 }
 
+/** k6 thresholds; with stop on limit, the first one to break ends the run. */
+function limits(...thresholds: string[]): Threshold[] {
+  if (!config.stopOnLimit) return thresholds;
+  return thresholds.map((threshold) => ({
+    threshold,
+    abortOnFail: true,
+    delayAbortEval: `${STOP_ON_LIMIT_DELAY_SECONDS}s`,
+  }));
+}
+
 export function buildOptions(defaultStages: Stage[]): Options {
   const { p50, p90, p95, p99 } = config.latencyLimitsMs;
   const stages = stagesFromEnv(defaultStages);
   const common: Options = {
     thresholds: {
-      http_req_failed: [`rate<${config.maxErrorRate}`],
-      http_req_duration: [`p(50)<${p50}`, `p(90)<${p90}`, `p(95)<${p95}`, `p(99)<${p99}`],
-      checks: ['rate>0.99'],
+      http_req_failed: limits(`rate<${config.maxErrorRate}`),
+      http_req_duration: limits(`p(50)<${p50}`, `p(90)<${p90}`, `p(95)<${p95}`, `p(99)<${p99}`),
+      checks: limits('rate>0.99'),
     },
     summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
     // Saves VU memory. Default for any request; scenario.ts sets responseType per step (text to extract).
@@ -50,7 +64,7 @@ export function buildOptions(defaultStages: Stage[]): Options {
   const allowedDrops = Math.max(1, plannedRuns(stages) * config.maxErrorRate);
   return {
     ...common,
-    thresholds: { ...common.thresholds, dropped_iterations: [`count<${allowedDrops}`] },
+    thresholds: { ...common.thresholds, dropped_iterations: limits(`count<${allowedDrops}`) },
     scenarios: {
       rate: {
         executor: 'ramping-arrival-rate',

@@ -239,7 +239,27 @@ describe('POST /api/v1/runs', () => {
     it('fills limits left out with the defaults', async () => {
       const response = await createRun(runPayload({ maxErrorRate: 0.2 }));
 
-      expect(response.body.run.limits).toEqual({ ...DEFAULT_LIMITS, maxErrorRate: 0.2 });
+      expect(response.body.run.limits).toEqual({
+        ...DEFAULT_LIMITS,
+        maxErrorRate: 0.2,
+        stopOnLimit: true,
+      });
+    });
+
+    it.each([
+      ['load', true],
+      ['stress', false],
+      ['spike', false],
+    ])('stops a %s run on a broken limit by default: %s', async (type, expected) => {
+      const response = await createRun(runPayload({ type }));
+
+      expect(response.body.run.limits.stopOnLimit).toBe(expected);
+    });
+
+    it('stores stop on limit when given', async () => {
+      const response = await createRun(runPayload({ type: 'stress', stopOnLimit: true }));
+
+      expect(response.body.run.limits.stopOnLimit).toBe(true);
     });
 
     it('accepts a rate below 1 per second, with up to 2 decimals', async () => {
@@ -368,6 +388,7 @@ describe('POST /api/v1/runs', () => {
       ],
       ['a negative think time', runPayload({ thinkTimeSeconds: -1 })],
       ['a negative grace period', runPayload({ gracePeriodSeconds: -1 })],
+      ['stop on limit that is not a boolean', runPayload({ stopOnLimit: 'yes' })],
       ['a grace period over 5 minutes', runPayload({ gracePeriodSeconds: 301 })],
       ['a fractional grace period', runPayload({ gracePeriodSeconds: 1.5 })],
       ['an error rate over 1', runPayload({ maxErrorRate: 1.1 })],

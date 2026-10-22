@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { AppError } from '../../core/errors.ts';
 import {
   DEFAULT_LIMITS,
+  DEFAULT_STOP_ON_LIMIT,
   DEFAULT_MAX_VIRTUAL_USERS,
   DEFAULT_STAGES,
   stagesToEnv,
@@ -73,6 +74,7 @@ export class RunsService {
       stages: DEFAULT_STAGES,
       maxVirtualUsers: DEFAULT_MAX_VIRTUAL_USERS,
       limits: DEFAULT_LIMITS,
+      stopOnLimit: DEFAULT_STOP_ON_LIMIT,
       flow: DEFAULT_FLOW,
     };
   }
@@ -105,6 +107,7 @@ export class RunsService {
           gracePeriodSeconds: input.gracePeriodSeconds ?? DEFAULT_LIMITS.gracePeriodSeconds,
           maxErrorRate: input.maxErrorRate ?? DEFAULT_LIMITS.maxErrorRate,
           latencyLimitsMs: input.latencyLimitsMs ?? DEFAULT_LIMITS.latencyLimitsMs,
+          stopOnLimit: input.stopOnLimit ?? DEFAULT_STOP_ON_LIMIT[input.type],
         },
       });
     } finally {
@@ -324,7 +327,8 @@ export class RunsService {
       consolePath,
     }: { summaryPath: string; pointsPath: string; flowPath: string; consolePath: string },
   ): Promise<{ exitCode: number; stderr: string }> {
-    const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs, gracePeriodSeconds } = run.limits;
+    const { thinkTimeSeconds, maxErrorRate, latencyLimitsMs, gracePeriodSeconds, stopOnLimit } =
+      run.limits;
     // Only what k6 needs: the child must not inherit DATABASE_URL or other secrets.
     const env = {
       PATH: process.env.PATH,
@@ -342,6 +346,8 @@ export class RunsService {
       P90_MS: String(latencyLimitsMs.p90),
       P95_MS: String(latencyLimitsMs.p95),
       P99_MS: String(latencyLimitsMs.p99),
+      // Runs stored before the setting existed ran to the end.
+      STOP_ON_LIMIT: String(stopOnLimit ?? false),
       // k6 checks every resolved address, so DNS cannot steer a run onto this network.
       ...(this.k6.allowPrivateTargets()
         ? {}
