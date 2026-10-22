@@ -303,34 +303,37 @@ function RunPanelForm({
             >
               {tab === 'setup' && (
                 <>
-                  <Field label={t('panel.testType')} htmlFor="run-type">
-                    <Select
-                      id="run-type"
-                      data-testid="run-type"
-                      value={type}
-                      onChange={onTypeChange}
-                      options={RUN_TYPES.map((value) => ({
-                        value,
-                        label: t(`runType.${value}`),
-                      }))}
-                    />
-                  </Field>
-                  <Field
-                    label={t('panel.baseUrl')}
-                    htmlFor="base-url"
-                    hint={t('panel.baseUrlHint')}
-                    error={errors.baseUrl}
-                  >
-                    <Input
-                      id="base-url"
-                      data-testid="base-url"
-                      mono
-                      value={baseUrl}
-                      onChange={(event) => setBaseUrl(event.target.value)}
-                      placeholder="https://api.example.com/health"
-                      invalid={Boolean(errors.baseUrl)}
-                    />
-                  </Field>
+                  <div className="flex items-start gap-3">
+                    <Field label={t('panel.testType')} htmlFor="run-type" className="w-32 shrink-0">
+                      <Select
+                        id="run-type"
+                        data-testid="run-type"
+                        value={type}
+                        onChange={onTypeChange}
+                        options={RUN_TYPES.map((value) => ({
+                          value,
+                          label: t(`runType.${value}`),
+                        }))}
+                      />
+                    </Field>
+                    <Field
+                      label={t('panel.baseUrl')}
+                      htmlFor="base-url"
+                      className="min-w-0 flex-1"
+                      hint={t('panel.baseUrlHint')}
+                      error={errors.baseUrl}
+                    >
+                      <Input
+                        id="base-url"
+                        data-testid="base-url"
+                        mono
+                        value={baseUrl}
+                        onChange={(event) => setBaseUrl(event.target.value)}
+                        placeholder="https://api.example.com/health"
+                        invalid={Boolean(errors.baseUrl)}
+                      />
+                    </Field>
+                  </div>
                   <h3 className="m-0 border-t border-line pt-4 text-sm font-semibold text-fg">
                     {t('panel.loadShape')}
                   </h3>
@@ -596,8 +599,10 @@ function RunPanelSkeleton({ className }: { className?: string }) {
       aria-busy="true"
     >
       <div className="flex flex-col gap-5">
-        <FieldSkeleton />
-        <FieldSkeleton />
+        <div className="flex gap-3">
+          <FieldSkeleton className="w-32 shrink-0" />
+          <FieldSkeleton className="min-w-0 flex-1" />
+        </div>
         {/* The Setup tab opens with the load shape chart and stages below the fields. */}
         <Skeleton className="h-[164px] w-full" />
         <FieldSkeleton />
