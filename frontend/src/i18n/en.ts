@@ -78,7 +78,6 @@ export const en = {
   },
   panel: {
     title: 'New run',
-    close: 'Close',
     tabsLabel: 'Form sections',
     sections: {
       setup: 'Setup',

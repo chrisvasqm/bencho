@@ -252,7 +252,7 @@ export function App() {
         </div>
       </header>
 
-      <main className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 gap-4 p-4 lg:min-h-0 lg:grid-cols-[340px_minmax(0,1fr)]">
+      <main className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 gap-4 p-4 lg:min-h-0 lg:grid-cols-[360px_minmax(0,1fr)]">
         <Card
           ref={runsCardRef}
           className="lg:min-h-0"

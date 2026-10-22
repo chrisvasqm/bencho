@@ -82,7 +82,6 @@ export const es: Translation = {
   },
   panel: {
     title: 'Nueva ejecución',
-    close: 'Cerrar',
     tabsLabel: 'Secciones del formulario',
     sections: {
       setup: 'Ajustes',

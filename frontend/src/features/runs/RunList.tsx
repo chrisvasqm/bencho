@@ -7,6 +7,7 @@ import { useCopy } from '../../i18n/useCopy.ts';
 import { RunSparkline } from './RunSparkline.tsx';
 import {
   STATUS_TONES,
+  formatAgo,
   formatMs,
   formatPeak,
   formatPercent,
@@ -86,6 +87,9 @@ export function RunList({
             runs.map((run) => {
               const selected = run.id === selectedId;
               const time = formatTime(run.createdAt, language);
+              const p95 = run.summary?.metrics.http_req_duration?.['p(95)'];
+              // Only a failing share says something; 0.00% on every row is noise.
+              const errors = run.summary?.metrics.http_req_failed?.value;
               return (
                 <m.li
                   key={run.id}
@@ -154,10 +158,12 @@ export function RunList({
                       </span>
                     </div>
                     <span className="flex gap-1 font-mono text-[11px] text-fg-muted tabular-nums">
-                      <span className="truncate">{time}</span>
+                      <span className="truncate" title={time}>
+                        {formatAgo(run.createdAt, language)}
+                      </span>
                       <span className="shrink-0">
-                        · {formatMs(run.summary?.metrics.http_req_duration?.['p(95)'])} ·{' '}
-                        {formatPercent(run.summary?.metrics.http_req_failed?.value)}
+                        · {formatMs(p95)}
+                        {errors !== undefined && errors > 0 && ` · ${formatPercent(errors)}`}
                       </span>
                     </span>
                   </div>

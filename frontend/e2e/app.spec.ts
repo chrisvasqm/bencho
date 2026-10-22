@@ -21,7 +21,7 @@ test.describe('first load', () => {
 
     await expect(page.getByTestId('base-url')).toHaveValue(defaults.baseUrl);
     await expect(page.getByTestId('run-type')).toHaveValue('load');
-    await page.getByTestId('run-form-close').click();
+    await page.keyboard.press('Escape');
     await expect(page.getByTestId('run-form-drawer')).toHaveCount(0);
   });
 

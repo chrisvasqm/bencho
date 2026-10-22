@@ -87,6 +87,22 @@ export function formatTime(iso: string, language: string): string {
   });
 }
 
+const AGO_UNITS: Array<[Intl.RelativeTimeFormatUnit, number]> = [
+  ['day', 86400],
+  ['hour', 3600],
+  ['minute', 60],
+];
+
+/** "18 min. ago", "2 hr. ago", "yesterday": how long ago, for a list row. */
+export function formatAgo(iso: string, language: string, now = Date.now()): string {
+  const seconds = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
+  const format = new Intl.RelativeTimeFormat(language, { numeric: 'auto', style: 'short' });
+  for (const [unit, size] of AGO_UNITS) {
+    if (seconds >= size) return format.format(-Math.floor(seconds / size), unit);
+  }
+  return format.format(0, 'second');
+}
+
 export function durationSeconds(run: Run): number | undefined {
   if (!run.startedAt || !run.finishedAt) return undefined;
   return (new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000;
