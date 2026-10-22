@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "up": "docker compose up -d --build",
+    "setup": "docker compose up -d --build",
     "watch": "docker compose watch frontend backend",
-    "down": "docker compose down"
+    "teardown": "docker compose down"
   },
   "keywords": [],
   "author": "",
