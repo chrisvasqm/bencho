@@ -268,7 +268,6 @@ export function App() {
             )}
           </Card>
 
-          {/* Swap in place: no exit phase, so the layout never jumps up and back. */}
           {shownRun ? (
             <m.div
               key={shownRun.id}
