@@ -5,6 +5,7 @@ import {
   DEFAULT_MAX_VIRTUAL_USERS,
   DURATION_PATTERN,
   LOAD_MODES,
+  isValidTarget,
   type LoadMode,
 } from './defaults.ts';
 
@@ -19,12 +20,14 @@ function numberFromEnv(name: string, fallback: number): number {
 }
 
 function parseStage(entry: string): Stage {
-  const [duration = '', target = ''] = entry.trim().split(':');
-  const virtualUsers = Number(target);
-  if (!DURATION_PATTERN.test(duration) || !Number.isInteger(virtualUsers) || virtualUsers < 0) {
-    throw new Error(`STAGES entry "${entry}" must be <duration>:<VUs>, for example 30s:10`);
+  const [duration = '', rawTarget = ''] = entry.trim().split(':');
+  const target = Number(rawTarget);
+  if (!DURATION_PATTERN.test(duration) || !isValidTarget(target, modeFromEnv())) {
+    throw new Error(
+      `STAGES entry "${entry}" must be <duration>:<target>, for example 30s:10 (rate: up to 2 decimals)`,
+    );
   }
-  return { duration, target: virtualUsers };
+  return { duration, target };
 }
 
 /** MODE=rate starts a set number of flow runs per second; MODE=users (default) ramps VUs. */

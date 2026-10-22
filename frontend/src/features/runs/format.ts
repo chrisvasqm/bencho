@@ -41,6 +41,22 @@ export const TARGET_LABELS: Record<LoadMode, string> = {
   rate: 'Flow runs per second',
 };
 
+/** Whole VUs, or a rate with at most 2 decimals (0.25 = one flow run every 4 s). Same as the API. */
+export function isValidTarget(target: number, mode: LoadMode): boolean {
+  if (!Number.isFinite(target) || target < 0) return false;
+  if (mode === 'users') return Number.isSafeInteger(target);
+  const scaled = target * 100;
+  return (
+    Math.abs(scaled - Math.round(scaled)) < 1e-9 && Number.isSafeInteger(Math.round(target * 3600))
+  );
+}
+
+/** What the stage targets mean in each mode, shown under the switch. */
+export const MODE_HINTS: Record<LoadMode, string> = {
+  users: 'Each target is a number of virtual users running at the same time.',
+  rate: 'Each target is flow runs started per second, up to 2 decimals (0.25 = one every 4 seconds). Switching keeps the numbers as they are, so check them.',
+};
+
 const TARGET_UNITS: Record<LoadMode, string> = { users: ' VUs', rate: '/s' };
 
 export function formatStages(stages: Stage[], mode: LoadMode): string {

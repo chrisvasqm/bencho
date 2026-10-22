@@ -17,7 +17,7 @@ export default function LoadShapeChart({ stages, mode }: { stages: Stage[]; mode
       series={[{ key: 'virtualUsers', label, color: 'var(--series-1)' }]}
       formatX={formatSeconds}
       height={140}
-      integerY
+      integerY={mode === 'users'}
       integerX
       empty="Fix the stage durations to see the shape."
     />

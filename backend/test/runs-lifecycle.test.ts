@@ -85,6 +85,24 @@ describe('run lifecycle', () => {
     expect(run.summary.metrics.vus_max.max).toBe(2);
   });
 
+  it('runs a rate below 1 flow run per second', async () => {
+    // 0.5 per second, held for 8 s after a 1 s ramp: about 4 flow runs.
+    const run = await runToEnd(
+      shortRunPayload({
+        mode: 'rate',
+        maxVirtualUsers: 2,
+        stages: [
+          { duration: '1s', target: 0.5 },
+          { duration: '8s', target: 0.5 },
+        ],
+      }),
+    );
+
+    expect(run).toMatchObject({ status: 'passed', exitCode: 0 });
+    expect(run.summary.metrics.iterations.count).toBeGreaterThanOrEqual(3);
+    expect(run.summary.metrics.iterations.count).toBeLessThanOrEqual(6);
+  });
+
   it('fails a rate run that drops more flow runs than the error limit allows', async () => {
     // 0 → 20 runs per second plans 20 runs; 1 VU with 1 s think time manages about 2.
     const run = await runToEnd(

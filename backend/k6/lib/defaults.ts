@@ -12,6 +12,20 @@ export type LoadMode = (typeof LOAD_MODES)[number];
 /** Most VUs a rate run may add to keep its rate, when the run does not set its own. */
 export const DEFAULT_MAX_VIRTUAL_USERS = 100;
 
+/** Rate targets may go below 1 per second, in steps of 0.01 (one every 100 seconds). */
+export const RATE_TARGET_DECIMALS = 2;
+
+/** A valid stage target for the mode: whole VUs, or a rate with at most two decimals. */
+export function isValidTarget(target: number, mode: LoadMode): boolean {
+  if (!Number.isFinite(target) || target < 0) return false;
+  if (mode === 'users') return Number.isSafeInteger(target);
+  const scaled = target * 10 ** RATE_TARGET_DECIMALS;
+  // k6 gets the rate per hour (options.ts), which must stay a safe whole number.
+  return (
+    Math.abs(scaled - Math.round(scaled)) < 1e-9 && Number.isSafeInteger(Math.round(target * 3600))
+  );
+}
+
 export interface LoadStage {
   duration: string;
   target: number;

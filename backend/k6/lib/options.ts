@@ -55,8 +55,9 @@ export function buildOptions(defaultStages: Stage[]): Options {
       rate: {
         executor: 'ramping-arrival-rate',
         startRate: 0,
-        timeUnit: '1s',
-        stages,
+        // Per hour, so rates below 1 per second (0.25/s = 900/h) stay whole numbers for k6.
+        timeUnit: '1h',
+        stages: stages.map((stage) => ({ ...stage, target: Math.round(stage.target * 3600) })),
         // All VUs up front, like users mode: VUs added mid-run start late and cause drops.
         preAllocatedVUs: maxVirtualUsers,
         maxVUs: maxVirtualUsers,

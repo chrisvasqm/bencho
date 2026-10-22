@@ -7,10 +7,12 @@ export interface StagesEditorProps {
   onChange: (stages: StageRow[]) => void;
   /** What a target counts, for the column header and labels. */
   targetLabel: string;
+  /** Input step: 1 for VUs, 0.01 for a rate. */
+  targetStep: number;
 }
 
 /** Rows of duration + target users. The last row usually ramps down to 0. */
-export function StagesEditor({ stages, onChange, targetLabel }: StagesEditorProps) {
+export function StagesEditor({ stages, onChange, targetLabel, targetStep }: StagesEditorProps) {
   const update = (index: number, patch: Partial<Stage>) =>
     onChange(
       stages.map((stage, position) => (position === index ? { ...stage, ...patch } : stage)),
@@ -44,7 +46,7 @@ export function StagesEditor({ stages, onChange, targetLabel }: StagesEditorProp
             mono
             type="number"
             min={0}
-            step={1}
+            step={targetStep}
             value={stage.target}
             onChange={(event) => update(index, { target: Number(event.target.value) })}
           />
