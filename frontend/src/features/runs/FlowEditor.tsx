@@ -1,7 +1,15 @@
 // Ordered steps one virtual user runs per iteration. One step is open for editing at a time.
 import { useEffect, useRef } from 'react';
-import { HTTP_METHODS, type HttpMethod } from '../../api/runs.ts';
-import { Button, Field, Input, Select, Textarea, cn } from '../../components/ui/index.ts';
+import { HTTP_METHODS, type BodyFormat, type HttpMethod } from '../../api/runs.ts';
+import {
+  Button,
+  Field,
+  Input,
+  SegmentedControl,
+  Select,
+  Textarea,
+  cn,
+} from '../../components/ui/index.ts';
 import {
   BUILTIN_PLACEHOLDERS,
   MAX_BODY_LENGTH,
@@ -31,6 +39,17 @@ export interface FlowEditorProps {
 }
 
 const METHOD_OPTIONS = HTTP_METHODS.map((value) => ({ value, label: value }));
+const BODY_FORMAT_OPTIONS = [
+  { value: 'json', label: 'JSON' },
+  { value: 'soap', label: 'SOAP' },
+] as const;
+const SOAP_BODY_PLACEHOLDER = [
+  '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">',
+  '  <soap:Body>',
+  '    <GetItem><Name>item-{{shortId}}</Name></GetItem>',
+  '  </soap:Body>',
+  '</soap:Envelope>',
+].join('\n');
 
 export function FlowEditor({
   steps,
@@ -199,6 +218,7 @@ function StepFields({
   className,
 }: StepFieldsProps) {
   const id = step.id;
+  const soap = step.bodyFormat === 'soap';
   const errorRef = useRef<HTMLParagraphElement>(null);
   // The panel scrolls; bring a new problem into view so the user sees what to fix.
   useEffect(() => {
@@ -274,19 +294,41 @@ function StepFields({
           addLabel="Add header"
         />
       </div>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium text-fg">Format</span>
+          <SegmentedControl
+            label="Body and response format"
+            testId="step-body-format"
+            options={BODY_FORMAT_OPTIONS}
+            value={step.bodyFormat}
+            onChange={(bodyFormat: BodyFormat) => onChange({ bodyFormat })}
+          />
+        </div>
+        <p className="m-0 text-xs text-fg-muted">
+          {soap
+            ? 'The body is XML and saved values come from the XML response. Values in {{name}} are escaped as XML text.'
+            : 'The body is JSON and saved values come from the JSON response.'}
+        </p>
+      </div>
       <Field
-        label="JSON body"
+        label={soap ? 'SOAP body' : 'JSON body'}
         htmlFor={`${id}-body-text`}
-        hint="Leave empty for no body. Sent as application/json unless a header says otherwise."
+        hint={
+          soap
+            ? 'Leave empty for no body. Sent as text/xml (SOAP 1.1) unless a header says otherwise: for SOAP 1.2 set Content-Type to application/soap+xml. Add a SOAPAction header if the service needs one.'
+            : 'Leave empty for no body. Sent as application/json unless a header says otherwise.'
+        }
       >
         <Textarea
           id={`${id}-body-text`}
+          data-testid="step-body"
           mono
-          rows={5}
+          rows={soap ? 7 : 5}
           maxLength={MAX_BODY_LENGTH}
           spellCheck={false}
           value={step.body}
-          placeholder={'{\n  "name": "item-{{shortId}}"\n}'}
+          placeholder={soap ? SOAP_BODY_PLACEHOLDER : '{\n  "name": "item-{{shortId}}"\n}'}
           onChange={(event) => onChange({ body: event.target.value })}
         />
       </Field>
@@ -324,19 +366,29 @@ function StepFields({
       </div>
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium text-fg">Save from response</span>
-        <p className="m-0 text-xs text-fg-muted">
-          Later steps use a saved value as {'{{name}}'}. The path reads the JSON response, for
-          example <code className="font-mono">pizza.id</code> or{' '}
-          <code className="font-mono">items.0.id</code>.
-        </p>
+        {soap ? (
+          <p className="m-0 text-xs text-fg-muted">
+            Later steps use a saved value as {'{{name}}'}. The path names elements of the XML
+            response, at any depth and without prefixes, for example{' '}
+            <code className="font-mono">Token</code> or{' '}
+            <code className="font-mono">LoginResponse.Token</code>. A number picks one of many:{' '}
+            <code className="font-mono">Item.1.Id</code>.
+          </p>
+        ) : (
+          <p className="m-0 text-xs text-fg-muted">
+            Later steps use a saved value as {'{{name}}'}. The path reads the JSON response, for
+            example <code className="font-mono">pizza.id</code> or{' '}
+            <code className="font-mono">items.0.id</code>.
+          </p>
+        )}
         <PairsEditor
           id={`${id}-save`}
           pairs={step.extract}
           onChange={(extract) => onChange({ extract })}
           keyLabel="Name"
-          valueLabel="JSON path"
+          valueLabel={soap ? 'Element path' : 'JSON path'}
           keyPlaceholder="token"
-          valuePlaceholder="token"
+          valuePlaceholder={soap ? 'LoginResponse.Token' : 'token'}
           addLabel="Add value"
         />
       </div>

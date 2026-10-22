@@ -37,6 +37,38 @@ test('a run with a random wait after a step passes', async ({ page }) => {
   await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
 });
 
+test('a SOAP step sends its XML body as SOAP and passes', async ({ page }) => {
+  const body = '<Envelope><Body><Ping id="{{uuid}}">user-{{shortId}}</Ping></Body></Envelope>';
+  await page.getByTestId('panel-tab-flow').click();
+  await page.getByTestId('step-body-format-soap').click();
+  await page.getByTestId('step-body').fill(body);
+  await setSingleStage(page, '1s');
+  await setLooseLimits(page);
+  const post = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith('/api/v1/runs'),
+  );
+
+  await startRun(page);
+
+  const sent = (await post).postDataJSON() as { flow: { body: string; bodyFormat: string }[] };
+  expect(sent.flow[0]).toMatchObject({ body, bodyFormat: 'soap' });
+  await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
+});
+
+test('a SOAP step with malformed XML shows the problem without calling the backend', async ({
+  page,
+  api,
+}) => {
+  await page.getByTestId('panel-tab-flow').click();
+  await page.getByTestId('step-body-format-soap').click();
+  await page.getByTestId('step-body').fill('<Envelope><Body></Envelope>');
+
+  await page.getByTestId('start-run').click();
+
+  await expect(page.getByTestId('flow-step-error')).toContainText('well-formed XML');
+  expect(await api.list()).toEqual([]);
+});
+
 test('a rate run sends its rate and VU cap and passes', async ({ page }) => {
   await setSingleStage(page, '2s');
   await page.getByTestId('load-mode-rate').click();

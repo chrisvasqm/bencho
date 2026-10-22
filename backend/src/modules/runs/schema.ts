@@ -23,6 +23,7 @@ import {
   type RunType,
 } from '../../../k6/lib/defaults.ts';
 import {
+  BODY_FORMATS,
   BUILTIN_PLACEHOLDERS,
   DEFAULT_FLOW,
   HTTP_METHODS,
@@ -158,6 +159,7 @@ const flowStepSchema = z.object({
       message: `Use at most ${MAX_HEADERS} headers`,
     }),
   body: z.string().max(MAX_BODY_LENGTH).nullable(),
+  bodyFormat: z.enum(BODY_FORMATS).optional(),
   expectedStatus: z.number().int().min(100).max(599),
   extract: z
     .array(z.object({ name: placeholderName, path: z.string().trim().min(1).max(200) }))

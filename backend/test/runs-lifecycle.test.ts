@@ -1,9 +1,11 @@
 // Real k6 runs against the demo app (QuickPizza) from the local stack.
+import { createServer, type IncomingMessage, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import supertest from 'supertest';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.ts';
 import { RunsService } from '../src/modules/runs/service.ts';
-import { flowStep, longRunPayload, shortRunPayload } from './helpers/payloads.ts';
+import { flowStep, longRunPayload, shortRunPayload, soapStep } from './helpers/payloads.ts';
 import { useTestApp } from './helpers/test-app.ts';
 
 const app = useTestApp();
@@ -215,6 +217,99 @@ describe('run lifecycle', () => {
       // The login worked: its token must not be stored, only the shape of the body.
       { step: 'Login', reason: 'extract', status: 200, body: '{"token":"<string>"}' },
     ]);
+  });
+
+  describe('with SOAP steps', () => {
+    // A token with XML special characters (a&b<c): k6 must decode it and escape it again, or
+    // the Order body would hold a&amp;amp;b... instead.
+    const ESCAPED_TOKEN = 'a&amp;b&lt;c';
+    const envelope = (content: string) =>
+      `<?xml version="1.0"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>${content}</soap:Body></soap:Envelope>`;
+    const received: { path: string; contentType: string; body: string }[] = [];
+    let server: Server;
+    let baseUrl: string;
+
+    async function readBody(request: IncomingMessage): Promise<string> {
+      let body = '';
+      for await (const chunk of request) body += String(chunk);
+      return body;
+    }
+
+    // A SOAP service: Login answers a token; Order accepts only that token, escaped.
+    beforeAll(async () => {
+      server = createServer((request, response) => {
+        void readBody(request).then((body) => {
+          const contentType = request.headers['content-type'] ?? '';
+          received.push({ path: request.url ?? '', contentType, body });
+          const isXml = contentType.startsWith('text/xml');
+          const ok =
+            request.url === '/login'
+              ? isXml && body.includes('<User>user-')
+              : isXml && body.includes(`<Token>${ESCAPED_TOKEN}</Token>`);
+          const content =
+            request.url === '/login'
+              ? `<LoginResponse><Token>${ESCAPED_TOKEN}</Token></LoginResponse>`
+              : '<OrderResponse><Id>7</Id></OrderResponse>';
+          response.writeHead(ok ? 200 : 500, { 'Content-Type': 'text/xml; charset=utf-8' });
+          response.end(envelope(ok ? content : '<soap:Fault/>'));
+        });
+      });
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+      baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    });
+
+    afterAll(async () => {
+      await new Promise((resolve) => server.close(resolve));
+    });
+
+    it('sends XML bodies and saves values from XML responses', async () => {
+      received.length = 0;
+      const run = await runToEnd(
+        shortRunPayload({
+          baseUrl,
+          flow: [
+            soapStep(envelope('<Login><User>user-{{shortId}}</User></Login>'), {
+              name: 'Login',
+              path: '/login',
+              extract: [{ name: 'token', path: 'LoginResponse.Token' }],
+            }),
+            soapStep(envelope('<Order><Token>{{token}}</Token></Order>'), {
+              name: 'Order',
+              path: '/order',
+            }),
+          ],
+        }),
+      );
+
+      // A wrong token or content type gets a 500, which fails the status check: exit code 99.
+      expect(run).toMatchObject({ status: 'passed', exitCode: 0, errorMessage: null });
+      expect(received.some((request) => request.path === '/order')).toBe(true);
+      expect(received[0]?.contentType).toBe('text/xml; charset=utf-8');
+    });
+
+    it('stores only the element names of a SOAP step whose value to save is missing', async () => {
+      const run = await runToEnd(
+        shortRunPayload({
+          baseUrl,
+          flow: [
+            soapStep(envelope('<Login><User>user-{{shortId}}</User></Login>'), {
+              name: 'Login',
+              path: '/login',
+              extract: [{ name: 'missing', path: 'LoginResponse.Session' }],
+            }),
+          ],
+        }),
+      );
+
+      expect(run.failures).toEqual([
+        {
+          step: 'Login',
+          reason: 'extract',
+          status: 200,
+          body: '<Envelope><Body><LoginResponse><Token/></LoginResponse></Body></Envelope>',
+        },
+      ]);
+    });
   });
 
   it('stores no failures for a run where every step passes', async () => {
