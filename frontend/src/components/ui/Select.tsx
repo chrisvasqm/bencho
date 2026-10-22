@@ -25,11 +25,11 @@ export function Select<Value extends string>({
   ...rest
 }: SelectProps<Value>) {
   return (
-    <div className="relative">
+    <div className={cn('relative', className)}>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value as Value)}
-        className={cn(inputClasses, 'cursor-pointer appearance-none pr-9', className)}
+        className={cn(inputClasses, 'peer cursor-pointer appearance-none pr-8')}
         {...rest}
       >
         {options.map((option) => (
@@ -40,7 +40,7 @@ export function Select<Value extends string>({
       </select>
       <ChevronDown
         aria-hidden
-        className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-fg-muted"
+        className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-fg-muted peer-disabled:text-fg-faint"
       />
     </div>
   );
