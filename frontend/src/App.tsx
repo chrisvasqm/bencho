@@ -213,7 +213,7 @@ export function App() {
           className="lg:min-h-0"
         />
 
-        <div className="flex min-w-0 flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+        <div className="relative flex min-w-0 flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           <Card
             ref={runsCardRef}
             title={t('app.runsTitle')}
