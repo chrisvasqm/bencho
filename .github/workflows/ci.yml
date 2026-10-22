@@ -39,14 +39,13 @@ jobs:
       - uses: grafana/setup-k6-action@43b9fc21641a76002687994433dd586f56e791b1 # v1.2.2
         with:
           k6-version: ${{ env.K6_VERSION }}
-      - name: Start test Postgres, QuickPizza and the SOAP demo
+      # The backend's SOAP tests run their own stub; only e2e needs the SOAP demo.
+      - name: Start test Postgres and QuickPizza
         run: |
           docker compose -p perf-test --profile test up -d --wait postgres-test
-          docker compose up -d quickpizza soap-demo
-          for url in http://localhost:10001 http://localhost:10007/services; do
-            for attempt in $(seq 1 60); do curl -sf -o /dev/null "$url" && break; sleep 2; done
-            curl -sf -o /dev/null "$url" || { echo "$url did not start"; exit 1; }
-          done
+          docker compose up -d quickpizza
+          for attempt in $(seq 1 30); do curl -sf -o /dev/null http://localhost:10001 && exit 0; sleep 2; done
+          echo "QuickPizza did not start" && exit 1
       - run: pnpm install --frozen-lockfile
         working-directory: backend
       - run: pnpm check

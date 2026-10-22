@@ -9,9 +9,9 @@ const schema = z
     DEFAULT_BASE_URL: z.url().default('http://localhost:10001'),
     /**
      * Base URL of the SOAP demo app (Learn Web Services) that the SOAP example flow calls.
-     * Defaults to the local stack outside production; unset in production hides the example.
+     * Unset: the local stack outside production, none in production. Empty: no SOAP example.
      */
-    SOAP_EXAMPLE_BASE_URL: z.url().optional(),
+    SOAP_EXAMPLE_BASE_URL: z.union([z.url(), z.literal('')]).optional(),
     K6_BUNDLE_DIR: z.string().min(1).default('dist/k6'),
     /**
      * Lets runs target private, loopback and link-local addresses (see modules/runs/targets.ts).
@@ -24,8 +24,10 @@ const schema = z
     ...env,
     allowPrivateTargets: env.ALLOW_PRIVATE_TARGETS !== 'false',
     SOAP_EXAMPLE_BASE_URL:
-      env.SOAP_EXAMPLE_BASE_URL ??
-      (env.NODE_ENV === 'production' ? undefined : 'http://localhost:10007'),
+      env.SOAP_EXAMPLE_BASE_URL === ''
+        ? undefined
+        : (env.SOAP_EXAMPLE_BASE_URL ??
+          (env.NODE_ENV === 'production' ? undefined : 'http://localhost:10007')),
   }));
 
 export type Config = z.infer<typeof schema>;

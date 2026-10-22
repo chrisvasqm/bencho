@@ -43,9 +43,10 @@ export interface FlowEditorProps {
   onErrorShown?: () => void;
   /** "Step 2 (Log in)", shown with the message when that step is closed. */
   errorLabel?: string;
-  /** Target of the SOAP example: loading it also sets the run's base URL. None hides it. */
-  soapExampleBaseUrl?: string;
-  onBaseUrlChange: (baseUrl: string) => void;
+  /** Shows "Load SOAP example"; its target is the run panel's business (onExampleLoad). */
+  hasSoapExample: boolean;
+  /** Called after an example's steps are loaded, so the panel can point the run at its target. */
+  onExampleLoad: (example: 'quickPizza' | 'soap') => void;
 }
 
 const METHOD_OPTIONS = HTTP_METHODS.map((value) => ({ value, label: value }));
@@ -68,8 +69,8 @@ export function FlowEditor({
   scrollToError,
   onErrorShown,
   errorLabel,
-  soapExampleBaseUrl,
-  onBaseUrlChange,
+  hasSoapExample,
+  onExampleLoad,
 }: FlowEditorProps) {
   // A problem with no step, or with its step closed, shows under the list instead.
   const listError = error && (!errorStepId || errorStepId !== openId) ? error : undefined;
@@ -201,17 +202,25 @@ export function FlowEditor({
         <Button variant="secondary" size="sm" onClick={add}>
           Add step
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => loadExample(QUICKPIZZA_FLOW)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          data-testid="load-quickpizza-example"
+          onClick={() => {
+            loadExample(QUICKPIZZA_FLOW);
+            onExampleLoad('quickPizza');
+          }}
+        >
           Load QuickPizza example
         </Button>
-        {soapExampleBaseUrl && (
+        {hasSoapExample && (
           <Button
             variant="ghost"
             size="sm"
             data-testid="load-soap-example"
             onClick={() => {
               loadExample(SOAP_FLOW);
-              onBaseUrlChange(soapExampleBaseUrl);
+              onExampleLoad('soap');
             }}
           >
             Load SOAP example

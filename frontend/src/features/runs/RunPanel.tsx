@@ -425,9 +425,19 @@ function RunPanelForm({
                     }}
                     openId={openStepId}
                     onOpenChange={setOpenStepId}
-                    soapExampleBaseUrl={defaults.soapExampleBaseUrl}
-                    onBaseUrlChange={(url) => {
-                      setBaseUrl(url);
+                    hasSoapExample={Boolean(defaults.soapExampleBaseUrl)}
+                    onExampleLoad={(example) => {
+                      const { soapExampleBaseUrl } = defaults;
+                      // The SOAP example needs its demo app. QuickPizza keeps a typed URL, but
+                      // not the SOAP demo's, which cannot serve it.
+                      const target =
+                        example === 'soap'
+                          ? soapExampleBaseUrl
+                          : baseUrl.trim() === soapExampleBaseUrl
+                            ? defaults.baseUrl
+                            : undefined;
+                      if (target === undefined) return;
+                      setBaseUrl(target);
                       // The example's URL is valid: drop an earlier base URL problem.
                       setErrors(({ baseUrl: _fixed, ...rest }) => rest);
                     }}
