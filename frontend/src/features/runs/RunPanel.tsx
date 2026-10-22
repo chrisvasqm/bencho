@@ -599,8 +599,10 @@ function RunPanelSkeleton({ className }: { className?: string }) {
       aria-busy="true"
     >
       <div className="flex flex-col gap-5">
-        <FieldSkeleton />
-        <FieldSkeleton />
+        <div className="flex gap-3">
+          <FieldSkeleton className="w-32 shrink-0" />
+          <FieldSkeleton className="min-w-0 flex-1" />
+        </div>
         {/* The Setup tab opens with the load shape chart and stages below the fields. */}
         <Skeleton className="h-[164px] w-full" />
         <FieldSkeleton />
