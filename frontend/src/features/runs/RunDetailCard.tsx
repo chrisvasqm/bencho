@@ -1,9 +1,13 @@
+import { RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { Suspense, lazy, useEffect, useState } from 'react';
 import type { Run } from '../../api/runs.ts';
 import { Badge, Button, Card, Skeleton, Stat, type StatTone } from '../../components/ui/index.ts';
+import { hasRedactedSecrets } from './input.ts';
+import { verdictReason } from './verdict.ts';
 import { LearnMore } from '../learn/LearnMore.tsx';
 import { useCopy } from '../../i18n/useCopy.ts';
 import {
+  LATENCY_KEYS,
   STATUS_TONES,
   durationSeconds,
   formatMs,
@@ -20,16 +24,26 @@ export interface RunDetailCardProps {
   deleting: boolean;
   onStop: (run: Run) => void;
   stopping: boolean;
+  /** Starts the run again with the same settings. */
+  onRunAgain: (run: Run) => void;
+  /** Opens the form filled with this run's settings. */
+  onChange: (run: Run) => void;
+  starting: boolean;
+  /** False until the form's defaults have loaded: the drawer would show only a skeleton. */
+  canChange: boolean;
 }
 
-const PERCENTILE_KEYS = [
-  ['p50', 'med'],
-  ['p90', 'p(90)'],
-  ['p95', 'p(95)'],
-  ['p99', 'p(99)'],
-] as const;
-
 const CONFIRM_TIMEOUT_MS = 4000;
+
+/** The verdict strip takes the soft tone of its status, so the result reads at a glance. */
+const VERDICT_CLASSES: Record<Run['status'], string> = {
+  queued: 'bg-surface-sunken',
+  running: 'bg-info-soft',
+  passed: 'bg-success-soft',
+  failed: 'bg-danger-soft',
+  error: 'bg-warning-soft',
+  stopped: 'bg-surface-sunken',
+};
 
 // Charts pull in recharts; load them after the first paint.
 const RunCharts = lazy(() =>
@@ -41,7 +55,17 @@ function toneFor(value: number | undefined, limit: number): StatTone {
   return value < limit ? 'success' : 'danger';
 }
 
-export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: RunDetailCardProps) {
+export function RunDetailCard({
+  run,
+  onDelete,
+  deleting,
+  onStop,
+  stopping,
+  onRunAgain,
+  onChange,
+  starting,
+  canChange,
+}: RunDetailCardProps) {
   const { t, language } = useCopy();
   const [confirming, setConfirming] = useState(false);
   const [confirmingFor, setConfirmingFor] = useState(run.status);
@@ -76,6 +100,33 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
         busy: deleting,
         run: () => onDelete(run),
       };
+  // A redacted secret header cannot be sent again as it is; the form asks for it again.
+  const secrets = hasRedactedSecrets(run);
+  const reuseButtons = !active && (
+    <>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => onChange(run)}
+        disabled={starting || !canChange}
+        data-testid="run-change"
+      >
+        <SlidersHorizontal size={14} aria-hidden />
+        {t('detail.change')}
+      </Button>
+      <Button
+        size="sm"
+        onClick={() => onRunAgain(run)}
+        loading={starting}
+        disabled={secrets}
+        title={secrets ? t('detail.runAgainSecrets') : undefined}
+        data-testid="run-again"
+      >
+        <RotateCcw size={14} aria-hidden />
+        {t('detail.runAgain')}
+      </Button>
+    </>
+  );
   const actionButtons = confirming ? (
     <div className="flex items-center gap-2">
       <Button
@@ -114,16 +165,27 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
         time: formatTime(run.createdAt, language),
       })}
       description={<span className="text-xs">{run.baseUrl}</span>}
-      actions={actionButtons}
+      actions={
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {reuseButtons}
+          {actionButtons}
+        </div>
+      }
       data-testid="run-detail"
       data-run-id={run.id}
       data-status={run.status}
     >
       <div className="flex flex-col gap-5">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+        <div
+          data-testid="run-verdict"
+          className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-3 py-2 text-sm ${VERDICT_CLASSES[run.status]}`}
+        >
           <Badge tone={STATUS_TONES[run.status]} pulse={active}>
             {t(`status.${run.status}`)}
           </Badge>
+          <span className="text-fg">{verdictReason(run, t)}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
           <span className="text-xs text-fg-muted">{formatStages(run.stages, run.mode, t)}</span>
           {run.mode === 'rate' && (
             <span className="text-xs text-fg-muted" data-testid="run-rate-cap">
@@ -159,7 +221,7 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
             data-testid="run-summary"
             className="grid grid-cols-2 gap-4 sm:grid-cols-3 2xl:grid-cols-6"
           >
-            {PERCENTILE_KEYS.map(([label, metricKey]) => (
+            {LATENCY_KEYS.map(([label, metricKey]) => (
               <Stat
                 key={label}
                 label={label}
@@ -195,9 +257,7 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
             />
           </div>
         ) : (
-          <p className="text-sm text-fg-muted">
-            {active ? t('detail.waiting') : t('detail.noTotals')}
-          </p>
+          !active && <p className="text-sm text-fg-muted">{t('detail.noTotals')}</p>
         )}
 
         {run.failures.length > 0 && <FailureList run={run} />}

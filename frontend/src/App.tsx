@@ -1,37 +1,40 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
 import { m } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import {
-  ApiError,
-  RUN_TYPES,
-  runsApi,
-  type CreateRunInput,
-  type Run,
-  type RunType,
-  type RunsPage,
-} from './api/runs.ts';
-import { Card, Pagination, Skeleton, Tabs } from './components/ui/index.ts';
+import { ApiError, runsApi, type CreateRunInput, type Run, type RunsPage } from './api/runs.ts';
+import { Button, Card, Pagination, Skeleton } from './components/ui/index.ts';
 import { isActive, runTypeVars } from './features/runs/format.ts';
 import { LanguageSwitch } from './features/preferences/PreferenceSwitches.tsx';
 import { useCopy, type Copy } from './i18n/useCopy.ts';
 import { ActiveRunsWidget } from './features/runs/ActiveRunsWidget.tsx';
 import { BulkDeleteBar } from './features/runs/BulkDeleteBar.tsx';
+import { CompareCard } from './features/runs/CompareCard.tsx';
 import { RunDetailCard } from './features/runs/RunDetailCard.tsx';
-import { RunPanel } from './features/runs/RunPanel.tsx';
+import { RunFormDrawer } from './features/runs/RunFormDrawer.tsx';
 import { RunsTable } from './features/runs/RunsTable.tsx';
+import { runToInput } from './features/runs/input.ts';
 import { useRunWatcher } from './features/runs/useRunWatcher.ts';
 import { ThemeSwitch } from './features/theme/ThemeSwitch.tsx';
 
 const POLL_INTERVAL_MS = 2000;
 const PAGE_SIZE = 8;
 
+/** The form drawer: closed, or open and filled from a run (the newest one, or a chosen one). */
+interface FormState {
+  open: boolean;
+  initial?: Run;
+  /** Changes on every open, so the form starts fresh each time. */
+  key: number;
+}
+
 export function App() {
   const { t } = useCopy();
-  const [type, setType] = useState<RunType>('load');
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string>();
   const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(new Set());
+  const [form, setForm] = useState<FormState>({ open: false, key: 0 });
   const runsCardRef = useRef<HTMLElement>(null);
   const queryClient = useQueryClient();
   const { watch } = useRunWatcher();
@@ -53,9 +56,9 @@ export function App() {
   }, [defaults.isError]);
 
   const runs = useQuery({
-    queryKey: ['runs', type, page],
-    queryFn: () => runsApi.list(type, page, PAGE_SIZE),
-    placeholderData: (previous) => (previous?.runs[0]?.type === type ? previous : undefined),
+    queryKey: ['runs', 'page', page],
+    queryFn: () => runsApi.list(page, PAGE_SIZE),
+    placeholderData: (previous) => previous,
     refetchInterval: (query) =>
       query.state.data?.runs.some((run) => isActive(run.status)) ? POLL_INTERVAL_MS : false,
   });
@@ -83,20 +86,42 @@ export function App() {
   });
   const selectedRun: Run | undefined = selected.data?.run;
 
-  // While the next type's runs load, keep showing the last run instead of blinking empty.
+  // While the next page's runs load, keep showing the last run instead of blinking empty.
   const [lastShown, setLastShown] = useState<Run>();
   if (selectedRun && selectedRun !== lastShown) setLastShown(selectedRun);
   const loadingNext = runs.isPending || (Boolean(effectiveId) && selected.isPending);
   const shownRun = selectedRun ?? (loadingNext ? lastShown : undefined);
 
+  // Two ticked runs are compared in place of the selected run's results. Each has its own
+  // query, so a run ticked on another page stays known after that page leaves the cache.
+  const selectionKey = [...checkedIds].sort().join(',');
+  const comparedIds = checkedIds.size === 2 ? selectionKey.split(',') : [];
+  const comparedQueries = useQueries({
+    queries: comparedIds.map((id) => ({
+      queryKey: ['run', id],
+      queryFn: () => runsApi.get(id),
+      initialData: () => {
+        const run = list.find((item) => item.id === id);
+        return run ? { run } : undefined;
+      },
+      // Only finished runs can be ticked, and a finished run never changes.
+      staleTime: Infinity,
+    })),
+  });
+  const compared = comparedQueries
+    .map((query) => query.data?.run)
+    .filter((run): run is Run => run !== undefined);
+  const comparing = comparedIds.length === 2 && compared.length === 2;
+
   const create = useMutation({
     mutationFn: (input: CreateRunInput) => runsApi.create(input),
     onSuccess: ({ run }) => {
       watch(run.id);
+      setForm((current) => ({ ...current, open: false }));
       setPage(1);
       setSelectedId(run.id);
-      void queryClient.invalidateQueries({ queryKey: ['runs', run.type] });
-      void queryClient.invalidateQueries({ queryKey: ['runs', 'active'] });
+      setCheckedIds(new Set());
+      void queryClient.invalidateQueries({ queryKey: ['runs'] });
       toast.info(t('toast.started', runTypeVars(run.type, t)), {
         description: t('toast.startedHint'),
         testId: 'toast-run-started',
@@ -110,12 +135,34 @@ export function App() {
     },
   });
 
+  // New run opens the form with the newest run's settings, or the defaults when there is none.
+  // Page 1 is newest first, so it already holds that run; another page needs one fetch.
+  // Each open or close of the form counts; a fetch for an earlier open gives up when a later
+  // action (Change and run, a close, another New run) came first.
+  const formRequest = useRef(0);
+  const openNewRun = async () => {
+    const request = ++formRequest.current;
+    const newest =
+      page === 1 && runs.data && !runs.isPlaceholderData
+        ? list[0]
+        : await runsApi
+            .list(1, 1)
+            .then((result) => result.runs[0])
+            .catch(() => undefined);
+    if (formRequest.current !== request) return;
+    setForm((current) => ({ open: true, initial: newest, key: current.key + 1 }));
+  };
+  const openChange = (run: Run) => {
+    formRequest.current += 1;
+    setForm((current) => ({ open: true, initial: run, key: current.key + 1 }));
+  };
+
   // Drop deleted runs from every cached list first: otherwise the next render still picks a
   // deleted run (the newest on the page) and fetches it again, which answers 404.
   // Only pages that still hold a deleted run change: a page fetched after the delete is already
   // right, and lowering its total again would count the run twice. The refetch fixes the rest.
   const forgetRuns = (ids: ReadonlySet<string>) => {
-    queryClient.setQueriesData<RunsPage>({ queryKey: ['runs'] }, (old) => {
+    queryClient.setQueriesData<RunsPage>({ queryKey: ['runs', 'page'] }, (old) => {
       if (!old) return old;
       const runs = old.runs.filter((item) => !ids.has(item.id));
       return { ...old, runs, total: old.total - (old.runs.length - runs.length) };
@@ -136,7 +183,7 @@ export function App() {
         return next;
       });
       forgetRuns(new Set([run.id]));
-      void queryClient.invalidateQueries({ queryKey: ['runs', run.type] });
+      void queryClient.invalidateQueries({ queryKey: ['runs'] });
       toast.success(t('toast.deleted'), { testId: 'toast-run-deleted' });
     },
     onError: (error) => {
@@ -164,7 +211,7 @@ export function App() {
       if (selectedId && gone.has(selectedId)) setSelectedId(undefined);
       setCheckedIds(new Set());
       forgetRuns(gone);
-      void queryClient.invalidateQueries({ queryKey: ['runs', type] });
+      void queryClient.invalidateQueries({ queryKey: ['runs'] });
       const label = t('toast.bulkDeleted', { count: deleted.length });
       if (skipped.length === 0) toast.success(label, { testId: 'toast-runs-deleted' });
       else {
@@ -178,13 +225,6 @@ export function App() {
       toast.error(t('toast.bulkDeleteFailed'), { description: describeError(error, t) });
     },
   });
-
-  const selectType = (next: RunType) => {
-    setType(next);
-    setPage(1);
-    setSelectedId(undefined);
-    setCheckedIds(new Set());
-  };
 
   return (
     <div className="flex min-h-dvh flex-col lg:h-dvh">
@@ -201,74 +241,74 @@ export function App() {
         </div>
       </header>
 
-      <main className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 gap-4 p-4 lg:min-h-0 lg:grid-cols-[400px_minmax(0,1fr)]">
-        <RunPanel
-          defaults={defaults.data}
-          type={type}
-          onTypeChange={selectType}
-          submitting={create.isPending}
-          onSubmit={async (input) => {
-            await create.mutateAsync(input).catch(() => undefined);
-          }}
+      <main className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 gap-4 p-4 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
+        <Card
+          ref={runsCardRef}
+          title={t('app.runsTitle')}
+          description={t('app.runsDescription')}
           className="lg:min-h-0"
-        />
-
-        {/* relative: absolute children (e.g. sr-only text) stay in this pane, not the page. */}
-        <div className="relative flex min-w-0 flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
-          <Card
-            ref={runsCardRef}
-            title={t('app.runsTitle')}
-            description={t('app.runsDescription')}
-            actions={
+          actions={
+            <div className="flex items-center gap-2">
               <BulkDeleteBar
                 count={checkedIds.size}
-                selectionKey={[...checkedIds].sort().join(',')}
+                selectionKey={selectionKey}
                 deleting={removeMany.isPending}
                 onClear={() => setCheckedIds(new Set())}
                 onDelete={() => removeMany.mutate([...checkedIds])}
               />
-            }
-            headerExtra={
-              <Tabs
-                label={t('panel.testType')}
-                testId="type-tab"
-                value={type}
-                onChange={selectType}
-                items={RUN_TYPES.map((value) => ({ value, label: t(`runType.${value}`) }))}
-              />
-            }
-            footer={
-              <Pagination
-                page={page}
-                pageSize={PAGE_SIZE}
-                total={total}
-                onPageChange={(next) => {
-                  setPage(next);
-                  setSelectedId(undefined);
-                }}
-                loading={runs.isFetching}
-              />
-            }
-          >
-            {runs.isError ? (
-              <p role="alert" data-testid="runs-error" className="text-sm text-danger">
-                {t('app.runsLoadError')}
-              </p>
-            ) : (
-              <RunsTable
-                runs={list}
-                loading={runs.isPending}
-                selectedId={selectedRun?.id}
-                onSelect={(run) => setSelectedId(run.id)}
-                pageSize={PAGE_SIZE}
-                listKey={`${type}:${page}`}
-                checkedIds={checkedIds}
-                onCheckedChange={setCheckedIds}
-              />
-            )}
-          </Card>
+              <Button
+                size="sm"
+                onClick={() => void openNewRun()}
+                disabled={!defaults.data}
+                data-testid="new-run"
+              >
+                <Plus size={14} aria-hidden />
+                {t('app.newRun')}
+              </Button>
+            </div>
+          }
+          footer={
+            <Pagination
+              page={page}
+              pageSize={PAGE_SIZE}
+              total={total}
+              onPageChange={(next) => {
+                setPage(next);
+                setSelectedId(undefined);
+              }}
+              loading={runs.isFetching}
+            />
+          }
+        >
+          {runs.isError ? (
+            <p role="alert" data-testid="runs-error" className="text-sm text-danger">
+              {t('app.runsLoadError')}
+            </p>
+          ) : (
+            <RunsTable
+              runs={list}
+              loading={runs.isPending}
+              selectedId={comparing ? undefined : selectedRun?.id}
+              onSelect={(run) => setSelectedId(run.id)}
+              pageSize={PAGE_SIZE}
+              listKey={String(page)}
+              checkedIds={checkedIds}
+              onCheckedChange={setCheckedIds}
+            />
+          )}
+        </Card>
 
-          {shownRun ? (
+        <div className="flex min-w-0 flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+          {comparing ? (
+            <m.div
+              key={selectionKey}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
+            >
+              <CompareCard runs={compared as [Run, Run]} onClose={() => setCheckedIds(new Set())} />
+            </m.div>
+          ) : shownRun ? (
             <m.div
               key={shownRun.id}
               initial={{ opacity: 0, y: 8 }}
@@ -281,6 +321,10 @@ export function App() {
                 onDelete={(run) => remove.mutate(run)}
                 stopping={stop.isPending}
                 onStop={(run) => stop.mutate(run)}
+                starting={create.isPending}
+                onRunAgain={(run) => create.mutate(runToInput(run))}
+                onChange={openChange}
+                canChange={Boolean(defaults.data)}
               />
             </m.div>
           ) : runs.isPending || (effectiveId && selected.isPending) ? (
@@ -291,12 +335,27 @@ export function App() {
         </div>
       </main>
 
+      <RunFormDrawer
+        key={form.key}
+        open={form.open}
+        onOpenChange={(open) => {
+          formRequest.current += 1;
+          setForm((current) => ({ ...current, open }));
+        }}
+        defaults={defaults.data}
+        initial={form.initial}
+        submitting={create.isPending}
+        onSubmit={async (input) => {
+          await create.mutateAsync(input).catch(() => undefined);
+        }}
+      />
+
       <ActiveRunsWidget
         anchorRef={runsCardRef}
         onOpen={(run) => {
-          setType(run.type);
           setPage(1);
           setSelectedId(run.id);
+          setCheckedIds(new Set());
           runsCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }}
       />

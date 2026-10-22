@@ -70,6 +70,8 @@ const summarySchema = z
           .object({ value: z.number(), passes: z.number(), fails: z.number() })
           .optional(),
         http_reqs: z.object({ count: z.number(), rate: z.number() }).optional(),
+        // Share of steps that got their expected status and saved their values (k6 checks).
+        checks: z.object({ value: z.number(), passes: z.number(), fails: z.number() }).optional(),
         // Rate runs only: flow runs k6 skipped because every allowed VU was busy.
         dropped_iterations: z.object({ count: z.number() }).optional(),
       })
@@ -198,8 +200,9 @@ async function request<Output>(path: string, schema: z.ZodType<Output>, init?: R
 export const runsApi = {
   defaults: () => request('/defaults', defaultsSchema),
   capacity: () => request('/capacity', capacitySchema),
-  list: (type: RunType, page: number, pageSize: number) =>
-    request(`/runs?type=${type}&page=${page}&pageSize=${pageSize}`, runsPageSchema),
+  /** Every type, newest first. */
+  list: (page: number, pageSize: number) =>
+    request(`/runs?page=${page}&pageSize=${pageSize}`, runsPageSchema),
   active: () => request('/runs?active=true&pageSize=10', runsPageSchema),
   points: (id: string) => request(`/runs/${id}/points`, z.object({ points: z.array(pointSchema) })),
   remove: (id: string) => request(`/runs/${id}`, z.undefined(), { method: 'DELETE' }),

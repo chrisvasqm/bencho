@@ -1,10 +1,15 @@
-// Steps on the "New run" panel, shared by the specs.
+// Steps on the "New run" form, shared by the specs.
 import { expect, type Page } from '@playwright/test';
+
+/** Opens the run form drawer and waits for its fields. */
+export async function openNewRun(page: Page): Promise<void> {
+  await page.getByTestId('new-run').click();
+  await expect(page.getByTestId('start-run')).toBeEnabled();
+  await expect(page.getByTestId('base-url')).toBeVisible();
+}
 
 /** Leaves one stage of `duration` with 1 virtual user. */
 export async function setSingleStage(page: Page, duration: string): Promise<void> {
-  await page.getByTestId('panel-tab-setup').click();
-  // The tab content animates in; wait for it before counting rows.
   await expect(page.getByTestId('stage-0-duration')).toBeVisible();
   while ((await page.getByTestId('stage-1-duration').count()) > 0) {
     await page.getByTestId('stage-1-remove').click();
@@ -15,7 +20,6 @@ export async function setSingleStage(page: Page, duration: string): Promise<void
 
 /** Latency limits no local request can reach, no think time, and a 50% error limit. */
 export async function setLooseLimits(page: Page): Promise<void> {
-  await page.getByTestId('panel-tab-limits').click();
   await expect(page.getByTestId('think-time')).toBeVisible();
   await page.getByTestId('think-time').fill('0');
   await page.getByTestId('max-error-rate').fill('50');

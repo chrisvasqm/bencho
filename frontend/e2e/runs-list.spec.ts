@@ -10,22 +10,18 @@ async function openRuns(page: Page): Promise<void> {
 }
 
 test.describe('runs list', () => {
-  test('shows only the runs of the selected type, newest first', async ({ page, api }) => {
+  test('shows the runs of every type together, newest first', async ({ page, api }) => {
     const [olderLoad, newerLoad] = await api.seedFinishedMany(2, 'load');
     const [stress] = await api.seedFinishedMany(1, 'stress');
     await openRuns(page);
 
     const rows = page.getByTestId('run-row');
-    await expect(rows).toHaveCount(2);
-    await expect(rows.nth(0)).toHaveAttribute('data-run-id', newerLoad!.id);
-    await expect(rows.nth(1)).toHaveAttribute('data-run-id', olderLoad!.id);
-
-    await page.getByTestId('type-tab-stress').click();
-    await expect(rows).toHaveCount(1);
-    await expect(rows.first()).toHaveAttribute('data-run-id', stress!.id);
-
-    await page.getByTestId('type-tab-spike').click();
-    await expect(page.getByTestId('runs-empty')).toBeVisible();
+    await expect(rows).toHaveCount(3);
+    await expect(rows.nth(0)).toHaveAttribute('data-run-id', stress!.id);
+    await expect(rows.nth(0)).toHaveAttribute('data-type', 'stress');
+    await expect(rows.nth(1)).toHaveAttribute('data-run-id', newerLoad!.id);
+    await expect(rows.nth(2)).toHaveAttribute('data-run-id', olderLoad!.id);
+    await expect(rows.nth(2)).toHaveAttribute('data-type', 'load');
   });
 
   test('shows the newest run by default and the run the user selects', async ({ page, api }) => {

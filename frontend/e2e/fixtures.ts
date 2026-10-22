@@ -165,9 +165,8 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
   },
 });
 
-/** Opens the app and waits until the run form has loaded its defaults. */
+/** Opens the app and waits until the backend defaults have loaded (New run is enabled). */
 export async function openApp(page: Page): Promise<void> {
   await page.goto('/');
-  await expect(page.getByTestId('start-run')).toBeEnabled();
-  await expect(page.getByTestId('base-url')).toBeVisible();
+  await expect(page.getByTestId('new-run')).toBeEnabled();
 }
