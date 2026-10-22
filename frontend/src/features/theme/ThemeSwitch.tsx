@@ -1,15 +1,13 @@
 import { useCopy } from '../../i18n/useCopy.ts';
-import { chooseTheme, useResolvedTheme, useTheme } from './theme.ts';
+import { useResolvedTheme } from './theme.ts';
 
 /**
  * One icon button: the sun shows in light mode, the moon in dark mode, and a click flips to the other.
- * Flipping to the OS theme clears the stored choice, so the app follows the OS again.
  * No text, so its width stays the same in every language.
  */
 export function ThemeSwitch() {
   const { t } = useCopy();
-  const [, setTheme] = useTheme();
-  const resolved = useResolvedTheme();
+  const [resolved, toggle] = useResolvedTheme();
   const next = resolved === 'dark' ? 'light' : 'dark';
   const label = t(`prefs.switchTheme.${next}`);
   return (
@@ -19,7 +17,7 @@ export function ThemeSwitch() {
       data-theme={resolved}
       aria-label={`${t('prefs.theme')}: ${label}`}
       title={label}
-      onClick={() => setTheme(chooseTheme(next))}
+      onClick={toggle}
       className="inline-flex size-8 items-center justify-center rounded-md bg-surface-sunken text-fg-muted transition-colors hover:text-fg"
     >
       <svg

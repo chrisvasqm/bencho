@@ -1,4 +1,4 @@
-// Theme choice: system (follow the OS) until the user picks light or dark. Stored per browser; applied as data-theme on <html>.
+// Theme choice: system (follow the OS) until the user picks light or dark; then the choice stays. Stored per browser; applied as data-theme on <html>.
 // index.html applies the stored choice before first paint so the page never flashes the wrong theme.
 import { useCallback, useSyncExternalStore } from 'react';
 
@@ -64,21 +64,20 @@ function subscribeSystem(listener: () => void): () => void {
   return () => systemQuery().removeEventListener('change', listener);
 }
 
-/** The theme on screen: the stored choice, else the OS preference. */
-export function useResolvedTheme(): ResolvedTheme {
-  const [theme] = useTheme();
+/** The theme on screen (the stored choice, else the OS preference) and a flip to the other one. */
+export function useResolvedTheme(): [ResolvedTheme, () => void] {
+  const [theme, setTheme] = useTheme();
   const systemDark = useSyncExternalStore(
     subscribeSystem,
     () => systemQuery().matches,
     () => false,
   );
-  if (theme !== 'system') return theme;
-  return systemDark ? 'dark' : 'light';
-}
-
-/** Picking the theme the OS already asks for goes back to 'system', so the app follows the OS again. */
-export function chooseTheme(next: ResolvedTheme): Theme {
-  return systemQuery().matches === (next === 'dark') ? 'system' : next;
+  const resolved: ResolvedTheme = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
+  const toggle = useCallback(
+    () => setTheme(resolved === 'dark' ? 'light' : 'dark'),
+    [resolved, setTheme],
+  );
+  return [resolved, toggle];
 }
 
 export function useTheme(): [Theme, (theme: Theme) => void] {
