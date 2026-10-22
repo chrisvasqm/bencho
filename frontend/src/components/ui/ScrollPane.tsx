@@ -19,8 +19,6 @@ const EDGE_PX = 4;
 export function ScrollPane({ children, className, labels, testId }: ScrollPaneProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ above: false, below: false });
-  // Classic scrollbars take width; overlay ones (macOS default) take none.
-  const [scrollbar, setScrollbar] = useState(0);
 
   useEffect(() => {
     const element = ref.current;
@@ -31,7 +29,6 @@ export function ScrollPane({ children, className, labels, testId }: ScrollPanePr
         above: scrollTop > EDGE_PX,
         below: scrollTop + clientHeight < scrollHeight - EDGE_PX,
       });
-      setScrollbar(element.offsetWidth - element.clientWidth);
     };
     measure();
     element.addEventListener('scroll', measure, { passive: true });
@@ -55,17 +52,18 @@ export function ScrollPane({ children, className, labels, testId }: ScrollPanePr
         className="flex h-full min-w-0 flex-col gap-4 overflow-y-auto pr-1"
       >
         {children}
+        {/* Inside the scroller, so it spans only the content box: never over the gutter or a
+            scrollbar, square where the content is cut off. The negative margin cancels its
+            height and the gap, so it does not change the scroll height. */}
+        <div
+          aria-hidden="true"
+          className={cn(
+            'pointer-events-none sticky bottom-0 -mt-14 h-10 shrink-0 bg-linear-to-t from-overlay/52 to-transparent transition-opacity',
+            edges.below ? 'opacity-100' : 'opacity-0',
+          )}
+        />
       </div>
-      <div
-        aria-hidden="true"
-        className={cn(
-          'pointer-events-none absolute bottom-0 left-0 h-10 bg-linear-to-t from-overlay/52 to-transparent transition-opacity',
-          edges.below ? 'opacity-100' : 'opacity-0',
-        )}
-        // Stops at the content edge: the pr-1 gutter (4px) plus any scrollbar.
-        style={{ right: scrollbar + 4 }}
-      />
-      <div className="absolute bottom-3 flex flex-col gap-1.5" style={{ right: scrollbar + 16 }}>
+      <div className="absolute right-4 bottom-3 flex flex-col gap-1.5">
         {edges.above && (
           <JumpButton label={labels.toTop} testId="scroll-to-top" onClick={() => jump(0)}>
             <ArrowUp size={16} aria-hidden />
