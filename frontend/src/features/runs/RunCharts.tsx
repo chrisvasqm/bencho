@@ -86,6 +86,9 @@ export function RunCharts({ run }: { run: Run }) {
                 data={rateData}
                 title="Flow runs per second"
                 testId="rate-chart"
+                // The plan is straight lines between stage targets; values up to 2 decimals.
+                curve="linear"
+                formatY={(value) => String(Math.round(value * 100) / 100)}
                 series={[
                   { key: 'target', label: 'Planned', color: 'var(--series-2)', dash: '4 3' },
                   { key: 'iterationsPerSecond', label: 'Finished', color: 'var(--series-1)' },
