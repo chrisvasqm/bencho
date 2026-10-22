@@ -14,9 +14,11 @@ test('switches the language and keeps it after a reload', async ({ page }) => {
   await expect(page.getByTestId('start-run')).toHaveText('Iniciar prueba de carga');
   await expect(page.getByTestId('language-es')).toHaveAttribute('aria-checked', 'true');
 
-  await page.getByTestId('language-en').click();
+  // A click on the current language also flips to the other one.
+  await page.getByTestId('language-es').click();
   await expect(page.getByTestId('start-run')).toHaveText('Start load test');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.getByTestId('language-en')).toHaveAttribute('aria-checked', 'true');
 });
 
 test.describe('basic mode', () => {

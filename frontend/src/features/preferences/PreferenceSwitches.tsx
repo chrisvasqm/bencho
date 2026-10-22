@@ -6,12 +6,14 @@ import { DETAILS, useDetail } from './detail.ts';
 export function LanguageSwitch() {
   const { t } = useCopy();
   const [language, setLanguage] = useLanguage();
+  // Two languages only, so any click (even on the current one) flips to the other.
+  const toggle = () => setLanguage(language === 'en' ? 'es' : 'en');
   return (
     <SegmentedControl
       label={t('prefs.language')}
       testId="language"
       value={language}
-      onChange={setLanguage}
+      onChange={toggle}
       options={LANGUAGES.map((value) => ({ value, label: value.toUpperCase() }))}
     />
   );
