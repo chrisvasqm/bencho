@@ -28,6 +28,8 @@ export const en = {
   },
   prefs: {
     language: 'Language',
+    languages: { en: 'English', es: 'Spanish' },
+    switchLanguage: 'change to {{language}}',
     theme: 'Theme',
     themes: { system: 'System', light: 'Light', dark: 'Dark' },
     detail: 'Detail level',

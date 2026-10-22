@@ -31,6 +31,8 @@ export const es: Translation = {
   },
   prefs: {
     language: 'Idioma',
+    languages: { en: 'inglés', es: 'español' },
+    switchLanguage: 'cambiar a {{language}}',
     theme: 'Tema',
     themes: { system: 'Sistema', light: 'Claro', dark: 'Oscuro' },
     detail: 'Nivel de detalle',
