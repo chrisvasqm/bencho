@@ -122,14 +122,38 @@ export function RunDetailCard({
   const duration = run.summary?.metrics.http_req_duration;
   const failed = run.summary?.metrics.http_req_failed;
   const requests = run.summary?.metrics.http_reqs;
-  // One tile shows the slow requests (p99); every percentile sits in its tooltip.
+  // How a measured number did against its limit: colour, badge text, and the meter under it.
+  const judge = (value: number | undefined, limit: number) => {
+    const tone = toneFor(value, limit);
+    const ratio = value === undefined || limit <= 0 ? undefined : value / limit;
+    return {
+      tone,
+      status:
+        tone === 'neutral'
+          ? undefined
+          : t(tone === 'success' ? 'detail.withinLimit' : 'detail.overLimit'),
+      meter:
+        ratio === undefined
+          ? undefined
+          : {
+              ratio,
+              label: t('detail.ofLimit', {
+                percent: Math.round(ratio * 100).toLocaleString(language),
+              }),
+            },
+    };
+  };
+  // One tile shows the slow requests (the last percentile); every percentile sits in its tooltip.
   const latency: StatDetail[] = LATENCY_KEYS.map(([label, metricKey]) => ({
     label,
     value: formatMs(duration?.[metricKey]),
     limit: `< ${run.limits.latencyLimitsMs[label]} ms`,
     tone: toneFor(duration?.[metricKey], run.limits.latencyLimitsMs[label]),
   }));
-  const headline = latency[latency.length - 1] ?? { value: '–', tone: 'neutral' as const };
+  const [slowLabel, slowKey] = LATENCY_KEYS[LATENCY_KEYS.length - 1];
+  const headline = latency[latency.length - 1] as StatDetail;
+  const slow = judge(duration?.[slowKey], run.limits.latencyLimitsMs[slowLabel]);
+  const errors = judge(failed?.value, run.limits.maxErrorRate);
   const dropped = run.summary?.metrics.dropped_iterations?.count ?? 0;
   const elapsed = durationSeconds(run);
   const active = isActive(run.status);
@@ -288,19 +312,25 @@ export function RunDetailCard({
               label={t('detail.latency')}
               value={headline.value}
               limit={headline.limit}
-              tone={headline.tone}
+              tone={slow.tone}
+              status={slow.status}
+              meter={slow.meter}
               details={latency}
             />
             <Stat
               label={t('detail.errorRate')}
               value={formatPercent(failed?.value)}
               limit={`< ${formatPercent(run.limits.maxErrorRate)}`}
-              tone={toneFor(failed?.value, run.limits.maxErrorRate)}
+              tone={errors.tone}
+              status={errors.status}
+              meter={errors.meter}
             />
             <Stat
               label={t('detail.requests')}
-              value={requests ? String(requests.count) : '–'}
-              unit={requests ? `${requests.rate.toFixed(1)}/s` : undefined}
+              value={requests ? requests.count.toLocaleString(language) : '–'}
+              unit={
+                requests ? t('detail.perSecond', { rate: requests.rate.toFixed(1) }) : undefined
+              }
             />
           </div>
         ) : (

@@ -4,15 +4,37 @@ import { Stat } from './Stat.tsx';
 const meta = {
   title: 'UI/Stat',
   component: Stat,
-  args: { label: 'p95', value: '212.4', unit: 'ms', limit: '< 500 ms', tone: 'success' },
+  args: {
+    label: 'Latency',
+    value: '212.4 ms',
+    limit: '< 500 ms',
+    tone: 'success',
+    status: 'Within limit',
+    meter: { ratio: 0.42, label: '42% of limit' },
+  },
 } satisfies Meta<typeof Stat>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const WithinLimit: Story = {};
-export const OverLimit: Story = { args: { value: '1.84', unit: 's', tone: 'danger' } };
+export const OverLimit: Story = {
+  args: {
+    value: '1.84 s',
+    tone: 'danger',
+    status: 'Over limit',
+    meter: { ratio: 3.7, label: '368% of limit' },
+  },
+};
 export const NoLimit: Story = {
-  args: { label: 'Requests', value: '4280', unit: '42.5/s', limit: undefined, tone: 'neutral' },
+  args: {
+    label: 'Requests',
+    value: '4,280',
+    unit: '42.5 per second',
+    limit: undefined,
+    tone: 'neutral',
+    status: undefined,
+    meter: undefined,
+  },
 };
 export const WithDetails: Story = {
   args: {
