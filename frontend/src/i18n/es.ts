@@ -276,7 +276,7 @@ export const es: Translation = {
     },
     wait: 'Espera después de este paso',
     waitHint:
-      'Segundos, de 0 a {{max}}. Cada vez, el usuario espera un tiempo al azar en este rango, como una persona real que lee o escribe. Deja ambos vacíos para usar la pausa por defecto.',
+      'Segundos, de 0 a {{max}}. Cada vez, el usuario espera un tiempo al azar en este rango, como una persona real que lee o escribe. Deja ambos vacíos para usar la pausa entre pasos por defecto.',
     shortest: 'Mínima',
     longest: 'Máxima',
     waitPlaceholder: 'Pausa',

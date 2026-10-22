@@ -266,7 +266,7 @@ export const en = {
     },
     wait: 'Wait after this step',
     waitHint:
-      'Seconds, 0 to {{max}}. Each time, the user waits a random time in this range, like a real person reading or typing. Leave both empty to use the default pause.',
+      'Seconds, 0 to {{max}}. Each time, the user waits a random time in this range, like a real person reading or typing. Leave both empty to use the default pause between steps.',
     shortest: 'Shortest',
     longest: 'Longest',
     waitPlaceholder: 'Pause',

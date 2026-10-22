@@ -191,8 +191,8 @@ function RunPanelForm({
     ...(mode === 'rate' && { maxVirtualUsers }),
     stages: stages.map(({ duration, target }) => ({ duration, target })),
     flow: flowSteps.map(fromDraft),
-    // No field: a new run takes the default pause, a copy keeps its own.
-    thinkTimeSeconds: limits.thinkTimeSeconds,
+    // No field: every run, a copy too, takes the default pause between steps.
+    thinkTimeSeconds: defaults.limits.thinkTimeSeconds,
     gracePeriodSeconds: gracePeriod,
     maxErrorRate: maxErrorPercent / 100,
     latencyLimitsMs: latency,
