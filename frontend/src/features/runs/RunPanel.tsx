@@ -1,4 +1,4 @@
-// Left-hand control panel: build a run across four tabs, start it from the pinned footer.
+// Left-hand control panel: build a run across three tabs (Setup, Flow, Limits), start it from the pinned footer.
 import { AnimatePresence, m } from 'motion/react';
 import { Suspense, lazy, useCallback, useState, type FormEvent } from 'react';
 import {
@@ -38,22 +38,21 @@ import { parseTarget, toStageRow, type StageRow } from './stages.ts';
 import { FlowEditor } from './FlowEditor.tsx';
 import { draftProblem, flowProblem, fromDraft, toDraft, type StepDraft } from './flow.ts';
 
-type PanelTab = 'target' | 'flow' | 'shape' | 'limits';
+type PanelTab = 'setup' | 'flow' | 'limits';
 
 const PANEL_TABS: ReadonlyArray<{ value: PanelTab; label: string }> = [
-  { value: 'target', label: 'Target' },
+  { value: 'setup', label: 'Setup' },
   { value: 'flow', label: 'Flow' },
-  { value: 'shape', label: 'Load shape' },
   { value: 'limits', label: 'Limits' },
 ];
 
 const ERROR_TAB: Record<string, PanelTab> = {
-  baseUrl: 'target',
+  baseUrl: 'setup',
   flow: 'flow',
   flowStep: 'flow',
   flowStepLabel: 'flow',
-  stages: 'shape',
-  maxVirtualUsers: 'shape',
+  stages: 'setup',
+  maxVirtualUsers: 'setup',
   thinkTime: 'limits',
   gracePeriod: 'limits',
   maxErrorRate: 'limits',
@@ -151,7 +150,7 @@ function RunPanelForm({
   submitting,
   className,
 }: RunPanelProps & { defaults: RunDefaults }) {
-  const [tab, setTab] = useState<PanelTab>('target');
+  const [tab, setTab] = useState<PanelTab>('setup');
   const [baseUrl, setBaseUrl] = useState(defaults.baseUrl);
   const [stages, setStages] = useState<StageRow[]>(() => defaults.stages[type].map(toStageRow));
   const [mode, setMode] = useState<LoadMode>('users');
@@ -205,7 +204,7 @@ function RunPanelForm({
     if (ERROR_TAB[Object.keys(nextErrors)[0] ?? ''] !== 'flow') setShownErrorRevision(revision);
     if (nextErrors.flowStep) setOpenStepId(nextErrors.flowStep);
     if (firstError) {
-      setTab(ERROR_TAB[firstError] ?? 'target');
+      setTab(ERROR_TAB[firstError] ?? 'setup');
       return;
     }
     await onSubmit(input);
@@ -250,7 +249,7 @@ function RunPanelForm({
               transition={{ duration: 0.15 }}
               className="flex flex-col gap-5"
             >
-              {tab === 'target' && (
+              {tab === 'setup' && (
                 <>
                   <Field label="Test type" htmlFor="run-type">
                     <Select
@@ -280,37 +279,6 @@ function RunPanelForm({
                       invalid={Boolean(errors.baseUrl)}
                     />
                   </Field>
-                </>
-              )}
-
-              {tab === 'flow' && (
-                <>
-                  <FlowEditor
-                    steps={flowSteps}
-                    onChange={(steps) => {
-                      setFlowSteps(steps);
-                      // An edit may fix the problem; it is checked again on the next start.
-                      if (errors.flow) {
-                        setErrors(
-                          Object.fromEntries(
-                            Object.entries(errors).filter(([key]) => !key.startsWith('flow')),
-                          ),
-                        );
-                      }
-                    }}
-                    openId={openStepId}
-                    onOpenChange={setOpenStepId}
-                    errorStepId={errorStepId}
-                    error={errors.flow}
-                    scrollToError={submitCount !== shownErrorRevision}
-                    onErrorShown={markErrorShown}
-                    errorLabel={errors.flowStepLabel}
-                  />
-                </>
-              )}
-
-              {tab === 'shape' && (
-                <>
                   <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
                     <LoadShapeChart stages={stages} mode={mode} />
                   </Suspense>
@@ -397,6 +365,32 @@ function RunPanelForm({
                       second. Each flow run sends one request per step.
                     </p>
                   </Note>
+                </>
+              )}
+
+              {tab === 'flow' && (
+                <>
+                  <FlowEditor
+                    steps={flowSteps}
+                    onChange={(steps) => {
+                      setFlowSteps(steps);
+                      // An edit may fix the problem; it is checked again on the next start.
+                      if (errors.flow) {
+                        setErrors(
+                          Object.fromEntries(
+                            Object.entries(errors).filter(([key]) => !key.startsWith('flow')),
+                          ),
+                        );
+                      }
+                    }}
+                    openId={openStepId}
+                    onOpenChange={setOpenStepId}
+                    errorStepId={errorStepId}
+                    error={errors.flow}
+                    scrollToError={submitCount !== shownErrorRevision}
+                    onErrorShown={markErrorShown}
+                    errorLabel={errors.flowStepLabel}
+                  />
                 </>
               )}
 

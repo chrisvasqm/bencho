@@ -3,7 +3,7 @@ import { expect, type Page } from '@playwright/test';
 
 /** Leaves one stage of `duration` with 1 virtual user. */
 export async function setSingleStage(page: Page, duration: string): Promise<void> {
-  await page.getByTestId('panel-tab-shape').click();
+  await page.getByTestId('panel-tab-setup').click();
   // The tab content animates in; wait for it before counting rows.
   await expect(page.getByTestId('stage-0-duration')).toBeVisible();
   while ((await page.getByTestId('stage-1-duration').count()) > 0) {

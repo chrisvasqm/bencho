@@ -29,7 +29,7 @@ When the last stage ends (and, with Users, when the load shape removes a VU), a 
 
 Limits: 20 stages, 60 minutes of stages per run (plus the grace period), 3 runs at a time. A run passes when error rate, p50/p90/p95/p99 latency and check pass rate (above 99%) all hold.
 
-The Load shape tab shows a rough estimate of how many VUs the Bencho host can run: 80% of its free memory at 5 MB per VU, the high end of k6's guidance for simple tests (`GET /api/v1/capacity`). Long flows, other active runs and large response bodies of steps that extract values lower the real number; Bencho discards all other response bodies. On Docker Desktop, free memory comes from Docker's memory limit (Settings → Resources → Advanced → Memory limit), which all running containers share, not the host's; a `mem_limit` on the backend container lowers it too. With Docker Engine on Linux and no `mem_limit`, it is the host's free memory.
+The Setup tab shows a rough estimate of how many VUs the Bencho host can run: 80% of its free memory at 5 MB per VU, the high end of k6's guidance for simple tests (`GET /api/v1/capacity`). Long flows, other active runs and large response bodies of steps that extract values lower the real number; Bencho discards all other response bodies. On Docker Desktop, free memory comes from Docker's memory limit (Settings → Resources → Advanced → Memory limit), which all running containers share, not the host's; a `mem_limit` on the backend container lowers it too. With Docker Engine on Linux and no `mem_limit`, it is the host's free memory.
 
 ## Large runs
 
@@ -55,7 +55,7 @@ services:
 
 Then run `docker compose up -d backend`. Docker Compose reads the override file automatically. For a single target address, the local port range caps how many connections can be open at once; reusing ports in `TIME_WAIT` (`tcp_tw_reuse`) lets the next run start while the last one's connections close.
 
-Memory is the other limit: see the VU estimate on the Load shape tab. For the largest runs, run k6 on a separate machine from the target, so the two do not compete for CPU and memory.
+Memory is the other limit: see the VU estimate on the Setup tab. For the largest runs, run k6 on a separate machine from the target, so the two do not compete for CPU and memory.
 
 ## Security
 

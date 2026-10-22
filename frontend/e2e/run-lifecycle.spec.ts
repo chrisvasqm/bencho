@@ -74,7 +74,7 @@ test('a rate run that cannot keep its rate fails and shows the dropped runs', as
 });
 
 test('accepts a rate below 1 per second and refuses unclear targets', async ({ page }) => {
-  await page.getByTestId('panel-tab-shape').click();
+  await page.getByTestId('panel-tab-setup').click();
   // "1,000" users is a thousands separator, not 1: refused, never sent as 1 VU.
   await page.getByTestId('stage-0-target').fill('1,000');
   await page.getByTestId('start-run').click();
@@ -105,7 +105,7 @@ test('accepts a rate below 1 per second and refuses unclear targets', async ({ p
 });
 
 test('refuses a VU cap below 1 without starting a run', async ({ page }) => {
-  await page.getByTestId('panel-tab-shape').click();
+  await page.getByTestId('panel-tab-setup').click();
   await page.getByTestId('load-mode-rate').click();
   await page.getByTestId('max-virtual-users').fill('0');
 
