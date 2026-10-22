@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { runsApi, type Run } from '../../api/runs.ts';
+import { chartItems } from '../learn/items.ts';
 import { LearnMore } from '../learn/LearnMore.tsx';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
@@ -70,6 +71,15 @@ export function RunCharts({ run }: { run: Run }) {
         integerX
         {...shared}
         title={t('charts.latencyTitle')}
+        action={
+          data.length > 0 && (
+            <LearnMore
+              testId="learn-chart"
+              title={t('charts.learnTitle')}
+              items={chartItems(t, run.mode)}
+            />
+          )
+        }
         series={LATENCY_SERIES}
         minYStep={0.1}
         formatY={(value) => formatMs(value)}
@@ -131,18 +141,6 @@ export function RunCharts({ run }: { run: Run }) {
         minYStep={0.001}
         formatY={(value) => `${(value * 100).toFixed(1)}%`}
       />
-      {data.length > 0 && (
-        <LearnMore
-          testId="learn-chart"
-          title={t('charts.learnTitle')}
-          paragraphs={[
-            t('charts.noteLatency'),
-            ...(run.mode === 'rate' ? [t('charts.noteRate')] : []),
-            t('charts.noteLoad'),
-            t('charts.noteErrors'),
-          ]}
-        />
-      )}
     </div>
   );
 }

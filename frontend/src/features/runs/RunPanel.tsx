@@ -29,6 +29,7 @@ import {
   Skeleton,
   Tabs,
 } from '../../components/ui/index.ts';
+import { rulesItems, shapeItems } from '../learn/items.ts';
 import { LearnMore } from '../learn/LearnMore.tsx';
 import { useCopy, type Copy } from '../../i18n/useCopy.ts';
 import { durationToSeconds, formatTime, isValidTarget, peakTarget, runTypeVars } from './format.ts';
@@ -340,7 +341,7 @@ function RunPanelForm({
               <LearnMore
                 testId="learn-shape"
                 title={t('panel.shapeNoteTitle')}
-                paragraphs={[t('panel.shapeNote1'), t('panel.shapeNote2'), t('panel.shapeNote3')]}
+                items={shapeItems(t)}
               />
             </div>
             <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
@@ -519,9 +520,18 @@ function RunPanelForm({
                 invalid={Boolean(errors.gracePeriod)}
               />
             </Field>
-            <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
-              <legend className="mb-1.5 text-sm font-medium text-fg">
+            <fieldset
+              // Named by the legend text only, not the Learn link inside it.
+              aria-label={t('panel.latencyLimits')}
+              className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0"
+            >
+              <legend className="mb-1.5 flex w-full items-center justify-between gap-3 text-sm font-medium text-fg">
                 {t('panel.latencyLimits')}
+                <LearnMore
+                  testId="learn-rules"
+                  title={t('panel.rulesNoteTitle')}
+                  items={rulesItems(t, mode)}
+                />
               </legend>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {PERCENTILES.map((key) => (
@@ -550,18 +560,6 @@ function RunPanelForm({
                 </p>
               )}
             </fieldset>
-            <LearnMore
-              testId="learn-rules"
-              title={t('panel.rulesNoteTitle')}
-              paragraphs={[
-                t('explain.failRule'),
-                t('explain.percentile'),
-                t('panel.percentileNote2'),
-                t('explain.errorRate'),
-                t('explain.failChecks'),
-                ...(mode === 'rate' ? [t('explain.failRate')] : []),
-              ]}
-            />
           </div>
         </fieldset>
       </form>

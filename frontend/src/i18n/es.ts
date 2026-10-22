@@ -24,7 +24,99 @@ export const es: Translation = {
     theme: 'Tema',
     switchTheme: { light: 'Cambiar al tema claro', dark: 'Cambiar al tema oscuro' },
   },
-  learn: { open: 'Aprende', close: 'Cerrar' },
+  learn: {
+    open: 'Aprende',
+    close: 'Cerrar',
+    fail: {
+      term: 'Cuándo falla una ejecución',
+      limit: 'Un tiempo de respuesta llega a su límite.',
+      errors: 'Los errores llegan a Errores permitidos.',
+      checks:
+        '1 de cada 100 pasos o más no reciben el estado esperado o no pueden guardar un valor que necesitan. Así que puede fallar con 0 % de errores.',
+      rate: 'Solo con Tasa: se salta más flujos planeados que Errores permitidos, porque todos los usuarios estaban ocupados.',
+    },
+    percentile: {
+      p95Term: 'p95 de 300 ms',
+      p95: '95 de cada 100 solicitudes respondieron en 300 ms o menos.',
+      otherTerm: 'p50 y p99',
+      p50: 'p50: una solicitud típica.',
+      p99: 'p99: las lentas. Solo 1 de cada 100 solicitudes tardó más.',
+      average: 'Un promedio escondería esas solicitudes lentas.',
+    },
+    rules: {
+      errorTerm: 'Errores',
+      error: 'Solicitudes que no recibieron el estado que espera su paso.',
+    },
+    shape: {
+      userTerm: 'Usuario simulado (VU)',
+      user1: 'Recorre tus pasos en orden, con una pausa después de cada uno.',
+      user2: 'Vuelve a empezar hasta que termina la ejecución.',
+      user3: 'Si un paso falla, se salta el resto y vuelve a empezar.',
+      stageTerm: 'Etapas',
+      stage1: 'Corren en orden.',
+      stage2:
+        'Durante cada etapa, el número de usuarios cambia poco a poco hasta el número de la etapa.',
+      stage3:
+        'Ejemplo: 30s → 20 y luego 1m → 20 agrega usuarios durante 30 segundos y luego mantiene 20 usuarios durante 1 minuto.',
+      modeTerm: 'Usuarios o Tasa',
+      users: 'Usuarios: cuántas personas están activas a la vez.',
+      rate: 'Tasa: cuántos flujos empiezan cada segundo, aunque el sitio se ponga lento.',
+      flowRun: 'Un flujo es una pasada por todos tus pasos.',
+      goal: 'Usa Tasa para una meta como 50 inicios de sesión por segundo.',
+    },
+    results: {
+      colorTerm: 'Colores',
+      green: 'Verde: el número está dentro de su límite.',
+      red: 'Rojo: el número pasó su límite.',
+      errorTerm: 'Errores',
+      error: 'La parte de las solicitudes que no recibió la respuesta esperada.',
+      requestTerm: 'Solicitudes',
+      request: 'Cuántas se enviaron en total, con el promedio por segundo.',
+    },
+    capacity: {
+      howTerm: 'Qué cuenta Bencho',
+      memory: 'Memoria libre en el servidor de Bencho: {{memory}} GB.',
+      cpus: 'Núcleos de CPU: {{cpus}}.',
+      perUser: 'Cada usuario virtual necesita hasta unos {{perUser}} MB.',
+      lowerTerm: 'Qué baja el número',
+      lower: 'Los flujos largos, los cuerpos grandes, las pausas cortas y otras ejecuciones.',
+      dockerTerm: 'Docker Desktop',
+      docker:
+        'Bencho solo ve la memoria que le das a Docker: Settings → Resources → Advanced → Memory limit.',
+    },
+    failures: {
+      whichTerm: 'Ejemplos, no todos los fallos',
+      which1: 'Respuestas de 1 de cada 20 flujos.',
+      which2: 'De todos los flujos para los pasos que guardan valores.',
+      which3: 'Hasta 10 por paso y 3 por estado.',
+      privateTerm: 'Respuestas correctas (2xx)',
+      private:
+        'Solo se muestran los nombres de los campos, porque el contenido puede tener contraseñas o tokens.',
+    },
+    chart: {
+      latencyTerm: 'Tiempo de respuesta',
+      latency1: 'Cada punto es un segundo de la ejecución.',
+      latency2:
+        'p95: 95 de cada 100 solicitudes de ese segundo respondieron dentro de este tiempo.',
+      latency3: 'p50 muestra una solicitud típica, p99 las lentas.',
+      latency4: 'Cuando un segundo tiene pocas solicitudes, las líneas pueden juntarse.',
+      latency5:
+        'Si las líneas suben a medida que se agregan usuarios, el sitio se está volviendo lento.',
+      rateTerm: 'Flujos por segundo',
+      rate1: 'Planeados: flujos que deben empezar cada segundo.',
+      rate2: 'Terminados: flujos que acabaron. Cuentan al terminar, así que van un poco detrás.',
+      rate3: 'Descartados: se saltaron porque todos los usuarios estaban ocupados.',
+      loadTerm: 'Usuarios y solicitudes',
+      load1: 'Usuarios: cuántos usuarios simulados estaban activos.',
+      load2: 'Solicitudes por segundo: cuántas solicitudes enviaron.',
+      load3:
+        'Si los usuarios siguen subiendo pero las solicitudes por segundo dejan de subir, el sitio llegó a su límite.',
+      errorTerm: 'Solicitudes fallidas',
+      error1: 'La parte de las solicitudes de cada segundo que no recibió la respuesta esperada.',
+      error2:
+        'Si los errores empiezan cuando la carga llega a su pico, el sitio no aguanta esa carga.',
+    },
+  },
   runType: { load: 'Carga', stress: 'Estrés', spike: 'Pico' },
   runTypeLower: { load: 'carga', stress: 'estrés', spike: 'pico' },
   runTypeDescription: {
@@ -120,12 +212,6 @@ export const es: Translation = {
     chartTitle: '{{label}} planeados',
     chartEmpty: 'Corrige las duraciones de las etapas para ver la forma.',
     shapeNoteTitle: 'Cómo funcionan usuarios y etapas',
-    shapeNote1:
-      'Cada usuario simulado (también llamado usuario virtual, o VU) recorre tus pasos en orden, hace una pausa después de cada uno y vuelve a empezar hasta que termina la ejecución. Si un paso falla, se salta el resto y vuelve a empezar.',
-    shapeNote2:
-      'Las etapas corren en orden. Durante cada etapa, el número de usuarios cambia poco a poco hasta el número de la etapa. Por ejemplo, 30s → 20 y luego 1m → 20 agrega usuarios durante 30 segundos y luego mantiene 20 usuarios durante 1 minuto.',
-    shapeNote3:
-      'Usuarios fija cuántas personas están activas a la vez. Tasa fija cuántos flujos empiezan cada segundo, aunque el sitio se ponga lento. Un flujo es una pasada por todos tus pasos. Usa Tasa para una meta como 50 inicios de sesión por segundo.',
     thinkTime: 'Pausa entre pasos',
     thinkTimeHint:
       'Segundos que cada usuario espera después de un paso, como una persona leyendo la página.',
@@ -137,8 +223,6 @@ export const es: Translation = {
       'Segundos que un usuario puede usar para terminar su flujo después de la última etapa (y, con Usuarios, cuando la forma de la carga lo quita). Pasado este tiempo, k6 corta el flujo.',
     latencyLimits: 'Límites de latencia (ms)',
     rulesNoteTitle: 'Cómo funcionan las reglas',
-    percentileNote2:
-      'p50 es una solicitud típica. p99 muestra las lentas: solo 1 de cada 100 solicitudes tardó más. Un promedio escondería esas solicitudes lentas.',
   },
   validation: {
     baseUrl: 'Escribe una dirección completa, que empiece con http:// o https://',
@@ -240,13 +324,10 @@ export const es: Translation = {
     title: '¿Cómo se calcula?',
     estimate:
       'Estimación aproximada: unos {{estimate}} usuarios virtuales a la vez en el servidor de Bencho.',
-    docker:
-      'En Docker Desktop, Bencho solo ve la memoria que le das a Docker: Settings → Resources → Advanced → Memory limit.',
     warning:
       'Tus etapas llegan a {{value}} usuarios virtuales, más que la estimación de {{estimate}}. La ejecución puede volver lento o detener el servidor.',
     warningRate:
       'El máximo de usuarios virtuales es {{value}}, más que la estimación de {{estimate}}. La ejecución puede volver lento o detener el servidor.',
-    how: 'Bencho mira la memoria libre ({{memory}} GB) y los núcleos de CPU ({{cpus}}) del servidor donde corre. Cada usuario virtual necesita hasta unos {{perUser}} MB. Los flujos largos, los cuerpos grandes, las pausas cortas y otras ejecuciones bajan el número.',
   },
   runs: {
     empty: 'Todavía no hay ejecuciones. Inicia una con Nueva ejecución.',
@@ -309,9 +390,6 @@ export const es: Translation = {
     errorsUnder: 'errores < {{limit}}',
     requests: 'Solicitudes',
     readTitle: 'Cómo leer estos números',
-    read1: 'Verde significa que el número está dentro de su límite. Rojo, que pasó el límite.',
-    read2:
-      'Errores es la parte de las solicitudes que no recibió la respuesta esperada. Solicitudes es cuántas se enviaron en total, con el promedio por segundo.',
     waiting:
       'Los resultados aparecen cuando termina la ejecución. Los gráficos de abajo se actualizan cada 2 segundos.',
     noTotals: 'No se registraron resultados.',
@@ -351,17 +429,6 @@ export const es: Translation = {
       started: 'Inicio',
     },
   },
-  explain: {
-    percentile:
-      'Estos límites revisan qué tan rápido respondieron las solicitudes. Un p95 de 300 ms significa que 95 de cada 100 solicitudes respondieron en 300 ms o menos.',
-    errorRate: 'Los errores son solicitudes que no recibieron el estado que espera su paso.',
-    failRule:
-      'Una ejecución falla cuando un tiempo de respuesta llega a su límite, o cuando los errores llegan a Errores permitidos.',
-    failChecks:
-      'También falla cuando 1 de cada 100 pasos o más no reciben el estado esperado o no pueden guardar un valor que necesitan. Así que una ejecución puede fallar con 0 % de errores.',
-    failRate:
-      'Una ejecución por tasa también falla cuando se salta más flujos planeados que Errores permitidos, porque todos sus usuarios estaban ocupados.',
-  },
   failures: {
     title: 'Respuestas fallidas (ejemplos)',
     hint: 'Ejemplos de lo que respondió el sitio cuando falló un paso.',
@@ -371,9 +438,6 @@ export const es: Translation = {
     statusExpected: 'estado {{status}}, se esperaba {{expected}}',
     emptyBody: '(cuerpo vacío)',
     learnTitle: '¿Qué respuestas se muestran?',
-    how: 'Son ejemplos, no todos los fallos. Bencho guarda respuestas de 1 de cada 20 flujos (de todos los flujos para los pasos que guardan valores), hasta 10 por paso y 3 por estado.',
-    private:
-      'En una respuesta correcta (2xx) solo se muestran los nombres de los campos, porque el contenido puede tener contraseñas o tokens.',
   },
   charts: {
     waiting: 'Esperando los primeros segundos de resultados…',
@@ -388,14 +452,6 @@ export const es: Translation = {
     requests: 'Solicitudes/s',
     errorsTitle: 'Solicitudes fallidas (parte de cada segundo)',
     errorRate: 'Errores',
-    noteLatency:
-      'Cada punto es un segundo de la ejecución. p95 es el tiempo dentro del cual respondieron 95 de cada 100 solicitudes de ese segundo; p50 muestra una solicitud típica y p99 las lentas. Cuando un segundo tiene pocas solicitudes, las líneas pueden juntarse. Si las líneas suben a medida que se agregan usuarios, el sitio se está volviendo lento.',
-    noteLoad:
-      'Usuarios es cuántos usuarios simulados estaban activos. Solicitudes por segundo es cuántas solicitudes enviaron. Si los usuarios siguen subiendo pero las solicitudes por segundo dejan de subir, el sitio llegó a su límite.',
-    noteRate:
-      'Compara los flujos planeados cada segundo con los que terminaron y los que se saltaron porque todos los usuarios estaban ocupados. Un flujo cuenta cuando termina, así que Terminados va un poco detrás de Planeados.',
-    noteErrors:
-      'La parte de las solicitudes de cada segundo que no recibió la respuesta esperada. Si los errores empiezan cuando la carga llega a su pico, el sitio no aguanta esa carga.',
     learnTitle: 'Cómo leer este gráfico',
   },
 };

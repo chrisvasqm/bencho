@@ -13,6 +13,7 @@ import {
   type LabelProps,
   type TooltipContentProps,
 } from 'recharts';
+import type { ReactNode } from 'react';
 import { Skeleton } from './Skeleton.tsx';
 
 export interface LineSeries<Row> {
@@ -51,6 +52,8 @@ export interface LineChartProps<Row> {
   loading?: boolean;
   empty?: string;
   testId?: string;
+  /** Shown right of the title, such as a Learn link. */
+  action?: ReactNode;
 }
 
 const tick = { fill: 'var(--fg-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' };
@@ -71,6 +74,7 @@ export function LineChart<Row extends object>({
   loading,
   empty = 'No data yet.',
   testId,
+  action,
 }: LineChartProps<Row>) {
   const showLegend = series.length > 1;
   const xTicks = xTime
@@ -97,8 +101,16 @@ export function LineChart<Row extends object>({
       .map((item) => item.label.length * 7 + 10),
   );
   return (
-    <figure className="m-0 flex min-w-0 flex-col gap-2" data-testid={testId}>
-      <figcaption className="text-sm font-medium text-fg">{title}</figcaption>
+    <figure
+      // Named by the title only, not the action next to it.
+      aria-label={title}
+      className="m-0 flex min-w-0 flex-col gap-2"
+      data-testid={testId}
+    >
+      <figcaption className="flex items-center justify-between gap-3 text-sm font-medium text-fg">
+        {title}
+        {action}
+      </figcaption>
       {loading ? (
         <div style={{ height }}>
           <Skeleton className="h-full w-full" />
