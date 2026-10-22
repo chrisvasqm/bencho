@@ -5,20 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "start": "node dist/app/src/server.js",
-    "build:k6": "tsx scripts/build-k6.ts",
-    "build": "tsc -p tsconfig.build.json && pnpm build:k6",
-    "load": "pnpm build:k6 && tsx scripts/run.ts load",
-    "stress": "pnpm build:k6 && tsx scripts/run.ts stress",
-    "spike": "pnpm build:k6 && tsx scripts/run.ts spike",
-    "db:generate": "drizzle-kit generate",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint .",
-    "format": "prettier --write .",
-    "check": "tsc --noEmit && eslint . && prettier --check . && pnpm build",
-    "test": "vitest run",
-    "test:db": "docker compose -p perf-test --profile test up -d --wait postgres-test",
-    "e2e:server": "tsx scripts/e2e-server.ts"
+    "start": "node dist/app/src/server.js"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
