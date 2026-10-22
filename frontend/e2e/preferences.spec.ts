@@ -4,6 +4,9 @@ test('switches the language and keeps it after a reload', async ({ page }) => {
   await openApp(page);
   await expect(page.getByTestId('start-run')).toHaveText('Start load test');
 
+  await expect(page.getByTestId('language')).toHaveAccessibleName(
+    'Language: EN ES — change to Spanish',
+  );
   // A click on either side of the switch moves to the other language.
   await page.getByTestId('language-es').click();
   // Text built at render follows the switch at once, without a reload.
@@ -14,6 +17,9 @@ test('switches the language and keeps it after a reload', async ({ page }) => {
   await page.reload();
   await expect(page.getByTestId('start-run')).toHaveText('Iniciar prueba de carga');
   await expect(page.getByTestId('language')).toHaveAttribute('data-language', 'es');
+  await expect(page.getByTestId('language')).toHaveAccessibleName(
+    'Idioma: EN ES — cambiar a inglés',
+  );
 
   // The highlighted side flips too.
   await page.getByTestId('language-es').click();

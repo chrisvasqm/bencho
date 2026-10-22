@@ -16,23 +16,26 @@ export function LanguageSwitch() {
       type="button"
       data-testid="language"
       data-language={language}
-      aria-label={t('prefs.switchLanguage', { language: t(`prefs.languages.${next}`) })}
       onClick={() => setLanguage(next)}
-      className="inline-flex rounded-md bg-surface-sunken p-0.5"
+      className="group inline-flex rounded-md bg-surface-sunken p-0.5"
     >
+      {/* The name reads "Language: EN ES — change to Spanish": it keeps the visible text for voice control. */}
+      <span className="sr-only">{t('prefs.language')}: </span>
       {LANGUAGES.map((value) => (
         <span
           key={value}
-          aria-hidden
           data-testid={`language-${value}`}
           className={cn(
             'rounded-[5px] px-2.5 py-1 text-xs font-medium transition-colors',
-            value === language ? 'bg-surface text-fg' : 'text-fg-muted',
+            value === language ? 'bg-surface text-fg' : 'text-fg-muted group-hover:text-fg',
           )}
         >
           {value.toUpperCase()}
         </span>
       ))}
+      <span className="sr-only">
+        — {t('prefs.switchLanguage', { language: t(`prefs.languages.${next}`) })}
+      </span>
     </button>
   );
 }
