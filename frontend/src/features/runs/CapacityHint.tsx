@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { runsApi } from '../../api/runs.ts';
-import { Note } from '../../components/ui/Note.tsx';
 import { useCopy } from '../../i18n/useCopy.ts';
+import { LearnMore } from '../learn/LearnMore.tsx';
 
 const GIGABYTE = 1024 ** 3;
 const MEGABYTE = 1024 ** 2;
@@ -28,18 +28,22 @@ export function CapacityHint({ peakTarget, rate }: CapacityHintProps) {
     capacity.data;
   const estimate = estimatedVirtualUsers.toLocaleString(language);
   return (
-    <Note title={t('capacity.title')}>
+    <div className="flex flex-col gap-1 text-xs text-fg-muted">
       <p className="m-0" data-testid="capacity-estimate">
-        {t('capacity.estimate', {
-          estimate,
-          memory: (availableMemoryBytes / GIGABYTE).toFixed(1),
-          cpus: cpuCount,
-          perUser: Math.round(memoryPerVirtualUserBytes / MEGABYTE),
-        })}
+        {t('capacity.estimate', { estimate })}
       </p>
-      <p className="m-0" data-testid="capacity-docker">
-        {t('capacity.docker')}
-      </p>
+      <LearnMore
+        testId="learn-capacity"
+        title={t('capacity.title')}
+        paragraphs={[
+          t('capacity.how', {
+            memory: (availableMemoryBytes / GIGABYTE).toFixed(1),
+            cpus: cpuCount,
+            perUser: Math.round(memoryPerVirtualUserBytes / MEGABYTE),
+          }),
+          t('capacity.docker'),
+        ]}
+      />
       {/* Always mounted (hidden when empty), so screen readers announce changes politely. */}
       <p
         role="status"
@@ -52,6 +56,6 @@ export function CapacityHint({ peakTarget, rate }: CapacityHintProps) {
             estimate,
           })}
       </p>
-    </Note>
+    </div>
   );
 }

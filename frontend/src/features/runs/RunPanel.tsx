@@ -15,12 +15,12 @@ import {
   Field,
   FieldSkeleton,
   Input,
-  Note,
   SegmentedControl,
   Select,
   Skeleton,
   Tabs,
 } from '../../components/ui/index.ts';
+import { LearnMore } from '../learn/LearnMore.tsx';
 import { useCopy, type Copy } from '../../i18n/useCopy.ts';
 import { durationToSeconds, isValidTarget, peakTarget, runTypeVars } from './format.ts';
 import { CapacityHint } from './CapacityHint.tsx';
@@ -150,7 +150,7 @@ function RunPanelForm({
   submitting,
   className,
 }: RunPanelProps & { defaults: RunDefaults }) {
-  const { t, advanced, language } = useCopy();
+  const { t, language } = useCopy();
   const [tab, setTab] = useState<PanelTab>('setup');
   const [baseUrl, setBaseUrl] = useState(defaults.baseUrl);
   const [stages, setStages] = useState<StageRow[]>(() => defaults.stages[type].map(toStageRow));
@@ -224,13 +224,6 @@ function RunPanelForm({
     // The new stages are VU targets; keeping Rate would reread them as runs per second.
     setMode('users');
   }
-
-  // Basic keeps to users, but once a rate run is set up the switch stays, so the user can go back.
-  const [rateSeen, setRateSeen] = useState(false);
-  if (mode === 'rate' && !rateSeen) setRateSeen(true);
-  // Basic hides these settings, but shows them again while they hold a problem to fix.
-  const showGrace = advanced || Boolean(errors.gracePeriod);
-  const allLimits = advanced || Boolean(errors.latency);
 
   // Edits clear flow errors, so the marked step always still exists.
   const errorStepId = errors.flowStep;
@@ -344,36 +337,33 @@ function RunPanelForm({
                   <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
                     <LoadShapeChart stages={stages} mode={mode} />
                   </Suspense>
-                  {/* Basic keeps to users; the switch stays once a rate run was set up. */}
-                  {(advanced || rateSeen) && (
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-sm font-medium text-fg">{t('panel.targetsCount')}</span>
-                      <SegmentedControl
-                        label={t('panel.targetsCount')}
-                        testId="load-mode"
-                        value={mode}
-                        onChange={(next) => {
-                          setMode(next);
-                          // An error for the other mode no longer applies; the next start checks again.
-                          setErrors(({ stages: _stale, ...rest }) => rest);
-                          // The same text can be valid in one mode and not the other ("0,5").
-                          setStages(
-                            stages.map((stage) => ({
-                              ...stage,
-                              target: parseTarget(stage.targetText, next === 'rate'),
-                            })),
-                          );
-                        }}
-                        options={LOAD_MODES.map((value) => ({
-                          value,
-                          label: t(`panel.modes.${value}`),
-                        }))}
-                      />
-                      <p className="m-0 text-xs text-fg-muted" data-testid="load-mode-hint">
-                        {t(`panel.modeHint.${mode}`)}
-                      </p>
-                    </div>
-                  )}
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-sm font-medium text-fg">{t('panel.targetsCount')}</span>
+                    <SegmentedControl
+                      label={t('panel.targetsCount')}
+                      testId="load-mode"
+                      value={mode}
+                      onChange={(next) => {
+                        setMode(next);
+                        // An error for the other mode no longer applies; the next start checks again.
+                        setErrors(({ stages: _stale, ...rest }) => rest);
+                        // The same text can be valid in one mode and not the other ("0,5").
+                        setStages(
+                          stages.map((stage) => ({
+                            ...stage,
+                            target: parseTarget(stage.targetText, next === 'rate'),
+                          })),
+                        );
+                      }}
+                      options={LOAD_MODES.map((value) => ({
+                        value,
+                        label: t(`panel.modes.${value}`),
+                      }))}
+                    />
+                    <p className="m-0 text-xs text-fg-muted" data-testid="load-mode-hint">
+                      {t(`panel.modeHint.${mode}`)}
+                    </p>
+                  </div>
                   <Field
                     label={t('panel.stages')}
                     htmlFor="stage-0-duration"
@@ -412,11 +402,15 @@ function RunPanelForm({
                     peakTarget={mode === 'rate' ? maxVirtualUsers : peakTarget(stages)}
                     rate={mode === 'rate'}
                   />
-                  <Note title={t('panel.shapeNoteTitle')}>
-                    <p className="m-0">{t('panel.shapeNote1')}</p>
-                    <p className="m-0">{t('panel.shapeNote2')}</p>
-                    {advanced && <p className="m-0">{t('panel.shapeNote3')}</p>}
-                  </Note>
+                  <LearnMore
+                    testId="learn-shape"
+                    title={t('panel.shapeNoteTitle')}
+                    paragraphs={[
+                      t('panel.shapeNote1'),
+                      t('panel.shapeNote2'),
+                      t('panel.shapeNote3'),
+                    ]}
+                  />
                 </>
               )}
 
@@ -501,54 +495,43 @@ function RunPanelForm({
                       />
                     </Field>
                   </div>
-                  {showGrace && (
-                    <Field
-                      label={t('panel.gracePeriod')}
-                      htmlFor="grace-period"
-                      hint={t('panel.gracePeriodHint')}
-                      error={errors.gracePeriod}
-                    >
-                      <Input
-                        id="grace-period"
-                        data-testid="grace-period"
-                        mono
-                        type="number"
-                        min={0}
-                        max={MAX_GRACE_PERIOD_SECONDS}
-                        step={1}
-                        value={Number.isNaN(gracePeriod) ? '' : gracePeriod}
-                        // An empty field is not 0 seconds: NaN fails validation.
-                        onChange={(event) =>
-                          setGracePeriod(
-                            event.target.value === '' ? Number.NaN : Number(event.target.value),
-                          )
-                        }
-                        invalid={Boolean(errors.gracePeriod)}
-                      />
-                    </Field>
-                  )}
+                  <Field
+                    label={t('panel.gracePeriod')}
+                    htmlFor="grace-period"
+                    hint={t('panel.gracePeriodHint')}
+                    error={errors.gracePeriod}
+                  >
+                    <Input
+                      id="grace-period"
+                      data-testid="grace-period"
+                      mono
+                      type="number"
+                      min={0}
+                      max={MAX_GRACE_PERIOD_SECONDS}
+                      step={1}
+                      value={Number.isNaN(gracePeriod) ? '' : gracePeriod}
+                      // An empty field is not 0 seconds: NaN fails validation.
+                      onChange={(event) =>
+                        setGracePeriod(
+                          event.target.value === '' ? Number.NaN : Number(event.target.value),
+                        )
+                      }
+                      invalid={Boolean(errors.gracePeriod)}
+                    />
+                  </Field>
                   <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
                     <legend className="mb-1.5 text-sm font-medium text-fg">
-                      {allLimits ? t('panel.latencyLimits') : t('panel.maxResponseTime')}
+                      {t('panel.latencyLimits')}
                     </legend>
-                    <div
-                      className={
-                        allLimits ? 'grid grid-cols-2 gap-2 sm:grid-cols-4' : 'flex flex-col gap-1'
-                      }
-                    >
-                      {/* Basic sets one limit: p95. The others keep their values. */}
-                      {(allLimits ? PERCENTILES : (['p95'] as const)).map((key) => (
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {PERCENTILES.map((key) => (
                         <div key={key} className="flex flex-col gap-1">
-                          {allLimits && (
-                            <label htmlFor={`limit-${key}`} className="text-xs text-fg-muted">
-                              {key}
-                            </label>
-                          )}
+                          <label htmlFor={`limit-${key}`} className="text-xs text-fg-muted">
+                            {key}
+                          </label>
                           <Input
                             id={`limit-${key}`}
                             data-testid={`limit-${key}`}
-                            // Basic shows no label above the one limit; the legend names it.
-                            aria-label={allLimits ? undefined : t('panel.maxResponseTime')}
                             mono
                             type="number"
                             min={1}
@@ -561,25 +544,24 @@ function RunPanelForm({
                         </div>
                       ))}
                     </div>
-                    {!allLimits && (
-                      <p className="m-0 text-xs text-fg-muted">{t('panel.maxResponseTimeHint')}</p>
-                    )}
                     {errors.latency && (
                       <p role="alert" data-testid="latency-error" className="text-xs text-danger">
                         {errors.latency}
                       </p>
                     )}
                   </fieldset>
-                  {advanced && (
-                    <Note title={t('panel.percentileNoteTitle')}>
-                      <p className="m-0">{t('explain.percentile')}</p>
-                      <p className="m-0">{t('panel.percentileNote2')}</p>
-                    </Note>
-                  )}
-                  <Note title={t('panel.failNoteTitle')}>
-                    <p className="m-0">{t('explain.failRule')}</p>
-                    {advanced && <p className="m-0">{t('explain.errorRate')}</p>}
-                  </Note>
+                  <LearnMore
+                    testId="learn-rules"
+                    title={t('panel.rulesNoteTitle')}
+                    paragraphs={[
+                      t('explain.failRule'),
+                      t('explain.percentile'),
+                      t('panel.percentileNote2'),
+                      t('explain.errorRate'),
+                      t('explain.failChecks'),
+                      ...(mode === 'rate' ? [t('explain.failRate')] : []),
+                    ]}
+                  />
                 </>
               )}
             </m.div>

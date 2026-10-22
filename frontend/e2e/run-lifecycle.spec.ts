@@ -141,7 +141,9 @@ test('accepts a rate below 1 per second and refuses unclear targets', async ({ p
   await expect(page.getByTestId('stages-error')).toBeVisible();
 
   await page.getByTestId('load-mode-rate').click();
-  await expect(page.getByTestId('load-mode-hint')).toContainText('flow runs started per second');
+  await expect(page.getByTestId('load-mode-hint')).toContainText(
+    'flow runs (one pass through all the steps) start per second',
+  );
   await page.getByTestId('stage-0-target').fill('0.125');
 
   await page.getByTestId('start-run').click();

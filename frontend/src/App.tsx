@@ -13,7 +13,7 @@ import {
 } from './api/runs.ts';
 import { Card, Pagination, Skeleton, Tabs } from './components/ui/index.ts';
 import { isActive, runTypeVars } from './features/runs/format.ts';
-import { DetailSwitch, LanguageSwitch } from './features/preferences/PreferenceSwitches.tsx';
+import { LanguageSwitch } from './features/preferences/PreferenceSwitches.tsx';
 import { useCopy, type Copy } from './i18n/useCopy.ts';
 import { ActiveRunsWidget } from './features/runs/ActiveRunsWidget.tsx';
 import { BulkDeleteBar } from './features/runs/BulkDeleteBar.tsx';
@@ -195,7 +195,6 @@ export function App() {
             <h1 className="text-lg leading-tight font-semibold tracking-tight text-fg">Bencho</h1>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <DetailSwitch />
             <LanguageSwitch />
             <ThemeSwitch />
           </div>

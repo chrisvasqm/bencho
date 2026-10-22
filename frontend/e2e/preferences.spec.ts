@@ -32,31 +32,13 @@ test('switches the language and keeps it after a reload', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('lang', 'es');
 });
 
-test.describe('basic mode', () => {
-  test.use({ detail: 'basic' });
-
-  test('hides the advanced settings until Advanced is on', async ({ page }) => {
-    await openApp(page);
-    await expect(page.getByTestId('detail-basic')).toHaveAttribute('aria-checked', 'true');
-    await expect(page.getByTestId('load-mode-rate')).toHaveCount(0);
-
-    await page.getByTestId('panel-tab-limits').click();
-    await expect(page.getByTestId('limit-p95')).toBeVisible();
-    await expect(page.getByTestId('limit-p50')).toHaveCount(0);
-    await expect(page.getByTestId('grace-period')).toHaveCount(0);
-
-    await page.getByTestId('panel-tab-flow').click();
-    await expect(page.getByTestId('step-body')).toBeVisible();
-    await expect(page.getByTestId('step-headers')).toHaveCount(0);
-    await expect(page.getByTestId('step-saves')).toHaveCount(0);
-
-    await page.getByTestId('detail-advanced').click();
-    await expect(page.getByTestId('step-headers')).toBeVisible();
-    await expect(page.getByTestId('step-saves')).toBeVisible();
-    await page.getByTestId('panel-tab-limits').click();
-    await expect(page.getByTestId('limit-p50')).toBeVisible();
-    await expect(page.getByTestId('grace-period')).toBeVisible();
-    await page.getByTestId('panel-tab-setup').click();
-    await expect(page.getByTestId('load-mode-rate')).toBeVisible();
-  });
+test('opens a Learn drawer and closes it', async ({ page }) => {
+  await openApp(page);
+  await page.getByTestId('panel-tab-setup').click();
+  await page.getByTestId('learn-shape').click();
+  const drawer = page.getByTestId('learn-shape-drawer');
+  await expect(drawer).toBeVisible();
+  await expect(drawer.getByRole('heading')).toHaveText('How users and stages work');
+  await page.getByTestId('learn-shape-close').click();
+  await expect(drawer).toHaveCount(0);
 });

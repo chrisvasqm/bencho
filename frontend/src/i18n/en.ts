@@ -1,17 +1,15 @@
-// English copy. Plain words first: a key holds the Basic wording; `<key>_advanced` holds the
-// technical wording shown in Advanced mode (i18next context), and falls back to the key.
+// English copy, in plain words.
 //
 // Plurals: i18next picks _one/_many/_other by language (Spanish uses _many from 1,000,000).
 //
 // Glossary (one word per idea, same in es.ts):
 //   run = one test run · flow = the steps each user follows · step = one request
-//   simulated user (Basic) / virtual user, VU (Advanced) · pause between steps (Basic) / think time
+//   simulated user (virtual user, VU, in rate settings) · pause between steps
 //   response time · errors = requests that did not get the expected answer
 export const en = {
   app: {
     backendDown: 'Bencho cannot reach its server',
     backendDownHint: 'Start Bencho with docker compose up, then reload this page.',
-    backendDownHint_advanced: 'Start the stack with docker compose up, then reload.',
     runsTitle: 'Runs',
     runsDescription: 'Newest first. Select a run to see its results.',
     runsLoadError: 'Could not load the runs. Bencho tries again in a moment.',
@@ -22,19 +20,14 @@ export const en = {
     switchLanguage: 'change to {{language}}',
     theme: 'Theme',
     switchTheme: { light: 'Change to light theme', dark: 'Change to dark theme' },
-    detail: 'Detail level',
-    detailHint: 'Basic shows the main settings in plain words. Advanced shows every setting.',
-    details: { basic: 'Basic', advanced: 'Advanced' },
   },
+  learn: { open: 'Learn', close: 'Close' },
   runType: { load: 'Load', stress: 'Stress', spike: 'Spike' },
   runTypeLower: { load: 'load', stress: 'stress', spike: 'spike' },
   runTypeDescription: {
     load: 'Normal, steady traffic. Checks that the site stays fast on a usual day.',
-    load_advanced: 'Steady, expected traffic. Confirms the API meets its limits on a normal day.',
     stress: 'Adds more and more users to find the point where the site slows down or fails.',
-    stress_advanced: 'Steps up past normal traffic to find where latency or errors start to climb.',
     spike: 'Sends a sudden burst of users, then drops back, to check that the site recovers.',
-    spike_advanced: 'Jumps to a burst of users in seconds, then drops back to check recovery.',
   },
   status: {
     queued: 'Waiting',
@@ -60,8 +53,7 @@ export const en = {
     bulkSkipped_many: '{{count}} runs were not deleted: they are still running or already gone.',
     bulkDeleteFailed: 'The runs were not deleted',
     passed: '{{type}} test passed',
-    passedHint: 'Response time (95%): {{value}}',
-    passedHint_advanced: 'p95 {{value}}',
+    passedHint: 'p95 {{value}}',
     failed: '{{type}} test failed',
     failedHint: 'A limit was crossed. Open the run to see which one.',
     stopped: '{{type}} test stopped',
@@ -89,9 +81,7 @@ export const en = {
     tabs: {
       setup: 'Setup',
       flow: 'Steps',
-      flow_advanced: 'Flow',
       limits: 'Pass rules',
-      limits_advanced: 'Limits',
     },
     tabsLabel: 'Run settings',
     loading: 'Loading settings…',
@@ -99,27 +89,19 @@ export const en = {
     starting: 'Starting…',
     testType: 'Test type',
     baseUrl: 'Website address',
-    baseUrl_advanced: 'Base URL',
     baseUrlHint: 'The address of the site or API to test. Each step adds its path to it.',
-    baseUrlHint_advanced: 'The steps in the Flow tab send their requests to paths under this URL.',
     loadShape: 'How many users, and when',
-    loadShape_advanced: 'Load shape',
     targetsCount: 'Stage targets count',
     modes: { users: 'Users', rate: 'Rate' },
     modeHint: {
       users: 'Each number is how many users are active at the same time.',
-      users_advanced: 'Each target is a number of virtual users running at the same time.',
-      rate: 'Each number is how many times per second the steps start, up to 2 decimals (0.25 = once every 4 seconds). Switching keeps the numbers as they are, so check them.',
-      rate_advanced:
-        'Each target is flow runs started per second, up to 2 decimals (0.25 = one every 4 seconds). Switching keeps the numbers as they are, so check them.',
+      rate: 'Each number is how many flow runs (one pass through all the steps) start per second, up to 2 decimals (0.25 = once every 4 seconds). Switching keeps the numbers as they are, so check them.',
     },
     stages: 'Stages',
     duration: 'Duration',
     target: {
       users: 'Users',
-      users_advanced: 'Virtual users',
-      rate: 'Starts per second',
-      rate_advanced: 'Flow runs per second',
+      rate: 'Flow runs per second',
     },
     stageDuration: 'Stage {{number}} duration',
     stageTarget: 'Stage {{number}} {{label}}',
@@ -129,36 +111,24 @@ export const en = {
     maxUsersHint: 'k6 adds VUs up to this number to keep the rate. Past it, flow runs are dropped.',
     chartTitle: 'Planned {{labelLower}}',
     chartEmpty: 'Fix the stage durations to see the shape.',
-    shapeNoteTitle: 'How this works',
-    shapeNoteTitle_advanced: 'How the load shape works',
+    shapeNoteTitle: 'How users and stages work',
     shapeNote1:
-      'Each simulated user follows the steps in the Steps tab, one after the other, pauses after each one, then starts again until the run ends.',
-    shapeNote1_advanced:
-      "A virtual user (VU) is one simulated user. It runs the steps in the Flow tab in order, waits after each step (the step's own random wait, or the think time), then starts again until the run ends. When a step fails, the VU waits, skips the remaining steps and starts again.",
+      'Each simulated user (also called a virtual user, or VU) goes through your steps in order, pauses after each one, and starts over until the run ends. If a step fails, it skips the rest and starts over.',
     shapeNote2:
       'Stages run in order. During each stage, the number of users changes smoothly to the stage number. For example, 30s → 20, then 1m → 20 adds users for 30 seconds, then keeps 20 users for 1 minute.',
-    shapeNote2_advanced:
-      "Stages run in order. During each stage, the number of VUs changes steadily to the stage's target. For example, 30s → 20 VUs, then 1m → 20 VUs adds users for 30 seconds, then holds 20 users for 1 minute.",
     shapeNote3:
-      'Users counts concurrent users. Rate counts flow runs started per second, no matter how slow the server gets: use it for a goal such as 50 sign-ins per second. Each flow run sends one request per step.',
+      'Users sets how many people are active at once. Rate sets how many flow runs start each second, even if the site gets slow. A flow run is one pass through all your steps. Use Rate for a goal such as 50 sign-ins per second.',
     thinkTime: 'Pause between steps',
-    thinkTime_advanced: 'Think time',
     thinkTimeHint: 'Seconds each user waits after a step, like a person reading the page.',
-    thinkTimeHint_advanced: 'Seconds a user waits after each step with no wait of its own',
     maxErrorRate: 'Allowed errors (%)',
-    maxErrorRate_advanced: 'Max error rate',
     maxErrorRateHint: 'The run fails if more requests than this get a wrong answer.',
-    maxErrorRateHint_advanced: 'Percent of requests without the expected status',
     gracePeriod: 'Grace period',
     gracePeriodHint:
       'Seconds a user may finish its flow run after the last stage (and, with Users, when the load shape removes it). Past this, k6 cuts the flow run off.',
     latencyLimits: 'Latency limits (ms)',
-    maxResponseTime: 'Max response time (ms)',
-    maxResponseTimeHint: '95 of every 100 requests must answer faster than this, or the run fails.',
-    percentileNoteTitle: 'What do p50, p90, p95 and p99 mean?',
+    rulesNoteTitle: 'How pass rules work',
     percentileNote2:
-      'p50 is the typical request. p99 is the line the slowest 1% of requests are above. An average hides these slow requests, so the limits use percentiles.',
-    failNoteTitle: 'When does a run fail?',
+      'p50 is a typical request. p99 shows the slow ones: only 1 in 100 requests took longer. An average would hide those slow requests.',
   },
   validation: {
     baseUrl: 'Enter a full address, starting with http:// or https://',
@@ -181,7 +151,6 @@ export const en = {
     introUse: 'Use',
     introAfter: 'or a value an earlier step saves, in the path, headers or body.',
     emptyPath: 'website address',
-    emptyPath_advanced: 'base URL',
     untitled: 'Untitled',
     hasProblem: 'has a problem',
     moveUp: 'Move step {{number}} up',
@@ -192,15 +161,11 @@ export const en = {
     loadSoapExample: 'Load SOAP example',
     name: 'Name',
     status: 'Expected answer code',
-    status_advanced: 'Status',
     request: 'Request',
     requestHint:
       'Choose what to do (GET reads, POST sends data) and the page path, such as /api/items. Leave the path empty to use the website address.',
-    requestHint_advanced:
-      'A path such as /api/items/{{example}} is added to the base URL. Leave it empty to use the base URL.',
     method: 'Method',
     pathPlaceholder: 'Empty: the website address',
-    pathPlaceholder_advanced: 'Empty: the base URL',
     headers: 'Headers',
     header: 'Header',
     value: 'Value',
@@ -214,21 +179,14 @@ export const en = {
     body: { json: 'JSON body', soap: 'SOAP body' },
     bodyHint: {
       json: 'Data to send. Leave empty for none.',
-      json_advanced:
-        'Leave empty for no body. Sent as application/json unless a header says otherwise.',
       soap: 'The SOAP message to send. Leave empty for none.',
-      soap_advanced:
-        'Leave empty for no body. Sent as text/xml (SOAP 1.1) unless a header says otherwise: for SOAP 1.2 set Content-Type to application/soap+xml. Add a SOAPAction header if the service needs one.',
     },
     wait: 'Wait after this step',
     waitHint:
       'Seconds, 0 to {{max}}. Each time, the user waits a random time in this range, like a real person reading or typing. Leave both empty to use the pause between steps.',
-    waitHint_advanced:
-      'Seconds, 0 to {{max}}. Each time, the user waits a random time in this range, like a real person reading or typing. Leave both empty to use the think time.',
     shortest: 'Shortest',
     longest: 'Longest',
     waitPlaceholder: 'Pause',
-    waitPlaceholder_advanced: 'Think time',
     save: 'Save from response',
     saveHint: {
       json: 'Later steps use a saved value as {{example}}. The path reads the JSON response, for example <code>pizza.id</code> or <code>items.0.id</code>.',
@@ -268,21 +226,15 @@ export const en = {
     savePathLength: 'The {{path}} can be at most {{max}} characters',
   },
   capacity: {
-    title: 'How many users this computer can simulate',
-    title_advanced: 'How many VUs the Bencho server can run',
-    estimate:
-      'Rough estimate: about {{estimate}} users at the same time, based on the free memory of the computer running Bencho.',
-    estimate_advanced:
-      'Rough estimate: about {{estimate}} VUs. The Bencho server has {{memory}} GB of free memory and {{cpus}} CPU cores, and k6 uses up to about {{perUser}} MB per VU. Long flows, large bodies, short think times and other active runs lower this number.',
-    docker: 'On Docker Desktop, the limit comes from the memory you give Docker in its settings.',
-    docker_advanced:
-      "On Docker Desktop, free memory comes from Docker's memory limit (Settings → Resources → Advanced → Memory limit), which all running containers share, not from all of the computer's memory. A mem_limit on the backend container lowers it too.",
+    title: 'How is this estimated?',
+    estimate: 'Rough estimate: about {{estimate}} virtual users at once on the Bencho server.',
+    docker:
+      'On Docker Desktop, Bencho only sees the memory you give Docker: Settings → Resources → Advanced → Memory limit.',
     warning:
-      'You asked for {{value}} users, more than the estimate of {{estimate}}. The run can slow down or stop this computer.',
+      'Your stages go up to {{value}} virtual users, more than the estimate of {{estimate}}. The run can slow down or stop the server.',
     warningRate:
-      'Max virtual users is {{value}} VUs, more than the estimate of {{estimate}}. The run can slow down or stop the server.',
-    warning_advanced:
-      'Your stages go up to {{value}} VUs, more than the estimate of {{estimate}}. The run can slow down or stop the server.',
+      'Max virtual users is {{value}}, more than the estimate of {{estimate}}. The run can slow down or stop the server.',
+    how: 'Bencho looks at the free memory ({{memory}} GB) and CPU cores ({{cpus}}) of the server it runs on. Each virtual user needs up to about {{perUser}} MB. Long flows, large bodies, short pauses and other runs lower the number.',
   },
   runs: {
     empty: 'No runs of this type yet. Start one from the panel.',
@@ -291,12 +243,9 @@ export const en = {
     openRun: '{{status}}, run from {{time}}',
     headers: {
       status: 'Result',
-      status_advanced: 'Status',
       target: 'Address',
-      target_advanced: 'Target',
       peak: 'Peak',
-      p95: 'Response time',
-      p95_advanced: 'p95',
+      p95: 'p95',
       errors: 'Errors',
       started: 'Started',
     },
@@ -309,9 +258,6 @@ export const en = {
     unitUsers_one: '{{count}} user',
     unitUsers_other: '{{count}} users',
     unitUsers_many: '{{count}} users',
-    unitUsers_advanced_one: '{{count}} VU',
-    unitUsers_advanced_other: '{{count}} VUs',
-    unitUsers_advanced_many: '{{count}} VUs',
     unitRate: '{{count}}/s',
   },
   pagination: {
@@ -345,53 +291,46 @@ export const en = {
     steps_one: '{{count}} step',
     steps_other: '{{count}} steps',
     steps_many: '{{count}} steps',
-    pauses: 'pause {{think}}s between steps',
-    pauses_advanced: 'think time {{think}}s, grace {{grace}}s',
+    pauses: 'pause {{think}}s between steps, {{grace}}s to finish',
     ownWaits: ', some steps wait their own range',
     took: 'took {{seconds}}s',
-    responseTime: 'Response time (95%)',
     errorRate: 'Errors',
-    errorRate_advanced: 'Error rate',
     requests: 'Requests',
     readTitle: 'How to read these numbers',
-    read1:
-      'Green means within its rule, red means the rule was broken. Response time (95%): 95 of every 100 requests answered within this time.',
-    read1_advanced:
-      'Green means below its limit, red means it reached the limit. p50, p90, p95 and p99: a percentile of the response time. A p95 of 300 ms means 95 of every 100 requests took 300 ms or less; the slowest 5 took longer.',
+    read1: 'Green means the number is within its limit. Red means it broke the limit.',
     read2:
       'Errors is the share of requests that did not get the expected answer. Requests is how many were sent in total, with the average per second.',
-    read2_advanced:
-      'Error rate is the share of requests that did not get the status their step expects. Requests is the total sent, with the average per second.',
     waiting: 'Results appear when the run finishes. The charts below update every 2 seconds.',
     noTotals: 'No results were recorded.',
   },
   explain: {
     percentile:
-      'A percentile of the response time. A p95 of 300 ms means 95 of every 100 requests took 300 ms or less; the slowest 5 took longer.',
-    errorRate:
-      'Error rate is the share of requests that did not get the status their step expects.',
+      'These limits check how fast requests answered. A p95 of 300 ms means 95 of every 100 requests answered in 300 ms or less.',
+    errorRate: 'Errors are requests that did not get the status their step expects.',
     failRule:
-      'A run fails when requests are too slow, when too many get a wrong answer, or when steps cannot save the values they need.',
-    failRule_advanced:
-      'A run fails when any latency value reaches its limit (each must stay below it), when the error rate reaches the maximum, or when 99% or fewer of the checks pass. Checks confirm that each step got its expected status and saved its values, so a run can fail with a 0% error rate. A rate run also fails when it drops more of its planned flow runs than the max error rate allows.',
+      'A run fails when a response time reaches its limit, or when the errors reach Allowed errors.',
+    failChecks:
+      'It also fails when 1 in 100 or more steps do not get their expected status or cannot save a value they need. So a run can fail with 0% errors.',
+    failRate:
+      'A rate run also fails when it skips more planned flow runs than Allowed errors, because all its users were busy.',
   },
   failures: {
     title: 'Failed answers (examples)',
-    title_advanced: 'Failed responses (sample)',
-    hint: 'Examples of what the site answered when a step failed. Not every failure is listed.',
-    hint_advanced:
-      'Bodies are read in 1 of every 20 flow runs, and in every flow run for steps that save values, so these are examples, not every failure. A success response (2xx) shows its JSON keys (or XML element names) only, since it may hold tokens. Each step shows up to 10 different responses, at most 3 per status.',
+    hint: 'Examples of what the site answered when a step failed.',
     extract: 'status {{status}}, a value to save was missing',
     network: 'no response (network error)',
     status: 'status {{status}}',
     statusExpected: 'status {{status}}, expected {{expected}}',
     emptyBody: '(empty body)',
+    learnTitle: 'Which answers are shown?',
+    how: 'These are examples, not every failure. Bencho keeps answers from 1 in every 20 flow runs (every flow run for steps that save values), up to 10 per step and 3 per status.',
+    private:
+      'For a success answer (2xx), only the field names show, because the content can hold passwords or tokens.',
   },
   charts: {
     label: 'Run charts',
     tabs: {
       latency: 'Response time',
-      latency_advanced: 'Latency',
       load: 'Load',
       errors: 'Errors',
     },
@@ -403,26 +342,19 @@ export const en = {
     finished: 'Finished',
     dropped: 'Dropped',
     users: 'Users',
-    users_advanced: 'Virtual users',
     requestsTitle: 'Requests per second',
     requests: 'Requests/s',
     errorsTitle: 'Failed requests (share of each second)',
     errorRate: 'Errors',
-    errorRate_advanced: 'Error rate',
     noteLatency:
-      'Each point is one second of the run. The lines show how long requests took to answer. Lines that climb as users are added mean the site is slowing down.',
-    noteLatency_advanced:
-      'Each point is one second of the run. Each line shows one percentile (p50, p90, p95, p99) of the requests that ended in that second: p95 is the time 95 of every 100 of them stayed at or under. With only a few requests in a second, p90, p95 and p99 often equal the slowest one. Lines that climb as users are added mean the API is slowing down.',
+      'Each point is one second of the run. p95 is the time 95 of every 100 requests in that second stayed within; p50 shows a typical request and p99 the slow ones. When a second has few requests, the lines can meet. Lines that climb as users are added mean the site is slowing down.',
     noteLoad:
       'Users is how many simulated users were active. Requests per second is how many requests they sent. When users keep rising but requests per second stops rising, the site has reached its limit.',
-    noteLoad_advanced:
-      'Virtual users is how many simulated users were running. Requests per second is how many requests they sent. When users keep rising but requests per second stops rising, the API has reached its limit.',
     noteRate:
-      'Flow runs per second compares the planned rate with the flow runs that finished and the ones k6 dropped because every allowed VU was busy. A flow run counts in the second it ends, so Finished trails Planned by about the length of one flow run.',
+      'Compares the flow runs planned each second with the ones that finished and the ones skipped because all users were busy. A flow run counts when it ends, so Finished runs a little behind Planned.',
     noteErrors:
       'The share of requests in each second that did not get the expected answer. Errors that start when the load peaks mean the site cannot handle that load.',
-    noteErrors_advanced:
-      'The share of requests in each second that did not get the status their step expects. Errors that start when the load peaks mean the API cannot handle that load.',
+    learnTitle: 'How to read this chart',
   },
 };
 

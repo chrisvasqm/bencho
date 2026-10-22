@@ -48,6 +48,7 @@
   --radius-md: 8px;
   --radius-lg: 12px;
   --shadow-raised: 0 1px 2px rgb(27 24 48 / 0.06), 0 4px 12px rgb(27 24 48 / 0.05);
+  --overlay: rgb(27 24 48 / 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -85,6 +86,7 @@
     --series-1: #9b87ff;
     --series-3: #6ed3b5;
     --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.35);
+    --overlay: rgb(0 0 0 / 0.6);
   }
 }
 
@@ -122,4 +124,5 @@
   --series-1: #9b87ff;
   --series-3: #6ed3b5;
   --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.35);
+  --overlay: rgb(0 0 0 / 0.6);
 }
