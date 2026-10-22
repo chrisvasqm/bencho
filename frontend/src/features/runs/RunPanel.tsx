@@ -61,6 +61,13 @@ const ERROR_TAB: Record<string, PanelTab> = {
 
 const PERCENTILES = ['p50', 'p90', 'p95', 'p99'] as const;
 
+/** Setup errors in the order they appear on the tab, with the test id of their message. */
+const SETUP_ERROR_TEST_IDS: Record<string, string> = {
+  baseUrl: 'base-url-error',
+  stages: 'stages-error',
+  maxVirtualUsers: 'max-virtual-users-error',
+};
+
 // recharts is large; the preview loads after the panel is usable.
 const LoadShapeChart = lazy(() => import('./LoadShapeChart.tsx'));
 // Mirrors the backend limits so the user sees which field to fix.
@@ -180,7 +187,7 @@ function RunPanelForm({
         frame = requestAnimationFrame(show);
         return;
       }
-      element?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       setSetupErrorToShow(undefined);
     };
     frame = requestAnimationFrame(show);
@@ -227,10 +234,9 @@ function RunPanelForm({
     if (Object.keys(nextErrors).length > 0) {
       // An error with no tab of its own still stops the run; Setup is the first tab.
       setTab(firstErrorTab ?? 'setup');
-      if ((firstErrorTab ?? 'setup') === 'setup') {
-        const setupKey = ['baseUrl', 'stages', 'maxVirtualUsers'].find((key) => nextErrors[key]);
-        if (setupKey === 'stages') setSetupErrorToShow('stages-error');
-        if (setupKey === 'maxVirtualUsers') setSetupErrorToShow('max-virtual-users-error');
+      const setupKey = Object.keys(SETUP_ERROR_TEST_IDS).find((key) => nextErrors[key]);
+      if ((firstErrorTab ?? 'setup') === 'setup' && setupKey) {
+        setSetupErrorToShow(SETUP_ERROR_TEST_IDS[setupKey]);
       }
       return;
     }
@@ -249,7 +255,11 @@ function RunPanelForm({
           label="Run settings"
           testId="panel-tab"
           value={tab}
-          onChange={setTab}
+          onChange={(next) => {
+            setTab(next);
+            // A scroll still waiting for Setup to appear no longer applies on another tab.
+            setSetupErrorToShow(undefined);
+          }}
           items={PANEL_TABS.map((item) => ({ ...item, alert: tabsWithErrors.has(item.value) }))}
         />
       }
