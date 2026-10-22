@@ -83,12 +83,8 @@
           "name": "run_points_run_id_runs_id_fk",
           "tableFrom": "run_points",
           "tableTo": "runs",
-          "columnsFrom": [
-            "run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -96,10 +92,7 @@
       "compositePrimaryKeys": {
         "run_points_run_id_second_pk": {
           "name": "run_points_run_id_second_pk",
-          "columns": [
-            "run_id",
-            "second"
-          ]
+          "columns": ["run_id", "second"]
         }
       },
       "uniqueConstraints": {},

@@ -322,11 +322,11 @@ describe('run lifecycle', () => {
 
       // A wrong token or content type gets a 500, which fails the status check: exit code 99.
       expect(run).toMatchObject({
-      status: 'passed',
-      exitCode: 0,
-      errorMessage: null,
-      stoppedEarly: false,
-    });
+        status: 'passed',
+        exitCode: 0,
+        errorMessage: null,
+        stoppedEarly: false,
+      });
       expect(received.some((request) => request.path === '/order')).toBe(true);
       expect(received[0]?.contentType).toBe('text/xml; charset=utf-8');
     });
