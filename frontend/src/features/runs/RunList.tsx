@@ -68,7 +68,6 @@ export function RunList({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.18 }}
-        role="listbox"
         aria-label={t('app.runsTitle')}
         className="m-0 list-none p-0"
       >
@@ -101,22 +100,13 @@ export function RunList({
                   exit={{ opacity: 0, transition: { duration: 0.12 } }}
                   transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
                   onClick={() => onSelect(run)}
-                  role="option"
-                  aria-selected={selected}
-                  tabIndex={0}
-                  onKeyDown={(event) => {
-                    if (event.target !== event.currentTarget) return;
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      onSelect(run);
-                    }
-                  }}
+                  aria-current={selected ? 'true' : undefined}
                   data-testid="run-row"
                   data-run-id={run.id}
                   data-status={run.status}
                   data-type={run.type}
                   style={{ height: ROW_HEIGHT_PX }}
-                  className={`flex cursor-pointer items-center gap-3 border-b border-line px-4 outline-offset-[-2px] last:border-b-0 hover:bg-surface-sunken ${
+                  className={`flex cursor-pointer items-center gap-3 border-b border-line px-4 last:border-b-0 hover:bg-surface-sunken ${
                     selected
                       ? 'bg-accent-soft shadow-[inset_3px_0_0_var(--accent)]'
                       : checkedIds.has(run.id)
@@ -124,14 +114,19 @@ export function RunList({
                         : ''
                   }`}
                 >
-                  <Checkbox
-                    aria-label={t('runs.selectRun', { time })}
-                    data-testid="run-row-checkbox"
-                    checked={checkedIds.has(run.id)}
-                    disabled={isActive(run.status)}
+                  {/* 24px hit area around the 16px box (WCAG 2.2 target size). */}
+                  <label
+                    className="-mx-1 flex size-6 shrink-0 cursor-pointer items-center justify-center"
                     onClick={(event) => event.stopPropagation()}
-                    onChange={() => toggle(run)}
-                  />
+                  >
+                    <Checkbox
+                      aria-label={t('runs.selectRun', { time })}
+                      data-testid="run-row-checkbox"
+                      checked={checkedIds.has(run.id)}
+                      disabled={isActive(run.status)}
+                      onChange={() => toggle(run)}
+                    />
+                  </label>
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <div className="flex items-center gap-1.5">
                       <button

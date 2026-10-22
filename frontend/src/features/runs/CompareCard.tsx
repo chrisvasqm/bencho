@@ -110,7 +110,9 @@ export function CompareCard({ runs, onClose }: CompareCardProps) {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-line text-left text-xs text-fg-muted">
-              <th scope="col" className="py-2 pr-3 font-medium" />
+              <th scope="col" className="py-2 pr-3 font-medium">
+                <span className="sr-only">{t('compare.metric')}</span>
+              </th>
               <th scope="col" className="px-3 py-2 font-medium">
                 {t('compare.older')}
               </th>

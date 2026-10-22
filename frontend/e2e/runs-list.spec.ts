@@ -33,7 +33,7 @@ test.describe('runs list', () => {
     await page.getByTestId('run-row').nth(1).click();
 
     await expect(detail).toHaveAttribute('data-run-id', older!.id);
-    await expect(page.getByTestId('run-row').nth(1)).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('run-row').nth(1)).toHaveAttribute('aria-current', 'true');
   });
 
   test('pages through more runs than fit on one page', async ({ page, api }) => {
