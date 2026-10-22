@@ -83,10 +83,15 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
         busy: deleting,
         run: () => onDelete(run),
       };
-  // Basic shows one response time (p95); Advanced shows all four percentiles.
+  // Basic shows one response time (p95), plus any other percentile that broke its limit, so a
+  // failed run always shows why. Advanced shows all four.
   const percentiles = advanced
     ? PERCENTILE_KEYS
-    : PERCENTILE_KEYS.filter(([label]) => label === 'p95');
+    : PERCENTILE_KEYS.filter(
+        ([label, metricKey]) =>
+          label === 'p95' ||
+          toneFor(duration?.[metricKey], run.limits.latencyLimitsMs[label]) === 'danger',
+      );
   const actionButtons = confirming ? (
     <div className="flex items-center gap-2">
       <Button
@@ -173,7 +178,7 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
             {percentiles.map(([label, metricKey]) => (
               <Stat
                 key={label}
-                label={advanced ? label : t('detail.responseTime')}
+                label={advanced || label !== 'p95' ? label : t('detail.responseTime')}
                 value={formatMs(duration?.[metricKey])}
                 limit={`< ${run.limits.latencyLimitsMs[label]} ms`}
                 tone={toneFor(duration?.[metricKey], run.limits.latencyLimitsMs[label])}

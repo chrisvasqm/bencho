@@ -150,7 +150,7 @@ function RunPanelForm({
   submitting,
   className,
 }: RunPanelProps & { defaults: RunDefaults }) {
-  const { t, advanced } = useCopy();
+  const { t, advanced, language } = useCopy();
   const [tab, setTab] = useState<PanelTab>('setup');
   const [baseUrl, setBaseUrl] = useState(defaults.baseUrl);
   const [stages, setStages] = useState<StageRow[]>(() => defaults.stages[type].map(toStageRow));
@@ -168,6 +168,24 @@ function RunPanelForm({
   const [maxErrorPercent, setMaxErrorPercent] = useState(defaults.limits.maxErrorRate * 100);
   const [latency, setLatency] = useState(defaults.limits.latencyLimitsMs);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // The input of the last start that found problems: a language switch shows them again in the
+  // new language.
+  const [checked, setChecked] = useState<{ input: CreateRunInput; steps: StepDraft[] }>();
+  const [errorsLanguage, setErrorsLanguage] = useState(language);
+  if (errorsLanguage !== language) {
+    setErrorsLanguage(language);
+    if (checked && Object.keys(errors).length > 0) {
+      const again = validate(checked.input, checked.steps, t);
+      // Keep only problems still on screen: edits since the start may have cleared some.
+      setErrors(
+        Object.fromEntries(
+          Object.keys(errors)
+            .filter((key) => again[key] !== undefined)
+            .map((key) => [key, again[key]]),
+        ),
+      );
+    }
+  }
   // Test id of a Setup error to bring into view once the tab has animated in.
   const [setupErrorToShow, setSetupErrorToShow] = useState<string | undefined>();
   useEffect(() => {
@@ -197,6 +215,10 @@ function RunPanelForm({
     setMode('users');
   }
 
+  // Basic hides these settings, but shows them again while they hold a problem to fix.
+  const showGrace = advanced || Boolean(errors.gracePeriod);
+  const allLimits = advanced || Boolean(errors.latency);
+
   // Edits clear flow errors, so the marked step always still exists.
   const errorStepId = errors.flowStep;
   const tabsWithErrors = new Set(Object.keys(errors).map((key) => ERROR_TAB[key]));
@@ -217,6 +239,7 @@ function RunPanelForm({
     };
     const nextErrors = validate(input, flowSteps, t);
     setErrors(nextErrors);
+    setChecked({ input, steps: flowSteps });
     // The first tab, in tab order, that has an error.
     const errorTabs = new Set(Object.keys(nextErrors).map((key) => ERROR_TAB[key]));
     const firstErrorTab = PANEL_TABS.find((value) => errorTabs.has(value));
@@ -477,7 +500,7 @@ function RunPanelForm({
                       />
                     </Field>
                   </div>
-                  {advanced && (
+                  {showGrace && (
                     <Field
                       label={t('panel.gracePeriod')}
                       htmlFor="grace-period"
@@ -505,17 +528,17 @@ function RunPanelForm({
                   )}
                   <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
                     <legend className="mb-1.5 text-sm font-medium text-fg">
-                      {advanced ? t('panel.latencyLimits') : t('panel.maxResponseTime')}
+                      {allLimits ? t('panel.latencyLimits') : t('panel.maxResponseTime')}
                     </legend>
                     <div
                       className={
-                        advanced ? 'grid grid-cols-2 gap-2 sm:grid-cols-4' : 'flex flex-col gap-1'
+                        allLimits ? 'grid grid-cols-2 gap-2 sm:grid-cols-4' : 'flex flex-col gap-1'
                       }
                     >
                       {/* Basic sets one limit: p95. The others keep their values. */}
-                      {(advanced ? PERCENTILES : (['p95'] as const)).map((key) => (
+                      {(allLimits ? PERCENTILES : (['p95'] as const)).map((key) => (
                         <div key={key} className="flex flex-col gap-1">
-                          {advanced && (
+                          {allLimits && (
                             <label htmlFor={`limit-${key}`} className="text-xs text-fg-muted">
                               {key}
                             </label>
@@ -535,7 +558,7 @@ function RunPanelForm({
                         </div>
                       ))}
                     </div>
-                    {!advanced && (
+                    {!allLimits && (
                       <p className="m-0 text-xs text-fg-muted">{t('panel.maxResponseTimeHint')}</p>
                     )}
                     {errors.latency && (

@@ -1,6 +1,8 @@
 // English copy. Plain words first: a key holds the Basic wording; `<key>_advanced` holds the
 // technical wording shown in Advanced mode (i18next context), and falls back to the key.
 //
+// Plurals: i18next picks _one/_many/_other by language (Spanish uses _many from 1,000,000).
+//
 // Glossary (one word per idea, same in es.ts):
 //   run = one test run · flow = the steps each user follows · step = one request
 //   simulated user (Basic) / virtual user, VU (Advanced) · pause between steps (Basic) / think time
@@ -16,6 +18,7 @@ export const en = {
     trendTitle: 'Trend',
     trendDescription_one: 'Response time of the last {{count}} {{typeLower}} run, oldest first',
     trendDescription_other: 'Response time of the last {{count}} {{typeLower}} runs, oldest first',
+    trendDescription_many: 'Response time of the last {{count}} {{typeLower}} runs, oldest first',
     trendChart: 'Response time per run',
     trendEmpty: 'Finish a run of this type to start the trend.',
     trendNote:
@@ -59,8 +62,10 @@ export const en = {
     stopFailed: 'The run did not stop',
     bulkDeleted_one: '{{count}} run deleted',
     bulkDeleted_other: '{{count}} runs deleted',
+    bulkDeleted_many: '{{count}} runs deleted',
     bulkSkipped_one: '{{count}} run was not deleted: it is still running or already gone.',
     bulkSkipped_other: '{{count}} runs were not deleted: they are still running or already gone.',
+    bulkSkipped_many: '{{count}} runs were not deleted: they are still running or already gone.',
     bulkDeleteFailed: 'The runs were not deleted',
     passed: '{{type}} test passed',
     passedHint: 'Response time (95%): {{value}}',
@@ -79,7 +84,7 @@ export const en = {
     RUN_NOT_ACTIVE: 'This run has already finished.',
     RUN_IN_PROGRESS: 'Wait for the run to finish before you delete it.',
     TARGET_NOT_ALLOWED:
-      'This address is on a private network, and Bencho is set to test public sites only.',
+      'This address ({{host}}) is on a private network, and Bencho is set to test public sites only.',
     PAYLOAD_TOO_LARGE: 'The settings are too large to send. Shorten the request bodies.',
     DATABASE_UNAVAILABLE: 'Bencho cannot reach its database. Try again in a moment.',
     INTERNAL: 'Something went wrong. Try again.',
@@ -306,10 +311,13 @@ export const en = {
     bulkDelete: 'Delete',
     bulkConfirm_one: 'Delete {{count}} run',
     bulkConfirm_other: 'Delete {{count}} runs',
+    bulkConfirm_many: 'Delete {{count}} runs',
     unitUsers_one: '{{count}} user',
     unitUsers_other: '{{count}} users',
+    unitUsers_many: '{{count}} users',
     unitUsers_advanced_one: '{{count}} VU',
     unitUsers_advanced_other: '{{count}} VUs',
+    unitUsers_advanced_many: '{{count}} VUs',
     unitRate: '{{count}}/s',
   },
   pagination: {
@@ -324,6 +332,7 @@ export const en = {
     title: 'Runs in progress',
     count_one: '{{count}} run in progress',
     count_other: '{{count}} runs in progress',
+    count_many: '{{count}} runs in progress',
     progress: '{{type}} run progress',
   },
   detail: {
@@ -336,8 +345,10 @@ export const en = {
     rateCap: 'rate, up to {{count}} VUs',
     dropped_one: '{{count}} flow run dropped (all VUs busy)',
     dropped_other: '{{count}} flow runs dropped (all VUs busy)',
+    dropped_many: '{{count}} flow runs dropped (all VUs busy)',
     steps_one: '{{count}} step',
     steps_other: '{{count}} steps',
+    steps_many: '{{count}} steps',
     pauses: 'pause {{think}}s between steps',
     pauses_advanced: 'think time {{think}}s, grace {{grace}}s',
     ownWaits: ', some steps wait their own range',

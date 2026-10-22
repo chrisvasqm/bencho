@@ -20,6 +20,8 @@ export const es: Translation = {
       'Tiempo de respuesta de la última {{count}} ejecución de {{typeLower}}, de la más antigua a la más reciente',
     trendDescription_other:
       'Tiempo de respuesta de las últimas {{count}} ejecuciones de {{typeLower}}, de la más antigua a la más reciente',
+    trendDescription_many:
+      'Tiempo de respuesta de las últimas {{count}} ejecuciones de {{typeLower}}, de la más antigua a la más reciente',
     trendChart: 'Tiempo de respuesta por ejecución',
     trendEmpty: 'Termina una ejecución de este tipo para empezar la tendencia.',
     trendNote:
@@ -69,8 +71,10 @@ export const es: Translation = {
     stopFailed: 'La ejecución no se detuvo',
     bulkDeleted_one: '{{count}} ejecución eliminada',
     bulkDeleted_other: '{{count}} ejecuciones eliminadas',
+    bulkDeleted_many: '{{count}} ejecuciones eliminadas',
     bulkSkipped_one: '{{count}} ejecución no se eliminó: sigue en curso o ya no existe.',
     bulkSkipped_other: '{{count}} ejecuciones no se eliminaron: siguen en curso o ya no existen.',
+    bulkSkipped_many: '{{count}} ejecuciones no se eliminaron: siguen en curso o ya no existen.',
     bulkDeleteFailed: 'Las ejecuciones no se eliminaron',
     passed: 'Prueba de {{typeLower}} aprobada',
     passedHint: 'Tiempo de respuesta (95 %): {{value}}',
@@ -90,7 +94,7 @@ export const es: Translation = {
     RUN_NOT_ACTIVE: 'Esta ejecución ya terminó.',
     RUN_IN_PROGRESS: 'Espera a que la ejecución termine antes de eliminarla.',
     TARGET_NOT_ALLOWED:
-      'Esta dirección está en una red privada, y Bencho está configurado para probar solo sitios públicos.',
+      'Esta dirección ({{host}}) está en una red privada, y Bencho está configurado para probar solo sitios públicos.',
     PAYLOAD_TOO_LARGE: 'Los ajustes son demasiado grandes para enviarlos. Acorta los cuerpos.',
     DATABASE_UNAVAILABLE: 'Bencho no puede conectarse a su base de datos. Inténtalo en un momento.',
     INTERNAL: 'Algo salió mal. Inténtalo de nuevo.',
@@ -322,10 +326,13 @@ export const es: Translation = {
     bulkDelete: 'Eliminar',
     bulkConfirm_one: 'Eliminar {{count}} ejecución',
     bulkConfirm_other: 'Eliminar {{count}} ejecuciones',
+    bulkConfirm_many: 'Eliminar {{count}} ejecuciones',
     unitUsers_one: '{{count}} usuario',
     unitUsers_other: '{{count}} usuarios',
+    unitUsers_many: '{{count}} usuarios',
     unitUsers_advanced_one: '{{count}} VU',
     unitUsers_advanced_other: '{{count}} VUs',
+    unitUsers_advanced_many: '{{count}} VUs',
     unitRate: '{{count}}/s',
   },
   pagination: {
@@ -340,6 +347,7 @@ export const es: Translation = {
     title: 'Ejecuciones en curso',
     count_one: '{{count}} ejecución en curso',
     count_other: '{{count}} ejecuciones en curso',
+    count_many: '{{count}} ejecuciones en curso',
     progress: 'Progreso de la ejecución de {{typeLower}}',
   },
   detail: {
@@ -352,8 +360,10 @@ export const es: Translation = {
     rateCap: 'tasa, hasta {{count}} VUs',
     dropped_one: '{{count}} flujo descartado (todos los VUs ocupados)',
     dropped_other: '{{count}} flujos descartados (todos los VUs ocupados)',
+    dropped_many: '{{count}} flujos descartados (todos los VUs ocupados)',
     steps_one: '{{count}} paso',
     steps_other: '{{count}} pasos',
+    steps_many: '{{count}} pasos',
     pauses: 'pausa de {{think}}s entre pasos',
     pauses_advanced: 'think time {{think}}s, gracia {{grace}}s',
     ownWaits: ', algunos pasos esperan su propio rango',

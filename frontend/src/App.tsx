@@ -53,7 +53,7 @@ export function App() {
         description: t('app.backendDownHint'),
       });
     }
-  }, [defaults.isError]);
+  }, [defaults.isError, t]);
 
   const runs = useQuery({
     queryKey: ['runs', type, page],
@@ -331,15 +331,15 @@ function Logo() {
   );
 }
 
-// Mirrors the backend limit, for the TOO_MANY_RUNS message.
-const MAX_CONCURRENT_RUNS = 3;
-
 /** A translated message for a known error code, else the backend's own (English) message. */
 function describeError(error: Error, t: Copy): string {
   if (!(error instanceof ApiError)) return t('errors.offline');
   if (error.code === 'VALIDATION') return t('errors.validation');
+  // TOO_MANY_RUNS sends its limit; TARGET_NOT_ALLOWED ends its message with the host.
+  const details = (error.details ?? {}) as { max?: number };
   return t(`errors.${error.code}` as 'errors.INTERNAL', {
     defaultValue: error.message,
-    max: MAX_CONCURRENT_RUNS,
+    max: details.max,
+    host: /\(([^)]+)\)$/.exec(error.message)?.[1] ?? '',
   });
 }

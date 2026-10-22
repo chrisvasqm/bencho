@@ -14,7 +14,7 @@ export function storedChoice<T extends string>(
   apply: (value: T) => void = () => undefined,
 ): StoredChoice<T> {
   const listeners = new Set<() => void>();
-  const read = (): T => {
+  const load = (): T => {
     try {
       const stored = localStorage.getItem(key);
       return values.includes(stored as T) ? (stored as T) : fallback();
@@ -22,26 +22,33 @@ export function storedChoice<T extends string>(
       return fallback();
     }
   };
+  // Read once and kept here, so the many components that read the choice never touch storage.
+  let current = load();
+  const notify = () => {
+    for (const listener of listeners) listener();
+  };
+  const read = (): T => current;
   const write = (value: T) => {
     try {
       localStorage.setItem(key, value);
     } catch {
       // Storage blocked: the choice still applies for this page view.
     }
+    current = value;
     apply(value);
-    for (const listener of listeners) listener();
+    notify();
   };
+  // One listener for changes made in other tabs, shared by every subscriber.
+  window.addEventListener('storage', (event) => {
+    if (event.key !== key) return;
+    current = load();
+    apply(current);
+    notify();
+  });
   const subscribe = (listener: () => void) => {
     listeners.add(listener);
-    const onStorage = (event: StorageEvent) => {
-      if (event.key !== key) return;
-      apply(read());
-      listener();
-    };
-    window.addEventListener('storage', onStorage);
     return () => {
       listeners.delete(listener);
-      window.removeEventListener('storage', onStorage);
     };
   };
   const use = (): [T, (value: T) => void] => {

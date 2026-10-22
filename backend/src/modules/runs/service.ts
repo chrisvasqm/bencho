@@ -86,6 +86,7 @@ export class RunsService {
         409,
         'TOO_MANY_RUNS',
         `At most ${MAX_CONCURRENT_RUNS} runs can be in progress. Wait for one to finish.`,
+        { max: MAX_CONCURRENT_RUNS },
       );
     }
     this.starting += 1;

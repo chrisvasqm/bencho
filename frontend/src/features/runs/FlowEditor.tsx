@@ -258,6 +258,8 @@ function StepFields({
   className,
 }: StepFieldsProps) {
   const { t, advanced } = useCopy();
+  // Basic hides headers and saved values, but shows them while the step has a problem to fix.
+  const showMore = advanced || Boolean(error);
   const id = step.id;
   const soap = step.bodyFormat === 'soap';
   const errorRef = useRef<HTMLParagraphElement>(null);
@@ -322,7 +324,7 @@ function StepFields({
           />
         </div>
       </Field>
-      {advanced && (
+      {showMore && (
         <div className="flex flex-col gap-1.5" data-testid="step-headers">
           <span className="text-sm font-medium text-fg">{t('flow.headers')}</span>
           <PairsEditor
@@ -398,7 +400,7 @@ function StepFields({
           </Field>
         </div>
       </div>
-      {advanced && (
+      {showMore && (
         <div className="flex flex-col gap-1.5" data-testid="step-saves">
           <span className="text-sm font-medium text-fg">{t('flow.save')}</span>
           <p className="m-0 text-xs text-fg-muted">
