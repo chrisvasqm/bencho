@@ -46,10 +46,12 @@ export class TimeseriesAggregator {
   private lastVirtualUsers = 0;
   private closedUpTo = Number.NEGATIVE_INFINITY;
   /**
-   * Unix second of k6's first sample: point second 0 is when the test itself started, after k6
-   * loaded the script and created its VUs, so the points line up with the planned stages.
+   * Unix second of k6's earliest sample: point second 0 is when the test itself started, after k6
+   * loaded the script and created its VUs, so the points line up with the planned stages. Rows can
+   * arrive out of order, so it keeps the earliest one seen until the first points are drained.
    */
   private startSecond: number | undefined;
+  private startFixed = false;
 
   /** Adds raw CSV text. Lines may be split across chunks. */
   consume(chunk: string): void {
@@ -68,6 +70,7 @@ export class TimeseriesAggregator {
     const ready = [...this.buckets.keys()]
       .filter((second) => second <= cutoff)
       .sort((a, b) => a - b);
+    if (ready.length > 0) this.startFixed = true;
     const last = ready.at(-1);
     if (last !== undefined) this.closedUpTo = Math.max(this.closedUpTo, last);
     return ready.map((second) => {
@@ -97,7 +100,7 @@ export class TimeseriesAggregator {
     const value = Number(rawValue);
     if (!metric || !Number.isFinite(second) || !Number.isFinite(value)) return; // header or junk
     if (second <= this.closedUpTo) return; // too late: that second is already stored
-    this.startSecond ??= second;
+    if (!this.startFixed) this.startSecond = Math.min(this.startSecond ?? second, second);
     this.latestSecond = Math.max(this.latestSecond, second);
     const bucket = this.bucketFor(second);
     if (metric === 'http_req_duration') bucket.durations.push(value);

@@ -20,7 +20,7 @@ const CHART_TABS: ReadonlyArray<{ value: ChartTab; label: string }> = [
 const CHART_NOTES: Record<ChartTab, string> = {
   latency:
     'Each point is one second of the run. Each line shows one percentile (p50, p90, p95, p99) of the requests that ended in that second: p95 is the time 95 of every 100 of them stayed at or under. With only a few requests in a second, p90, p95 and p99 often equal the slowest one. Lines that climb as users are added mean the API is slowing down.',
-  load: 'Virtual users is how many simulated users were running. Requests per second is how many requests they sent. When users keep rising but requests per second stops rising, the API has reached its limit. For a rate run, flow runs per second compares the planned rate with the flow runs that finished and the ones k6 dropped because every allowed VU was busy. A flow run counts in the second it ends, so Finished trails Planned by about the length of one flow run.',
+  load: 'Virtual users is how many simulated users were running. Requests per second is how many requests they sent. When users keep rising but requests per second stops rising, the API has reached its limit.',
   errors:
     'The share of requests in each second that did not get the status their step expects. Errors that start when the load peaks mean the API cannot handle that load.',
 };
@@ -122,6 +122,13 @@ export function RunCharts({ run }: { run: Run }) {
       {data.length > 0 && (
         <Note>
           <p className="m-0">{CHART_NOTES[tab]}</p>
+          {tab === 'load' && run.mode === 'rate' && (
+            <p className="m-0">
+              Flow runs per second compares the planned rate with the flow runs that finished and
+              the ones k6 dropped because every allowed VU was busy. A flow run counts in the second
+              it ends, so Finished trails Planned by about the length of one flow run.
+            </p>
+          )}
         </Note>
       )}
     </div>
