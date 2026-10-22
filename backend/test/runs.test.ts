@@ -220,6 +220,16 @@ describe('POST /api/v1/runs', () => {
       expect(response.body.run.flow).toEqual(flow);
     });
 
+    it('accepts a SOAP body with a byte order mark and non-ASCII element names', async () => {
+      const flow = [
+        soapStep('\uFEFF<?xml version="1.0"?><Pedido><Descripción>{{uuid}}</Descripción></Pedido>'),
+      ];
+
+      const response = await createRun(runPayload({ flow }));
+
+      expect(response.status).toBe(202);
+    });
+
     it('stores the grace period', async () => {
       const response = await createRun(runPayload({ gracePeriodSeconds: 0 }));
 

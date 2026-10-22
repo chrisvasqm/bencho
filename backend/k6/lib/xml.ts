@@ -10,7 +10,8 @@ export interface XmlElement {
 }
 
 // An open tag with its attributes; sticky, so it matches only where the tag starts.
-const OPEN_TAG = /<([A-Za-z_][\w.:-]*)((?:\s+[^\s=/>]+\s*=\s*(?:"[^"<]*"|'[^'<]*'))*)\s*(\/?)>/y;
+const OPEN_TAG =
+  /<([\p{L}_][\p{L}\p{N}.:_-]*)((?:\s+[^\s=/>]+\s*=\s*(?:"[^"<]*"|'[^'<]*'))*)\s*(\/?)>/uy;
 // Only the five predefined entities and character references: no DOCTYPE, so no others exist.
 const BAD_AMPERSAND = /&(?!(?:#x[0-9A-Fa-f]+|#\d+|lt|gt|amp|quot|apos);)/;
 const ENTITY = /&(#x[0-9A-Fa-f]+|#\d+|lt|gt|amp|quot|apos);/g;
@@ -54,7 +55,8 @@ export function parseXml(text: string): XmlElement {
   // A document node above the root, so the root is found like any other element.
   const document: XmlElement = { name: '', children: [], text: '' };
   const open: { tag: string; element: XmlElement }[] = [];
-  let index = 0;
+  // A UTF-8 byte order mark, as .NET services send, is not text outside the root.
+  let index = text.startsWith('\uFEFF') ? 1 : 0;
   while (index < text.length) {
     const parent = open[open.length - 1]?.element;
     if (text.charAt(index) !== '<') {
@@ -138,9 +140,8 @@ export function xmlValue(document: XmlElement, path: string): string | undefined
 
 /** Element names only, no text or attributes; repeated siblings show once: <Envelope><Body/>... */
 export function xmlShape(element: XmlElement): string {
-  const unique = element.children.filter(
-    (child, index, all) => all.findIndex((other) => other.name === child.name) === index,
-  );
+  const seen = new Set<string>();
+  const unique = element.children.filter((child) => !seen.has(child.name) && seen.add(child.name));
   const inner = unique.map(xmlShape).join('');
   if (element.name === '') return inner;
   return inner === '' ? `<${element.name}/>` : `<${element.name}>${inner}</${element.name}>`;
