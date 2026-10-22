@@ -340,7 +340,7 @@ function RunPanelForm({
                       stages={stages}
                       onChange={setStages}
                       targetLabel={TARGET_LABELS[mode]}
-                      targetStep={mode === 'rate' ? 0.01 : 1}
+                      decimals={mode === 'rate'}
                     />
                   </Field>
                   {mode === 'rate' && (

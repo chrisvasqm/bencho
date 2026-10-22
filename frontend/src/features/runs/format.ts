@@ -45,10 +45,8 @@ export const TARGET_LABELS: Record<LoadMode, string> = {
 export function isValidTarget(target: number, mode: LoadMode): boolean {
   if (!Number.isFinite(target) || target < 0) return false;
   if (mode === 'users') return Number.isSafeInteger(target);
-  const scaled = target * 100;
-  return (
-    Math.abs(scaled - Math.round(scaled)) < 1e-9 && Number.isSafeInteger(Math.round(target * 3600))
-  );
+  // toFixed compares at any size, where a fixed tolerance fails on large rates.
+  return Number(target.toFixed(2)) === target && Number.isSafeInteger(Math.round(target * 3600));
 }
 
 /** What the stage targets mean in each mode, shown under the switch. */
@@ -123,7 +121,11 @@ export function plannedShape(stages: Stage[]): PlannedPoint[] {
     const seconds = durationToSeconds(stage.duration);
     if (!Number.isFinite(seconds)) return points;
     elapsed += seconds;
-    points.push({ second: elapsed, virtualUsers: stage.target });
+    // A target still being typed (not a number yet) draws as 0.
+    points.push({
+      second: elapsed,
+      virtualUsers: Number.isFinite(stage.target) ? stage.target : 0,
+    });
   }
   return points;
 }

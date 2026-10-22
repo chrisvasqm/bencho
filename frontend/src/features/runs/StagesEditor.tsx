@@ -1,19 +1,18 @@
 import { Button, Input } from '../../components/ui/index.ts';
-import type { Stage } from '../../api/runs.ts';
-import { toStageRow, type StageRow } from './stages.ts';
+import { parseTarget, toStageRow, type StageRow } from './stages.ts';
 
 export interface StagesEditorProps {
   stages: StageRow[];
   onChange: (stages: StageRow[]) => void;
   /** What a target counts, for the column header and labels. */
   targetLabel: string;
-  /** Input step: 1 for VUs, 0.01 for a rate. */
-  targetStep: number;
+  /** Rate targets take decimals (0.25 or 0,25); VU targets are whole. */
+  decimals: boolean;
 }
 
 /** Rows of duration + target users. The last row usually ramps down to 0. */
-export function StagesEditor({ stages, onChange, targetLabel, targetStep }: StagesEditorProps) {
-  const update = (index: number, patch: Partial<Stage>) =>
+export function StagesEditor({ stages, onChange, targetLabel, decimals }: StagesEditorProps) {
+  const update = (index: number, patch: Partial<StageRow>) =>
     onChange(
       stages.map((stage, position) => (position === index ? { ...stage, ...patch } : stage)),
     );
@@ -44,11 +43,14 @@ export function StagesEditor({ stages, onChange, targetLabel, targetStep }: Stag
             aria-label={`Stage ${index + 1} ${targetLabel.toLowerCase()}`}
             data-testid={`stage-${index}-target`}
             mono
-            type="number"
-            min={0}
-            step={targetStep}
-            value={stage.target}
-            onChange={(event) => update(index, { target: Number(event.target.value) })}
+            inputMode={decimals ? 'decimal' : 'numeric'}
+            value={stage.targetText}
+            onChange={(event) =>
+              update(index, {
+                targetText: event.target.value,
+                target: parseTarget(event.target.value),
+              })
+            }
           />
           <Button
             variant="ghost"

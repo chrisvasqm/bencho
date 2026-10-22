@@ -85,7 +85,8 @@ test('accepts a rate below 1 per second and refuses one with 3 decimals', async 
   await expect(page.getByTestId('run-row')).toHaveCount(0);
 
   await setSingleStage(page, '2s');
-  await page.getByTestId('stage-0-target').fill('0.5');
+  // A comma decimal, as Spanish keyboards type it.
+  await page.getByTestId('stage-0-target').fill('0,5');
   await setLooseLimits(page);
   const post = page.waitForRequest(
     (request) => request.method() === 'POST' && request.url().endsWith('/api/v1/runs'),

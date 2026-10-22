@@ -19,10 +19,10 @@ function numberFromEnv(name: string, fallback: number): number {
   return value;
 }
 
-function parseStage(entry: string): Stage {
+function parseStage(entry: string, mode: LoadMode): Stage {
   const [duration = '', rawTarget = ''] = entry.trim().split(':');
   const target = Number(rawTarget);
-  if (!DURATION_PATTERN.test(duration) || !isValidTarget(target, modeFromEnv())) {
+  if (!DURATION_PATTERN.test(duration) || !isValidTarget(target, mode)) {
     throw new Error(
       `STAGES entry "${entry}" must be <duration>:<target>, for example 30s:10 (rate: up to 2 decimals)`,
     );
@@ -61,7 +61,7 @@ function gracePeriodFromEnv(): number {
 /** STAGES="30s:10,1m:10,30s:0" replaces the test's default load shape. */
 export function stagesFromEnv(defaultStages: Stage[]): Stage[] {
   const raw = __ENV.STAGES;
-  return raw ? raw.split(',').map(parseStage) : defaultStages;
+  return raw ? raw.split(',').map((entry) => parseStage(entry, config.mode)) : defaultStages;
 }
 
 const { thinkTimeSeconds, gracePeriodSeconds, maxErrorRate, latencyLimitsMs } = DEFAULT_LIMITS;

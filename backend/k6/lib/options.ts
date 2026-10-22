@@ -1,7 +1,7 @@
 // Builds k6 options for a test: its load shape plus the shared pass/fail limits from config.
 import type { Options, Stage } from 'k6/options';
 import { config, stagesFromEnv } from './config.ts';
-import { durationToSeconds } from './defaults.ts';
+import { RATE_TIME_UNIT_SECONDS, durationToSeconds } from './defaults.ts';
 
 /** Flow runs a rate shape plans in total: the area under its straight-line ramps, from 0. */
 function plannedRuns(stages: Stage[]): number {
@@ -56,8 +56,11 @@ export function buildOptions(defaultStages: Stage[]): Options {
         executor: 'ramping-arrival-rate',
         startRate: 0,
         // Per hour, so rates below 1 per second (0.25/s = 900/h) stay whole numbers for k6.
-        timeUnit: '1h',
-        stages: stages.map((stage) => ({ ...stage, target: Math.round(stage.target * 3600) })),
+        timeUnit: `${RATE_TIME_UNIT_SECONDS}s`,
+        stages: stages.map((stage) => ({
+          ...stage,
+          target: Math.round(stage.target * RATE_TIME_UNIT_SECONDS),
+        })),
         // All VUs up front, like users mode: VUs added mid-run start late and cause drops.
         preAllocatedVUs: maxVirtualUsers,
         maxVUs: maxVirtualUsers,

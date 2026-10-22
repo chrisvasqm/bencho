@@ -208,14 +208,16 @@ export const createRunSchema = z
     message: 'Max virtual users applies only to rate runs',
     path: ['maxVirtualUsers'],
   })
-  .refine(
-    (input) =>
-      (input.stages ?? []).every((stage) => isValidTarget(stage.target, input.mode ?? 'users')),
-    {
-      message: 'Targets must be whole virtual users, or a rate with at most 2 decimals',
-      path: ['stages'],
-    },
-  );
+  .superRefine((input, context) => {
+    for (const [index, stage] of (input.stages ?? []).entries()) {
+      if (isValidTarget(stage.target, input.mode ?? 'users')) continue;
+      context.addIssue({
+        code: 'custom',
+        message: 'Use whole virtual users, or a rate with at most 2 decimals',
+        path: ['stages', index, 'target'],
+      });
+    }
+  });
 export type CreateRunInput = z.infer<typeof createRunSchema>;
 
 export const listRunsQuerySchema = z.object({
