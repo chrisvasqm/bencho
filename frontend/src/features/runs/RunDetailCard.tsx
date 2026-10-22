@@ -129,7 +129,18 @@ export function RunDetailCard({
     limit: `< ${run.limits.latencyLimitsMs[label]} ms`,
     tone: toneFor(duration?.[metricKey], run.limits.latencyLimitsMs[label]),
   }));
-  const headline = latency[latency.length - 1] ?? { value: '–', tone: 'neutral' as const };
+  const headline: StatDetail = latency[latency.length - 1] ?? { label: 'p99', value: '–' };
+  const statusFor = (tone: StatTone = 'neutral') =>
+    tone === 'neutral'
+      ? undefined
+      : t(tone === 'success' ? 'detail.withinLimit' : 'detail.overLimit');
+  const meterFor = (value: number | undefined, limit: number) =>
+    value === undefined
+      ? undefined
+      : {
+          ratio: value / limit,
+          label: t('detail.ofLimit', { percent: Math.round((value / limit) * 100) }),
+        };
   const dropped = run.summary?.metrics.dropped_iterations?.count ?? 0;
   const elapsed = durationSeconds(run);
   const active = isActive(run.status);
@@ -289,6 +300,8 @@ export function RunDetailCard({
               value={headline.value}
               limit={headline.limit}
               tone={headline.tone}
+              status={statusFor(headline.tone)}
+              meter={meterFor(duration?.['p(99)'], run.limits.latencyLimitsMs.p99)}
               details={latency}
             />
             <Stat
@@ -296,11 +309,15 @@ export function RunDetailCard({
               value={formatPercent(failed?.value)}
               limit={`< ${formatPercent(run.limits.maxErrorRate)}`}
               tone={toneFor(failed?.value, run.limits.maxErrorRate)}
+              status={statusFor(toneFor(failed?.value, run.limits.maxErrorRate))}
+              meter={meterFor(failed?.value, run.limits.maxErrorRate)}
             />
             <Stat
               label={t('detail.requests')}
-              value={requests ? String(requests.count) : '–'}
-              unit={requests ? `${requests.rate.toFixed(1)}/s` : undefined}
+              value={requests ? requests.count.toLocaleString(language) : '–'}
+              unit={
+                requests ? t('detail.perSecond', { rate: requests.rate.toFixed(1) }) : undefined
+              }
             />
           </div>
         ) : (
