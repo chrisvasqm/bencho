@@ -12,9 +12,6 @@ export interface RunFilterValues {
 
 export const EMPTY_RUN_FILTERS: RunFilterValues = { type: 'all', fromDay: '', toDay: '' };
 
-export const isFiltering = (values: RunFilterValues) =>
-  values.type !== 'all' || values.fromDay !== '' || values.toDay !== '';
-
 /** Both days set and the end before the start: the range holds nothing. */
 export const isRangeInverted = (values: RunFilterValues) =>
   values.fromDay !== '' && values.toDay !== '' && values.toDay < values.fromDay;

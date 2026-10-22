@@ -1,14 +1,8 @@
 // Filters above the run list: one test type or all, and a range of calendar days.
-import { X } from 'lucide-react';
 import { RUN_TYPES } from '../../api/runs.ts';
-import { Button, Input, SegmentedControl } from '../../components/ui/index.ts';
+import { Input, SegmentedControl } from '../../components/ui/index.ts';
 import { useCopy } from '../../i18n/useCopy.ts';
-import {
-  EMPTY_RUN_FILTERS,
-  isFiltering,
-  isRangeInverted,
-  type RunFilterValues,
-} from './filters.ts';
+import { isRangeInverted, type RunFilterValues } from './filters.ts';
 
 export interface RunFiltersProps {
   values: RunFilterValues;
@@ -20,30 +14,17 @@ export function RunFilters({ values, onChange }: RunFiltersProps) {
   const inverted = isRangeInverted(values);
   return (
     <div className="flex flex-col gap-2" data-testid="runs-filters">
-      <div className="flex items-center justify-between gap-2">
-        <SegmentedControl
-          label={t('runs.filterType')}
-          testId="runs-filter-type"
-          value={values.type}
-          onChange={(type) => onChange({ ...values, type })}
-          options={[
-            { value: 'all', label: t('runs.filterAllTypes') },
-            ...RUN_TYPES.map((type) => ({ value: type, label: t(`runType.${type}`) })),
-          ]}
-        />
-        {isFiltering(values) && (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="shrink-0 px-2"
-            aria-label={t('runs.filterClear')}
-            data-testid="runs-filter-clear"
-            onClick={() => onChange(EMPTY_RUN_FILTERS)}
-          >
-            <X size={14} aria-hidden />
-          </Button>
-        )}
-      </div>
+      <SegmentedControl
+        label={t('runs.filterType')}
+        testId="runs-filter-type"
+        fullWidth
+        value={values.type}
+        onChange={(type) => onChange({ ...values, type })}
+        options={[
+          { value: 'all', label: t('runs.filterAllTypes') },
+          ...RUN_TYPES.map((type) => ({ value: type, label: t(`runType.${type}`) })),
+        ]}
+      />
       <div className="flex items-center gap-2">
         <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-fg-muted">
           {t('runs.filterFrom')}

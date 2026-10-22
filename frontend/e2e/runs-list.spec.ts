@@ -71,7 +71,7 @@ test.describe('runs list filters', () => {
     await expect(rows.first()).toHaveAttribute('data-run-id', stress!.id);
     await expect(page.getByTestId('pagination-range')).toHaveText('1–1 of 1');
 
-    await page.getByTestId('runs-filter-clear').click();
+    await page.getByTestId('runs-filter-type-all').click();
     await expect(rows).toHaveCount(3);
   });
 

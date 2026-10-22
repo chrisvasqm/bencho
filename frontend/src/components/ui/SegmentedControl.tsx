@@ -11,6 +11,8 @@ export interface SegmentedControlProps<Value extends string> {
   onChange: (value: Value) => void;
   label: string;
   size?: 'sm' | 'md';
+  /** Fills the row; the options split it evenly. */
+  fullWidth?: boolean;
   /** Prefix for test ids: each option gets `${testId}-${value}`. */
   testId?: string;
 }
@@ -22,13 +24,17 @@ export function SegmentedControl<Value extends string>({
   onChange,
   label,
   size = 'sm',
+  fullWidth = false,
   testId,
 }: SegmentedControlProps<Value>) {
   return (
     <div
       role="radiogroup"
       aria-label={label}
-      className="inline-flex rounded-md bg-surface-sunken p-0.5"
+      className={cn(
+        'rounded-md bg-surface-sunken p-0.5',
+        fullWidth ? 'flex w-full' : 'inline-flex',
+      )}
     >
       {options.map((option) => {
         const selected = option.value === value;
@@ -42,6 +48,7 @@ export function SegmentedControl<Value extends string>({
             onClick={() => onChange(option.value)}
             className={cn(
               'rounded-[5px] font-medium transition-colors',
+              fullWidth && 'min-w-0 flex-1 truncate',
               size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm',
               selected ? 'bg-surface text-fg' : 'text-fg-muted hover:text-fg',
             )}

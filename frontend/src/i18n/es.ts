@@ -336,7 +336,6 @@ export const es: Translation = {
     filterAllTypes: 'Todas',
     filterFrom: 'Desde',
     filterTo: 'Hasta',
-    filterClear: 'Quitar filtros',
     filterRangeInverted:
       'La fecha final es anterior a la inicial. Las fechas se ignoran hasta que se corrija.',
     selectAll: 'Seleccionar todas las ejecuciones terminadas de esta página',
