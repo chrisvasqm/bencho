@@ -5,7 +5,14 @@ import type { Run } from '../../api/runs.ts';
 import { Badge, Checkbox, Skeleton } from '../../components/ui/index.ts';
 import { useCopy } from '../../i18n/useCopy.ts';
 import { RunSparkline } from './RunSparkline.tsx';
-import { STATUS_TONES, formatMs, formatPeak, formatTime, isActive } from './format.ts';
+import {
+  STATUS_TONES,
+  formatMs,
+  formatPeak,
+  formatPercent,
+  formatTime,
+  isActive,
+} from './format.ts';
 
 export interface RunListProps {
   runs: Run[];
