@@ -4,17 +4,17 @@ Run [k6](https://k6.io) load, stress and spike tests from a web UI. Each run kee
 
 ## Getting started
 
-You need Docker only.
+You need Docker only (pnpm optional).
 
 ```sh
 git clone https://github.com/chrisvasqm/bencho.git
 cd bencho
-docker compose up -d --build
+docker compose up -d --build   # or: pnpm setup
 ```
 
 Open http://localhost:10004, click **New run**, pick a test type and click **Start load test** (or stress/spike). The default target `http://quickpizza:3333` is a demo app in the stack; any URL works. Load tests stop at the first broken limit (after 30 s); stress and spike run to the end (a checkbox in Limits changes it). Every run keeps its settings: **Retry** repeats it (after a confirm), **Reuse** opens the form filled in, and ticking two runs compares them. In the Steps section, **Load SOAP example** sets the target to the SOAP demo app (`http://soap-demo:8080`, [Learn Web Services](https://www.learnwebservices.com/): SayHello and a temperature converter) and loads a three-step SOAP flow.
 
-Stop with `docker compose down` (add `-v` to delete stored runs).
+Stop with `docker compose down` or `pnpm teardown` (add `-v` to delete stored runs).
 
 | Service    | URL                             | Port var          |
 | ---------- | ------------------------------- | ----------------- |
@@ -80,6 +80,8 @@ cd frontend && pnpm storybook              # UI kit on :10006
 ```
 
 `pnpm check` runs typecheck, lint, format and build in each project.
+
+Root scripts wrap the full Docker stack: `pnpm setup` builds and starts it, `pnpm watch` rebuilds backend and frontend on file changes (run after `setup`), `pnpm teardown` stops it.
 
 ## Tests
 
