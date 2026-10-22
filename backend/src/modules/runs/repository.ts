@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, inArray, lte, notInArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, lt, notInArray } from 'drizzle-orm';
 import type { Database } from '../../core/db.ts';
 import {
   ACTIVE_RUN_STATUSES,
@@ -18,7 +18,7 @@ export interface RunListFilters {
   active?: boolean;
   /** Created at or after. */
   from?: Date | undefined;
-  /** Created at or before. */
+  /** Created before (excluded). */
   to?: Date | undefined;
 }
 
@@ -44,7 +44,7 @@ export class RunsRepository {
       type ? eq(runs.type, type) : undefined,
       active ? inArray(runs.status, [...ACTIVE_RUN_STATUSES]) : undefined,
       from ? gte(runs.createdAt, from) : undefined,
-      to ? lte(runs.createdAt, to) : undefined,
+      to ? lt(runs.createdAt, to) : undefined,
     );
     const [rows, [totals]] = await Promise.all([
       this.db.query.runs.findMany({

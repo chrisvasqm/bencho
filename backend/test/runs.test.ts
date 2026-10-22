@@ -561,30 +561,30 @@ describe('GET /api/v1/runs', () => {
       expect(ids(response.body.runs)).toEqual([seeded[2]?.id]);
     });
 
-    it('filters by creation date, both ends included', async () => {
-      // Seeded one minute apart from 2026-01-01T00:00Z: the range covers runs 1, 2 and 3.
+    it('filters by creation date: from included, to excluded', async () => {
+      // Seeded one minute apart from 2026-01-01T00:00Z: [00:01, 00:03) covers runs 1 and 2.
       const from = new Date(Date.UTC(2026, 0, 1, 0, 1)).toISOString();
       const to = new Date(Date.UTC(2026, 0, 1, 0, 3)).toISOString();
       const response = await listRuns({ from, to });
 
-      expect(response.body.total).toBe(3);
-      expect(ids(response.body.runs)).toEqual([seeded[3]?.id, seeded[2]?.id, seeded[1]?.id]);
+      expect(response.body.total).toBe(2);
+      expect(ids(response.body.runs)).toEqual([seeded[2]?.id, seeded[1]?.id]);
     });
 
     it('accepts an open-ended date range and an offset', async () => {
       const onlyFrom = await listRuns({ from: '2026-01-01T00:03:00.000Z' });
-      // 01:02 at +01:00 is 00:02Z: the first three runs.
+      // 01:02 at +01:00 is 00:02Z, excluded: the first two runs.
       const onlyTo = await listRuns({ to: '2026-01-01T01:02:00+01:00' });
 
       expect(ids(onlyFrom.body.runs)).toEqual([seeded[4]?.id, seeded[3]?.id]);
-      expect(ids(onlyTo.body.runs)).toEqual([seeded[2]?.id, seeded[1]?.id, seeded[0]?.id]);
+      expect(ids(onlyTo.body.runs)).toEqual([seeded[1]?.id, seeded[0]?.id]);
     });
 
     it('combines the date range with the type filter', async () => {
       const response = await listRuns({
         type: 'load',
         from: '2026-01-01T00:01:00Z',
-        to: '2026-01-01T00:04:00Z',
+        to: '2026-01-01T00:05:00Z',
       });
 
       expect(ids(response.body.runs)).toEqual([seeded[4]?.id, seeded[2]?.id]);

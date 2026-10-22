@@ -167,7 +167,7 @@ export interface CreateRunInput {
 
 export interface RunListFilters {
   type?: RunType;
-  /** ISO 8601 instants: created at or after `from`, at or before `to`. */
+  /** ISO 8601 instants: created at or after `from` and before `to` (a half-open range). */
   from?: string;
   to?: string;
 }

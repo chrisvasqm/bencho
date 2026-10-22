@@ -239,7 +239,7 @@ export const listRunsQuerySchema = z
       .transform((value) => value === 'true'),
     /** Only runs created at or after this instant. */
     from: instantSchema.optional(),
-    /** Only runs created at or before this instant. */
+    /** Only runs created before this instant (excluded), so a day ends at the next midnight. */
     to: instantSchema.optional(),
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(50).default(10),

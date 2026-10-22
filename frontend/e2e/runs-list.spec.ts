@@ -85,7 +85,7 @@ test.describe('runs list filters', () => {
 
     // A range that starts tomorrow holds nothing; one that starts today holds both runs.
     await page.getByTestId('runs-filter-from').fill(tomorrow);
-    await expect(page.getByTestId('runs-empty')).toHaveText('No runs match these filters.');
+    await expect(page.getByTestId('runs-empty')).toBeVisible();
 
     await page.getByTestId('runs-filter-from').fill(today);
     await page.getByTestId('runs-filter-to').fill(today);

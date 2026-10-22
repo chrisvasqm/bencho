@@ -17,7 +17,7 @@ import { RunFilters } from './features/runs/RunFilters.tsx';
 import { RunList } from './features/runs/RunList.tsx';
 import {
   EMPTY_RUN_FILTERS,
-  isFiltering,
+  hasListFilters,
   toListFilters,
   type RunFilterValues,
 } from './features/runs/filters.ts';
@@ -41,6 +41,7 @@ export function App() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<RunFilterValues>(EMPTY_RUN_FILTERS);
   const listFilters = toListFilters(filters);
+  const filtering = hasListFilters(listFilters);
   const listKey = JSON.stringify(listFilters);
   const [selectedId, setSelectedId] = useState<string>();
   const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(new Set());
@@ -82,7 +83,8 @@ export function App() {
   }, [runs.data, page, lastPage]);
 
   // Fall back to the newest run on the page when nothing is picked (or the pick was deleted).
-  const effectiveId = selectedId ?? list[0]?.id;
+  // Not while the page shown is a placeholder: its runs may not match the new filters.
+  const effectiveId = selectedId ?? (runs.isPlaceholderData ? undefined : list[0]?.id);
   const selected = useQuery({
     queryKey: ['run', effectiveId],
     queryFn: () => runsApi.get(effectiveId!),
@@ -167,7 +169,7 @@ export function App() {
   const openNewRun = async () => {
     const request = ++formRequest.current;
     const newest =
-      page === 1 && !isFiltering(filters) && runs.data && !runs.isPlaceholderData
+      page === 1 && !filtering && runs.data && !runs.isPlaceholderData
         ? list[0]
         : await runsApi
             .list(1, 1)
@@ -290,6 +292,8 @@ export function App() {
                   setFilters(next);
                   setPage(1);
                   setSelectedId(undefined);
+                  // Ticked runs hidden by the new filters would still be compared or deleted.
+                  setCheckedIds(new Set());
                 }}
               />
               <div className="flex min-h-8 items-center gap-2 text-xs text-fg-muted">
@@ -340,7 +344,7 @@ export function App() {
               onSelect={(run) => setSelectedId(run.id)}
               pageSize={PAGE_SIZE}
               listKey={`${listKey}:${page}`}
-              emptyText={t(isFiltering(filters) ? 'runs.emptyFiltered' : 'runs.empty')}
+              emptyText={t(filtering ? 'runs.emptyFiltered' : 'runs.empty')}
               checkedIds={checkedIds}
               onCheckedChange={setCheckedIds}
             />

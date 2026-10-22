@@ -19,21 +19,30 @@ export const isFiltering = (values: RunFilterValues) =>
 export const isRangeInverted = (values: RunFilterValues) =>
   values.fromDay !== '' && values.toDay !== '' && values.toDay < values.fromDay;
 
-/** Local midnight that starts the day; `endOf` gives the last millisecond of the day. */
-function dayToInstant(day: string, endOf: boolean): string {
+/**
+ * Local midnight that starts the day, `daysLater` days on. setFullYear, not the Date
+ * constructor: the constructor reads years 0-99 as 1900-1999.
+ */
+function dayToInstant(day: string, daysLater: number): string {
   const [year, month, date] = day.split('-').map(Number) as [number, number, number];
-  const instant = endOf
-    ? new Date(year, month - 1, date + 1, 0, 0, 0, -1)
-    : new Date(year, month - 1, date);
+  const instant = new Date(0);
+  instant.setFullYear(year, month - 1, date + daysLater);
+  instant.setHours(0, 0, 0, 0);
   return instant.toISOString();
 }
 
-/** The query the API takes. An inverted range sends no dates, so the list stays useful. */
+/**
+ * The query the API takes: `to` is the midnight after the last day, since the API excludes it.
+ * An inverted range sends no dates, so the list stays useful while the user fixes it.
+ */
 export function toListFilters(values: RunFilterValues): RunListFilters {
   const filters: RunListFilters = {};
   if (values.type !== 'all') filters.type = values.type;
   if (isRangeInverted(values)) return filters;
-  if (values.fromDay) filters.from = dayToInstant(values.fromDay, false);
-  if (values.toDay) filters.to = dayToInstant(values.toDay, true);
+  if (values.fromDay) filters.from = dayToInstant(values.fromDay, 0);
+  if (values.toDay) filters.to = dayToInstant(values.toDay, 1);
   return filters;
 }
+
+/** True when the query sent to the API narrows the list. */
+export const hasListFilters = (filters: RunListFilters) => Object.keys(filters).length > 0;
