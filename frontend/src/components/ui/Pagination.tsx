@@ -18,34 +18,38 @@ export function Pagination({ page, pageSize, total, onPageChange, loading }: Pag
   return (
     <nav
       aria-label={t('pagination.label')}
-      className="flex flex-wrap items-center justify-between gap-3"
+      className="flex min-h-8 flex-wrap items-center justify-between gap-3"
     >
       <p data-testid="pagination-range" className="text-xs text-fg-muted tabular-nums">
         {total === 0 ? t('pagination.none') : t('pagination.range', { first, last, total })}
       </p>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          data-testid="pagination-previous"
-          disabled={page <= 1 || loading}
-          onClick={() => onPageChange(page - 1)}
-        >
-          {t('pagination.previous')}
-        </Button>
-        <span data-testid="pagination-page" className="text-xs text-fg-muted tabular-nums">
-          {t('pagination.page', { page, count: pageCount })}
-        </span>
-        <Button
-          variant="secondary"
-          size="sm"
-          data-testid="pagination-next"
-          disabled={page >= pageCount || loading}
-          onClick={() => onPageChange(page + 1)}
-        >
-          {t('pagination.next')}
-        </Button>
-      </div>
+      {/* One page needs no paging buttons; the range alone says how many there are. Past the
+          last page (runs deleted) they stay, so there is a way back. */}
+      {(pageCount > 1 || page > 1) && (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            data-testid="pagination-previous"
+            disabled={page <= 1 || loading}
+            onClick={() => onPageChange(page - 1)}
+          >
+            {t('pagination.previous')}
+          </Button>
+          <span data-testid="pagination-page" className="text-xs text-fg-muted tabular-nums">
+            {t('pagination.page', { page, count: pageCount })}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            data-testid="pagination-next"
+            disabled={page >= pageCount || loading}
+            onClick={() => onPageChange(page + 1)}
+          >
+            {t('pagination.next')}
+          </Button>
+        </div>
+      )}
     </nav>
   );
 }
