@@ -335,7 +335,14 @@ function RunPanelForm({
                 />
               </Field>
             </div>
-            <h4 className="m-0 text-sm font-semibold text-fg">{t('panel.loadShape')}</h4>
+            <div className="flex items-baseline justify-between gap-3">
+              <h4 className="m-0 text-sm font-semibold text-fg">{t('panel.loadShape')}</h4>
+              <LearnMore
+                testId="learn-shape"
+                title={t('panel.shapeNoteTitle')}
+                paragraphs={[t('panel.shapeNote1'), t('panel.shapeNote2'), t('panel.shapeNote3')]}
+              />
+            </div>
             <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
               <LoadShapeChart stages={stages} mode={mode} />
             </Suspense>
@@ -403,11 +410,6 @@ function RunPanelForm({
             <CapacityHint
               peakTarget={mode === 'rate' ? maxVirtualUsers : peakTarget(stages)}
               rate={mode === 'rate'}
-            />
-            <LearnMore
-              testId="learn-shape"
-              title={t('panel.shapeNoteTitle')}
-              paragraphs={[t('panel.shapeNote1'), t('panel.shapeNote2'), t('panel.shapeNote3')]}
             />
           </div>
           <div
