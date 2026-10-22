@@ -1,5 +1,5 @@
 // Ordered steps one virtual user runs per iteration. One step is open for editing at a time.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   BODY_FORMATS,
   HTTP_METHODS,
@@ -74,7 +74,7 @@ export function FlowEditor({
   hasSoapExample,
   onExampleLoad,
 }: FlowEditorProps) {
-  const { t, advanced } = useCopy();
+  const { t } = useCopy();
   // A problem with no step, or with its step closed, shows under the list instead.
   const listError = error && (!errorStepId || errorStepId !== openId) ? error : undefined;
   const listErrorRef = useRef<HTMLParagraphElement>(null);
@@ -107,20 +107,14 @@ export function FlowEditor({
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs text-fg-muted">
-        {t('flow.intro')}
-        {advanced && (
-          <>
-            {' '}
-            {t('flow.introUse')}{' '}
-            {BUILTIN_PLACEHOLDERS.map((name, index) => (
-              <span key={name}>
-                {index > 0 && ', '}
-                <code className="font-mono text-fg">{`{{${name}}}`}</code>
-              </span>
-            ))}{' '}
-            {t('flow.introAfter')}
-          </>
-        )}
+        {t('flow.intro')} {t('flow.introUse')}{' '}
+        {BUILTIN_PLACEHOLDERS.map((name, index) => (
+          <span key={name}>
+            {index > 0 && ', '}
+            <code className="font-mono text-fg">{`{{${name}}}`}</code>
+          </span>
+        ))}{' '}
+        {t('flow.introAfter')}
       </p>
       <ol className="m-0 flex list-none flex-col gap-2 p-0">
         {steps.map((step, index) => (
@@ -257,12 +251,7 @@ function StepFields({
   onChange,
   className,
 }: StepFieldsProps) {
-  const { t, advanced } = useCopy();
-  // Basic hides headers and saved values, but shows them once the step has a problem, and keeps
-  // them open while the user fixes it (the first edit clears the error).
-  const [revealed, setRevealed] = useState(false);
-  if (error && !revealed) setRevealed(true);
-  const showMore = advanced || revealed;
+  const { t } = useCopy();
   const id = step.id;
   const soap = step.bodyFormat === 'soap';
   const errorRef = useRef<HTMLParagraphElement>(null);
@@ -327,21 +316,19 @@ function StepFields({
           />
         </div>
       </Field>
-      {showMore && (
-        <div className="flex flex-col gap-1.5" data-testid="step-headers">
-          <span className="text-sm font-medium text-fg">{t('flow.headers')}</span>
-          <PairsEditor
-            id={`${id}-header`}
-            pairs={step.headers}
-            onChange={(headers) => onChange({ headers })}
-            keyLabel={t('flow.header')}
-            valueLabel={t('flow.value')}
-            keyPlaceholder="Authorization"
-            valuePlaceholder="Token {{token}}"
-            addLabel={t('flow.addHeader')}
-          />
-        </div>
-      )}
+      <div className="flex flex-col gap-1.5" data-testid="step-headers">
+        <span className="text-sm font-medium text-fg">{t('flow.headers')}</span>
+        <PairsEditor
+          id={`${id}-header`}
+          pairs={step.headers}
+          onChange={(headers) => onChange({ headers })}
+          keyLabel={t('flow.header')}
+          valueLabel={t('flow.value')}
+          keyPlaceholder="Authorization"
+          valuePlaceholder="Token {{token}}"
+          addLabel={t('flow.addHeader')}
+        />
+      </div>
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-medium text-fg">{t('flow.format')}</span>
@@ -403,28 +390,26 @@ function StepFields({
           </Field>
         </div>
       </div>
-      {showMore && (
-        <div className="flex flex-col gap-1.5" data-testid="step-saves">
-          <span className="text-sm font-medium text-fg">{t('flow.save')}</span>
-          <p className="m-0 text-xs text-fg-muted">
-            <Trans
-              i18nKey={soap ? 'flow.saveHint.soap' : 'flow.saveHint.json'}
-              values={{ example: '{{name}}' }}
-              components={{ code: <code className="font-mono" /> }}
-            />
-          </p>
-          <PairsEditor
-            id={`${id}-save`}
-            pairs={step.extract}
-            onChange={(extract) => onChange({ extract })}
-            keyLabel={t('flow.name')}
-            valueLabel={t(soap ? 'flow.savePath.soap' : 'flow.savePath.json')}
-            keyPlaceholder="token"
-            valuePlaceholder={soap ? 'LoginResponse.Token' : 'token'}
-            addLabel={t('flow.addValue')}
+      <div className="flex flex-col gap-1.5" data-testid="step-saves">
+        <span className="text-sm font-medium text-fg">{t('flow.save')}</span>
+        <p className="m-0 text-xs text-fg-muted">
+          <Trans
+            i18nKey={soap ? 'flow.saveHint.soap' : 'flow.saveHint.json'}
+            values={{ example: '{{name}}' }}
+            components={{ code: <code className="font-mono" /> }}
           />
-        </div>
-      )}
+        </p>
+        <PairsEditor
+          id={`${id}-save`}
+          pairs={step.extract}
+          onChange={(extract) => onChange({ extract })}
+          keyLabel={t('flow.name')}
+          valueLabel={t(soap ? 'flow.savePath.soap' : 'flow.savePath.json')}
+          keyPlaceholder="token"
+          valuePlaceholder={soap ? 'LoginResponse.Token' : 'token'}
+          addLabel={t('flow.addValue')}
+        />
+      </div>
     </div>
   );
 }

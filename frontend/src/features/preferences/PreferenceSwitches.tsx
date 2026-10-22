@@ -1,7 +1,6 @@
-import { SegmentedControl, cn } from '../../components/ui/index.ts';
+import { cn } from '../../components/ui/index.ts';
 import { LANGUAGES, useLanguage } from '../../i18n/index.ts';
 import { useCopy } from '../../i18n/useCopy.ts';
-import { DETAILS, useDetail } from './detail.ts';
 
 /**
  * One button that looks like the EN / ES pair: a click anywhere moves to the next language.
@@ -37,21 +36,5 @@ export function LanguageSwitch() {
         — {t('prefs.switchLanguage', { language: t(`prefs.languages.${next}`) })}
       </span>
     </button>
-  );
-}
-
-export function DetailSwitch() {
-  const { t } = useCopy();
-  const [detail, setDetail] = useDetail();
-  return (
-    <span title={t('prefs.detailHint')}>
-      <SegmentedControl
-        label={t('prefs.detail')}
-        testId="detail"
-        value={detail}
-        onChange={setDetail}
-        options={DETAILS.map((value) => ({ value, label: t(`prefs.details.${value}`) }))}
-      />
-    </span>
   );
 }

@@ -3,7 +3,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { runsApi, type Run } from '../../api/runs.ts';
-import { Note, Tabs } from '../../components/ui/index.ts';
+import { Tabs } from '../../components/ui/index.ts';
+import { LearnMore } from '../learn/LearnMore.tsx';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
 import { formatMs, formatSeconds, isActive, plannedShape, targetAt } from './format.ts';
@@ -128,10 +129,14 @@ export function RunCharts({ run }: { run: Run }) {
         />
       )}
       {data.length > 0 && (
-        <Note>
-          <p className="m-0">{t(CHART_NOTES[tab])}</p>
-          {tab === 'load' && run.mode === 'rate' && <p className="m-0">{t('charts.noteRate')}</p>}
-        </Note>
+        <LearnMore
+          testId="learn-chart"
+          title={t('charts.learnTitle')}
+          paragraphs={[
+            t(CHART_NOTES[tab]),
+            ...(tab === 'load' && run.mode === 'rate' ? [t('charts.noteRate')] : []),
+          ]}
+        />
       )}
     </div>
   );

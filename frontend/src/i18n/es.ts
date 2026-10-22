@@ -1,5 +1,5 @@
 // Spanish copy: neutral Latin American Spanish, addressing the user as "tú".
-// Same keys as en.ts; `<key>_advanced` is the Advanced mode wording.
+// Same keys as en.ts.
 //
 // Glosario: run = ejecución · flow = flujo (los pasos) · step = paso · simulated user = usuario
 // simulado · virtual user = usuario virtual (VU) · think time = pausa entre pasos · response time =
@@ -10,7 +10,6 @@ export const es: Translation = {
   app: {
     backendDown: 'Bencho no puede conectarse a su servidor',
     backendDownHint: 'Inicia Bencho con docker compose up y luego recarga esta página.',
-    backendDownHint_advanced: 'Inicia el stack con docker compose up y luego recarga.',
     runsTitle: 'Ejecuciones',
     runsDescription: 'Las más recientes primero. Selecciona una ejecución para ver sus resultados.',
     runsLoadError:
@@ -22,25 +21,16 @@ export const es: Translation = {
     switchLanguage: 'cambiar a {{language}}',
     theme: 'Tema',
     switchTheme: { light: 'Cambiar al tema claro', dark: 'Cambiar al tema oscuro' },
-    detail: 'Nivel de detalle',
-    detailHint:
-      'Básico muestra los ajustes principales con palabras simples. Avanzado muestra todos los ajustes.',
-    details: { basic: 'Básico', advanced: 'Avanzado' },
   },
+  learn: { open: 'Aprende', close: 'Cerrar' },
   runType: { load: 'Carga', stress: 'Estrés', spike: 'Pico' },
   runTypeLower: { load: 'carga', stress: 'estrés', spike: 'pico' },
   runTypeDescription: {
     load: 'Tráfico normal y estable. Revisa que el sitio siga rápido en un día común.',
-    load_advanced:
-      'Tráfico estable y esperado. Confirma que la API cumple sus límites en un día normal.',
     stress:
       'Agrega cada vez más usuarios para encontrar el punto donde el sitio se pone lento o falla.',
-    stress_advanced:
-      'Sube más allá del tráfico normal para encontrar dónde empiezan a crecer la latencia o los errores.',
     spike:
       'Envía una ola repentina de usuarios y luego baja, para revisar que el sitio se recupere.',
-    spike_advanced:
-      'Salta a una ola de usuarios en segundos y luego baja, para revisar la recuperación.',
   },
   status: {
     queued: 'En espera',
@@ -66,8 +56,7 @@ export const es: Translation = {
     bulkSkipped_many: '{{count}} ejecuciones no se eliminaron: siguen en curso o ya no existen.',
     bulkDeleteFailed: 'Las ejecuciones no se eliminaron',
     passed: 'Prueba de {{typeLower}} aprobada',
-    passedHint: 'Tiempo de respuesta (95 %): {{value}}',
-    passedHint_advanced: 'p95 {{value}}',
+    passedHint: 'p95 {{value}}',
     failed: 'Prueba de {{typeLower}} fallida',
     failedHint: 'Se superó un límite. Abre la ejecución para ver cuál.',
     stopped: 'Prueba de {{typeLower}} detenida',
@@ -96,9 +85,7 @@ export const es: Translation = {
     tabs: {
       setup: 'Ajustes',
       flow: 'Pasos',
-      flow_advanced: 'Flujo',
       limits: 'Reglas',
-      limits_advanced: 'Límites',
     },
     tabsLabel: 'Ajustes de la ejecución',
     loading: 'Cargando ajustes…',
@@ -106,28 +93,19 @@ export const es: Translation = {
     starting: 'Iniciando…',
     testType: 'Tipo de prueba',
     baseUrl: 'Dirección del sitio',
-    baseUrl_advanced: 'URL base',
     baseUrlHint: 'La dirección del sitio o API que quieres probar. Cada paso le agrega su ruta.',
-    baseUrlHint_advanced:
-      'Los pasos de la pestaña Flujo envían sus solicitudes a rutas dentro de esta URL.',
     loadShape: 'Cuántos usuarios y cuándo',
-    loadShape_advanced: 'Forma de la carga',
     targetsCount: 'Los objetivos cuentan',
     modes: { users: 'Usuarios', rate: 'Tasa' },
     modeHint: {
       users: 'Cada número es cuántos usuarios están activos al mismo tiempo.',
-      users_advanced: 'Cada objetivo es un número de usuarios virtuales corriendo al mismo tiempo.',
-      rate: 'Cada número es cuántas veces por segundo empiezan los pasos, con hasta 2 decimales (0.25 = una vez cada 4 segundos). Al cambiar, los números se mantienen, así que revísalos.',
-      rate_advanced:
-        'Cada objetivo es la cantidad de flujos iniciados por segundo, con hasta 2 decimales (0.25 = uno cada 4 segundos). Al cambiar, los números se mantienen, así que revísalos.',
+      rate: 'Cada número es cuántos flujos (una pasada por todos los pasos) empiezan por segundo, con hasta 2 decimales (0.25 = una vez cada 4 segundos). Al cambiar, los números se mantienen, así que revísalos.',
     },
     stages: 'Etapas',
     duration: 'Duración',
     target: {
       users: 'Usuarios',
-      users_advanced: 'Usuarios virtuales',
-      rate: 'Inicios por segundo',
-      rate_advanced: 'Flujos por segundo',
+      rate: 'Flujos por segundo',
     },
     stageDuration: 'Duración de la etapa {{number}}',
     stageTarget: 'Etapa {{number}}: {{label}}',
@@ -138,39 +116,26 @@ export const es: Translation = {
       'k6 agrega VUs hasta este número para mantener la tasa. Por encima, los flujos se descartan.',
     chartTitle: '{{label}} planeados',
     chartEmpty: 'Corrige las duraciones de las etapas para ver la forma.',
-    shapeNoteTitle: 'Cómo funciona',
-    shapeNoteTitle_advanced: 'Cómo funciona la forma de la carga',
+    shapeNoteTitle: 'Cómo funcionan usuarios y etapas',
     shapeNote1:
-      'Cada usuario simulado sigue los pasos de la pestaña Pasos, uno tras otro, hace una pausa después de cada uno y vuelve a empezar hasta que termina la ejecución.',
-    shapeNote1_advanced:
-      'Un usuario virtual (VU) es un usuario simulado. Ejecuta los pasos de la pestaña Flujo en orden, espera después de cada paso (la espera aleatoria del paso, o la pausa entre pasos) y vuelve a empezar hasta que termina la ejecución. Cuando un paso falla, el VU espera, salta los pasos restantes y vuelve a empezar.',
+      'Cada usuario simulado (también llamado usuario virtual, o VU) recorre tus pasos en orden, hace una pausa después de cada uno y vuelve a empezar hasta que termina la ejecución. Si un paso falla, se salta el resto y vuelve a empezar.',
     shapeNote2:
       'Las etapas corren en orden. Durante cada etapa, el número de usuarios cambia poco a poco hasta el número de la etapa. Por ejemplo, 30s → 20 y luego 1m → 20 agrega usuarios durante 30 segundos y luego mantiene 20 usuarios durante 1 minuto.',
-    shapeNote2_advanced:
-      'Las etapas corren en orden. Durante cada etapa, el número de VUs cambia de forma constante hasta el objetivo de la etapa. Por ejemplo, 30s → 20 VUs y luego 1m → 20 VUs agrega usuarios durante 30 segundos y luego mantiene 20 usuarios durante 1 minuto.',
     shapeNote3:
-      'Usuarios cuenta usuarios simultáneos. Tasa cuenta flujos iniciados por segundo, sin importar qué tan lento se ponga el servidor: úsala para una meta como 50 inicios de sesión por segundo. Cada flujo envía una solicitud por paso.',
+      'Usuarios fija cuántas personas están activas a la vez. Tasa fija cuántos flujos empiezan cada segundo, aunque el sitio se ponga lento. Un flujo es una pasada por todos tus pasos. Usa Tasa para una meta como 50 inicios de sesión por segundo.',
     thinkTime: 'Pausa entre pasos',
-    thinkTime_advanced: 'Think time',
     thinkTimeHint:
       'Segundos que cada usuario espera después de un paso, como una persona leyendo la página.',
-    thinkTimeHint_advanced: 'Segundos que espera un usuario después de cada paso sin espera propia',
     maxErrorRate: 'Errores permitidos (%)',
-    maxErrorRate_advanced: 'Tasa de error máxima',
     maxErrorRateHint:
       'La ejecución falla si más solicitudes que esto reciben una respuesta incorrecta.',
-    maxErrorRateHint_advanced: 'Porcentaje de solicitudes sin el estado esperado',
     gracePeriod: 'Periodo de gracia',
     gracePeriodHint:
       'Segundos que un usuario puede usar para terminar su flujo después de la última etapa (y, con Usuarios, cuando la forma de la carga lo quita). Pasado este tiempo, k6 corta el flujo.',
     latencyLimits: 'Límites de latencia (ms)',
-    maxResponseTime: 'Tiempo de respuesta máximo (ms)',
-    maxResponseTimeHint:
-      '95 de cada 100 solicitudes deben responder más rápido que esto, o la ejecución falla.',
-    percentileNoteTitle: '¿Qué significan p50, p90, p95 y p99?',
+    rulesNoteTitle: 'Cómo funcionan las reglas',
     percentileNote2:
-      'p50 es la solicitud típica. p99 es la línea por encima de la cual está el 1 % más lento de las solicitudes. Un promedio esconde estas solicitudes lentas, por eso los límites usan percentiles.',
-    failNoteTitle: '¿Cuándo falla una ejecución?',
+      'p50 es una solicitud típica. p99 muestra las lentas: solo 1 de cada 100 solicitudes tardó más. Un promedio escondería esas solicitudes lentas.',
   },
   validation: {
     baseUrl: 'Escribe una dirección completa, que empiece con http:// o https://',
@@ -193,7 +158,6 @@ export const es: Translation = {
     introUse: 'Usa',
     introAfter: 'o un valor que guarda un paso anterior, en la ruta, los encabezados o el cuerpo.',
     emptyPath: 'dirección del sitio',
-    emptyPath_advanced: 'URL base',
     untitled: 'Sin nombre',
     hasProblem: 'tiene un problema',
     moveUp: 'Subir el paso {{number}}',
@@ -204,15 +168,11 @@ export const es: Translation = {
     loadSoapExample: 'Cargar el ejemplo SOAP',
     name: 'Nombre',
     status: 'Código de respuesta esperado',
-    status_advanced: 'Estado',
     request: 'Solicitud',
     requestHint:
       'Elige qué hacer (GET lee, POST envía datos) y la ruta de la página, como /api/items. Deja la ruta vacía para usar la dirección del sitio.',
-    requestHint_advanced:
-      'Una ruta como /api/items/{{example}} se agrega a la URL base. Déjala vacía para usar la URL base.',
     method: 'Método',
     pathPlaceholder: 'Vacía: la dirección del sitio',
-    pathPlaceholder_advanced: 'Vacía: la URL base',
     headers: 'Encabezados',
     header: 'Encabezado',
     value: 'Valor',
@@ -226,21 +186,14 @@ export const es: Translation = {
     body: { json: 'Cuerpo JSON', soap: 'Cuerpo SOAP' },
     bodyHint: {
       json: 'Datos que se envían. Déjalo vacío si no hay.',
-      json_advanced:
-        'Déjalo vacío para no enviar cuerpo. Se envía como application/json salvo que un encabezado diga otra cosa.',
       soap: 'El mensaje SOAP que se envía. Déjalo vacío si no hay.',
-      soap_advanced:
-        'Déjalo vacío para no enviar cuerpo. Se envía como text/xml (SOAP 1.1) salvo que un encabezado diga otra cosa: para SOAP 1.2 pon Content-Type en application/soap+xml. Agrega un encabezado SOAPAction si el servicio lo necesita.',
     },
     wait: 'Espera después de este paso',
     waitHint:
       'Segundos, de 0 a {{max}}. Cada vez, el usuario espera un tiempo al azar en este rango, como una persona real que lee o escribe. Deja ambos vacíos para usar la pausa entre pasos.',
-    waitHint_advanced:
-      'Segundos, de 0 a {{max}}. Cada vez, el usuario espera un tiempo al azar en este rango, como una persona real que lee o escribe. Deja ambos vacíos para usar el think time.',
     shortest: 'Mínima',
     longest: 'Máxima',
     waitPlaceholder: 'Pausa',
-    waitPlaceholder_advanced: 'Think time',
     save: 'Guardar de la respuesta',
     saveHint: {
       json: 'Los pasos siguientes usan un valor guardado como {{example}}. La ruta lee la respuesta JSON, por ejemplo <code>pizza.id</code> o <code>items.0.id</code>.',
@@ -279,22 +232,16 @@ export const es: Translation = {
     savePathLength: 'La {{path}} puede tener {{max}} caracteres como máximo',
   },
   capacity: {
-    title: 'Cuántos usuarios puede simular esta computadora',
-    title_advanced: 'Cuántos VUs puede correr el servidor de Bencho',
+    title: '¿Cómo se calcula?',
     estimate:
-      'Estimación aproximada: unos {{estimate}} usuarios al mismo tiempo, según la memoria libre de la computadora donde corre Bencho.',
-    estimate_advanced:
-      'Estimación aproximada: unos {{estimate}} VUs. El servidor de Bencho tiene {{memory}} GB de memoria libre y {{cpus}} núcleos de CPU, y k6 usa hasta unos {{perUser}} MB por VU. Los flujos largos, los cuerpos grandes, las pausas cortas y otras ejecuciones activas bajan este número.',
+      'Estimación aproximada: unos {{estimate}} usuarios virtuales a la vez en el servidor de Bencho.',
     docker:
-      'En Docker Desktop, el límite depende de la memoria que le das a Docker en su configuración.',
-    docker_advanced:
-      'En Docker Desktop, la memoria libre viene del límite de memoria de Docker (Settings → Resources → Advanced → Memory limit), que comparten todos los contenedores en marcha, no de toda la memoria de la computadora. Un mem_limit en el contenedor del backend también la reduce.',
+      'En Docker Desktop, Bencho solo ve la memoria que le das a Docker: Settings → Resources → Advanced → Memory limit.',
     warning:
-      'Pediste {{value}} usuarios, más que la estimación de {{estimate}}. La ejecución puede volver lenta o detener esta computadora.',
+      'Tus etapas llegan a {{value}} usuarios virtuales, más que la estimación de {{estimate}}. La ejecución puede volver lento o detener el servidor.',
     warningRate:
-      'El máximo de usuarios virtuales es {{value}} VUs, más que la estimación de {{estimate}}. La ejecución puede volver lento o detener el servidor.',
-    warning_advanced:
-      'Tus etapas llegan a {{value}} VUs, más que la estimación de {{estimate}}. La ejecución puede volver lento o detener el servidor.',
+      'El máximo de usuarios virtuales es {{value}}, más que la estimación de {{estimate}}. La ejecución puede volver lento o detener el servidor.',
+    how: 'Bencho mira la memoria libre ({{memory}} GB) y los núcleos de CPU ({{cpus}}) del servidor donde corre. Cada usuario virtual necesita hasta unos {{perUser}} MB. Los flujos largos, los cuerpos grandes, las pausas cortas y otras ejecuciones bajan el número.',
   },
   runs: {
     empty: 'Todavía no hay ejecuciones de este tipo. Inicia una desde el panel.',
@@ -303,12 +250,9 @@ export const es: Translation = {
     openRun: '{{status}}, ejecución del {{time}}',
     headers: {
       status: 'Resultado',
-      status_advanced: 'Estado',
       target: 'Dirección',
-      target_advanced: 'Destino',
       peak: 'Pico',
-      p95: 'Tiempo de respuesta',
-      p95_advanced: 'p95',
+      p95: 'p95',
       errors: 'Errores',
       started: 'Inicio',
     },
@@ -321,9 +265,6 @@ export const es: Translation = {
     unitUsers_one: '{{count}} usuario',
     unitUsers_other: '{{count}} usuarios',
     unitUsers_many: '{{count}} usuarios',
-    unitUsers_advanced_one: '{{count}} VU',
-    unitUsers_advanced_other: '{{count}} VUs',
-    unitUsers_advanced_many: '{{count}} VUs',
     unitRate: '{{count}}/s',
   },
   pagination: {
@@ -357,54 +298,47 @@ export const es: Translation = {
     steps_one: '{{count}} paso',
     steps_other: '{{count}} pasos',
     steps_many: '{{count}} pasos',
-    pauses: 'pausa de {{think}}s entre pasos',
-    pauses_advanced: 'think time {{think}}s, gracia {{grace}}s',
+    pauses: 'pausa de {{think}}s entre pasos, {{grace}}s para terminar',
     ownWaits: ', algunos pasos esperan su propio rango',
     took: 'duró {{seconds}}s',
-    responseTime: 'Tiempo de respuesta (95 %)',
     errorRate: 'Errores',
-    errorRate_advanced: 'Tasa de error',
     requests: 'Solicitudes',
     readTitle: 'Cómo leer estos números',
-    read1:
-      'Verde significa que cumple su regla, rojo que no la cumplió. Tiempo de respuesta (95 %): 95 de cada 100 solicitudes respondieron dentro de este tiempo.',
-    read1_advanced:
-      'Verde significa por debajo de su límite, rojo que llegó al límite. p50, p90, p95 y p99: un percentil del tiempo de respuesta. Un p95 de 300 ms significa que 95 de cada 100 solicitudes tardaron 300 ms o menos; las 5 más lentas tardaron más.',
+    read1: 'Verde significa que el número está dentro de su límite. Rojo, que pasó el límite.',
     read2:
       'Errores es la parte de las solicitudes que no recibió la respuesta esperada. Solicitudes es cuántas se enviaron en total, con el promedio por segundo.',
-    read2_advanced:
-      'La tasa de error es la parte de las solicitudes que no recibió el estado que espera su paso. Solicitudes es el total enviado, con el promedio por segundo.',
     waiting:
       'Los resultados aparecen cuando termina la ejecución. Los gráficos de abajo se actualizan cada 2 segundos.',
     noTotals: 'No se registraron resultados.',
   },
   explain: {
     percentile:
-      'Un percentil del tiempo de respuesta. Un p95 de 300 ms significa que 95 de cada 100 solicitudes tardaron 300 ms o menos; las 5 más lentas tardaron más.',
-    errorRate:
-      'La tasa de error es la parte de las solicitudes que no recibió el estado que espera su paso.',
+      'Estos límites revisan qué tan rápido respondieron las solicitudes. Un p95 de 300 ms significa que 95 de cada 100 solicitudes respondieron en 300 ms o menos.',
+    errorRate: 'Los errores son solicitudes que no recibieron el estado que espera su paso.',
     failRule:
-      'Una ejecución falla cuando las solicitudes son demasiado lentas, cuando demasiadas reciben una respuesta incorrecta, o cuando los pasos no pueden guardar los valores que necesitan.',
-    failRule_advanced:
-      'Una ejecución falla cuando algún valor de latencia llega a su límite (cada uno debe quedar por debajo), cuando la tasa de error llega al máximo, o cuando pasa el 99 % o menos de las comprobaciones. Las comprobaciones confirman que cada paso recibió su estado esperado y guardó sus valores, así que una ejecución puede fallar con 0 % de errores. Una ejecución por tasa también falla cuando descarta más flujos planeados de los que permite la tasa de error máxima.',
+      'Una ejecución falla cuando un tiempo de respuesta llega a su límite, o cuando los errores llegan a Errores permitidos.',
+    failChecks:
+      'También falla cuando 1 de cada 100 pasos o más no reciben el estado esperado o no pueden guardar un valor que necesitan. Así que una ejecución puede fallar con 0 % de errores.',
+    failRate:
+      'Una ejecución por tasa también falla cuando se salta más flujos planeados que Errores permitidos, porque todos sus usuarios estaban ocupados.',
   },
   failures: {
     title: 'Respuestas fallidas (ejemplos)',
-    title_advanced: 'Respuestas fallidas (muestra)',
-    hint: 'Ejemplos de lo que respondió el sitio cuando falló un paso. No aparecen todos los fallos.',
-    hint_advanced:
-      'Los cuerpos se leen en 1 de cada 20 flujos, y en todos los flujos de los pasos que guardan valores, así que son ejemplos, no todos los fallos. Una respuesta exitosa (2xx) muestra solo sus claves JSON (o nombres de elementos XML), porque puede contener tokens. Cada paso muestra hasta 10 respuestas distintas, como máximo 3 por estado.',
+    hint: 'Ejemplos de lo que respondió el sitio cuando falló un paso.',
     extract: 'estado {{status}}, faltó un valor para guardar',
     network: 'sin respuesta (error de red)',
     status: 'estado {{status}}',
     statusExpected: 'estado {{status}}, se esperaba {{expected}}',
     emptyBody: '(cuerpo vacío)',
+    learnTitle: '¿Qué respuestas se muestran?',
+    how: 'Son ejemplos, no todos los fallos. Bencho guarda respuestas de 1 de cada 20 flujos (de todos los flujos para los pasos que guardan valores), hasta 10 por paso y 3 por estado.',
+    private:
+      'En una respuesta correcta (2xx) solo se muestran los nombres de los campos, porque el contenido puede tener contraseñas o tokens.',
   },
   charts: {
     label: 'Gráficos de la ejecución',
     tabs: {
       latency: 'Tiempo de respuesta',
-      latency_advanced: 'Latencia',
       load: 'Carga',
       errors: 'Errores',
     },
@@ -416,25 +350,18 @@ export const es: Translation = {
     finished: 'Terminados',
     dropped: 'Descartados',
     users: 'Usuarios',
-    users_advanced: 'Usuarios virtuales',
     requestsTitle: 'Solicitudes por segundo',
     requests: 'Solicitudes/s',
     errorsTitle: 'Solicitudes fallidas (parte de cada segundo)',
     errorRate: 'Errores',
-    errorRate_advanced: 'Tasa de error',
     noteLatency:
-      'Cada punto es un segundo de la ejecución. Las líneas muestran cuánto tardaron las solicitudes en responder. Si las líneas suben a medida que se agregan usuarios, el sitio se está volviendo lento.',
-    noteLatency_advanced:
-      'Cada punto es un segundo de la ejecución. Cada línea muestra un percentil (p50, p90, p95, p99) de las solicitudes que terminaron en ese segundo: p95 es el tiempo que no superaron 95 de cada 100. Con pocas solicitudes en un segundo, p90, p95 y p99 suelen ser iguales a la más lenta. Si las líneas suben a medida que se agregan usuarios, la API se está volviendo lenta.',
+      'Cada punto es un segundo de la ejecución. p95 es el tiempo dentro del cual respondieron 95 de cada 100 solicitudes de ese segundo; p50 muestra una solicitud típica y p99 las lentas. Cuando un segundo tiene pocas solicitudes, las líneas pueden juntarse. Si las líneas suben a medida que se agregan usuarios, el sitio se está volviendo lento.',
     noteLoad:
       'Usuarios es cuántos usuarios simulados estaban activos. Solicitudes por segundo es cuántas solicitudes enviaron. Si los usuarios siguen subiendo pero las solicitudes por segundo dejan de subir, el sitio llegó a su límite.',
-    noteLoad_advanced:
-      'Usuarios virtuales es cuántos usuarios simulados estaban corriendo. Solicitudes por segundo es cuántas solicitudes enviaron. Si los usuarios siguen subiendo pero las solicitudes por segundo dejan de subir, la API llegó a su límite.',
     noteRate:
-      'Flujos por segundo compara la tasa planeada con los flujos que terminaron y los que k6 descartó porque todos los VUs permitidos estaban ocupados. Un flujo cuenta en el segundo en que termina, así que Terminados va detrás de Planeados por lo que dura un flujo.',
+      'Compara los flujos planeados cada segundo con los que terminaron y los que se saltaron porque todos los usuarios estaban ocupados. Un flujo cuenta cuando termina, así que Terminados va un poco detrás de Planeados.',
     noteErrors:
       'La parte de las solicitudes de cada segundo que no recibió la respuesta esperada. Si los errores empiezan cuando la carga llega a su pico, el sitio no aguanta esa carga.',
-    noteErrors_advanced:
-      'La parte de las solicitudes de cada segundo que no recibió el estado que espera su paso. Si los errores empiezan cuando la carga llega a su pico, la API no aguanta esa carga.',
+    learnTitle: 'Cómo leer este gráfico',
   },
 };

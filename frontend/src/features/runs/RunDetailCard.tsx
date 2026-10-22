@@ -1,14 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import type { Run } from '../../api/runs.ts';
-import {
-  Badge,
-  Button,
-  Card,
-  Note,
-  Skeleton,
-  Stat,
-  type StatTone,
-} from '../../components/ui/index.ts';
+import { Badge, Button, Card, Skeleton, Stat, type StatTone } from '../../components/ui/index.ts';
+import { LearnMore } from '../learn/LearnMore.tsx';
 import { useCopy } from '../../i18n/useCopy.ts';
 import {
   STATUS_TONES,
@@ -49,7 +42,7 @@ function toneFor(value: number | undefined, limit: number): StatTone {
 }
 
 export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: RunDetailCardProps) {
-  const { t, advanced, language } = useCopy();
+  const { t, language } = useCopy();
   const [confirming, setConfirming] = useState(false);
   const [confirmingFor, setConfirmingFor] = useState(run.status);
   if (confirmingFor !== run.status) {
@@ -83,15 +76,6 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
         busy: deleting,
         run: () => onDelete(run),
       };
-  // Basic shows one response time (p95), plus any other percentile that broke its limit, so a
-  // failed run always shows why. Advanced shows all four.
-  const percentiles = advanced
-    ? PERCENTILE_KEYS
-    : PERCENTILE_KEYS.filter(
-        ([label, metricKey]) =>
-          label === 'p95' ||
-          toneFor(duration?.[metricKey], run.limits.latencyLimitsMs[label]) === 'danger',
-      );
   const actionButtons = confirming ? (
     <div className="flex items-center gap-2">
       <Button
@@ -175,10 +159,10 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
             data-testid="run-summary"
             className="grid grid-cols-2 gap-4 sm:grid-cols-3 2xl:grid-cols-6"
           >
-            {percentiles.map(([label, metricKey]) => (
+            {PERCENTILE_KEYS.map(([label, metricKey]) => (
               <Stat
                 key={label}
-                label={advanced || label !== 'p95' ? label : t('detail.responseTime')}
+                label={label}
                 value={formatMs(duration?.[metricKey])}
                 limit={`< ${run.limits.latencyLimitsMs[label]} ms`}
                 tone={toneFor(duration?.[metricKey], run.limits.latencyLimitsMs[label])}
@@ -195,11 +179,20 @@ export function RunDetailCard({ run, onDelete, deleting, onStop, stopping }: Run
               value={requests ? String(requests.count) : '–'}
               unit={requests ? `${requests.rate.toFixed(1)}/s` : undefined}
             />
-            <Note title={t('detail.readTitle')} className="col-span-full">
-              <p className="m-0">{t('detail.read1')}</p>
-              <p className="m-0">{t('detail.read2')}</p>
-              <p className="m-0">{t('explain.failRule')}</p>
-            </Note>
+            <LearnMore
+              testId="learn-results"
+              className="col-span-full"
+              title={t('detail.readTitle')}
+              paragraphs={[
+                t('detail.read1'),
+                t('explain.percentile'),
+                t('panel.percentileNote2'),
+                t('detail.read2'),
+                t('explain.failRule'),
+                t('explain.failChecks'),
+                ...(run.mode === 'rate' ? [t('explain.failRate')] : []),
+              ]}
+            />
           </div>
         ) : (
           <p className="text-sm text-fg-muted">
@@ -234,6 +227,11 @@ function FailureList({ run }: { run: Run }) {
       <div className="flex flex-col gap-1">
         <h3 className="m-0 text-sm font-medium text-fg">{t('failures.title')}</h3>
         <p className="m-0 text-xs text-fg-muted">{t('failures.hint')}</p>
+        <LearnMore
+          testId="learn-failures"
+          title={t('failures.learnTitle')}
+          paragraphs={[t('failures.how'), t('failures.private')]}
+        />
       </div>
       <ul className="m-0 flex list-none flex-col gap-3 p-0">
         {run.failures.map((failure, index) => {
