@@ -71,6 +71,8 @@ export function formatPeak(run: Pick<Run, 'stages' | 'mode'>, t: Copy): string {
 export function formatMs(value: number | undefined): string {
   if (value === undefined) return '–';
   // Seconds with 2 decimals read easier than milliseconds for people new to load tests.
+  // Under 10 ms would round to 0.00 s, which reads as no time at all.
+  if (value > 0 && value < 10) return '< 0.01 s';
   return `${(value / 1000).toFixed(2)} s`;
 }
 

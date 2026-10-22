@@ -81,7 +81,8 @@ export function RunCharts({ run }: { run: Run }) {
           )
         }
         series={LATENCY_SERIES}
-        minYStep={0.1}
+        // Labels show 0.01 s steps, so finer ticks would repeat a label.
+        minYStep={10}
         formatY={(value) => formatMs(value)}
         height={260}
       />
