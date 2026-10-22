@@ -1,6 +1,6 @@
 // Left-hand control panel: build a run across three tabs (Setup, Flow, Limits), start it from the pinned footer.
 import { AnimatePresence, m } from 'motion/react';
-import { Suspense, lazy, useCallback, useState, type FormEvent } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useState, type FormEvent } from 'react';
 import {
   LOAD_MODES,
   RUN_TYPES,
@@ -167,6 +167,25 @@ function RunPanelForm({
   const [maxErrorPercent, setMaxErrorPercent] = useState(defaults.limits.maxErrorRate * 100);
   const [latency, setLatency] = useState(defaults.limits.latencyLimitsMs);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Test id of a Setup error to bring into view once the tab has animated in.
+  const [setupErrorToShow, setSetupErrorToShow] = useState<string | undefined>();
+  useEffect(() => {
+    if (!setupErrorToShow || tab !== 'setup') return;
+    let frame = 0;
+    let tries = 0;
+    const show = () => {
+      const element = document.querySelector(`[data-testid="${setupErrorToShow}"]`);
+      // The tab content mounts after the exit animation; look again for up to about a second.
+      if (!element && tries++ < 60) {
+        frame = requestAnimationFrame(show);
+        return;
+      }
+      element?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      setSetupErrorToShow(undefined);
+    };
+    frame = requestAnimationFrame(show);
+    return () => cancelAnimationFrame(frame);
+  }, [setupErrorToShow, tab]);
 
   // The type can also change from the Runs tabs; the stages must follow either way.
   const [stagesType, setStagesType] = useState(type);
@@ -205,8 +224,14 @@ function RunPanelForm({
     // Scroll to a flow problem only when this submit opens the Flow tab, not on a later visit.
     if (firstErrorTab !== 'flow') setShownErrorRevision(revision);
     if (nextErrors.flowStep) setOpenStepId(nextErrors.flowStep);
-    if (firstErrorTab) {
-      setTab(firstErrorTab);
+    if (Object.keys(nextErrors).length > 0) {
+      // An error with no tab of its own still stops the run; Setup is the first tab.
+      setTab(firstErrorTab ?? 'setup');
+      if ((firstErrorTab ?? 'setup') === 'setup') {
+        const setupKey = ['baseUrl', 'stages', 'maxVirtualUsers'].find((key) => nextErrors[key]);
+        if (setupKey === 'stages') setSetupErrorToShow('stages-error');
+        if (setupKey === 'maxVirtualUsers') setSetupErrorToShow('max-virtual-users-error');
+      }
       return;
     }
     await onSubmit(input);

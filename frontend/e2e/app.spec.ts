@@ -77,7 +77,8 @@ test.describe('setup tab', () => {
 
     await page.getByTestId('start-run').click();
 
-    await expect(page.getByTestId('stages-error')).toBeVisible();
+    await expect(page.getByTestId('panel-tab-setup')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('stages-error')).toBeInViewport();
     await expect(page.getByTestId('run-row')).toHaveCount(0);
   });
 });
