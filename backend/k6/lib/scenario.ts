@@ -182,7 +182,7 @@ function runStep(
     try {
       value = soap ? xml && xmlValue(xml, extract.path) : response.json(extract.path);
     } catch {
-      value = undefined; // not a JSON response
+      value = undefined; // not a JSON response (xmlValue never throws)
     }
     const saved = check(value, {
       [`${step.name}: saves ${extract.name}`]: (checked) =>

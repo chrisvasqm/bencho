@@ -31,6 +31,10 @@ function decodeText(text: string): string {
   return text.replace(ENTITY, (match, entity: string) => {
     if (!entity.startsWith('#')) return NAMED_ENTITIES[entity] ?? match;
     const code = entity.startsWith('#x') ? parseInt(entity.slice(2), 16) : Number(entity.slice(1));
+    // Only characters XML allows: tab, line breaks and everything from space up.
+    const allowed =
+      code === 0x9 || code === 0xa || code === 0xd || (code >= 0x20 && code <= 0x10ffff);
+    if (!allowed) throw new Error(`&${entity}; is not an XML character`);
     return String.fromCodePoint(code);
   });
 }
@@ -54,7 +58,8 @@ function parseXml(text: string): XmlElement {
   while (index < text.length) {
     const parent = open[open.length - 1]?.element;
     if (text.charAt(index) !== '<') {
-      const end = text.indexOf('<', index) === -1 ? text.length : text.indexOf('<', index);
+      const next = text.indexOf('<', index);
+      const end = next === -1 ? text.length : next;
       const chunk = text.slice(index, end);
       if (!parent && chunk.trim() !== '') throw new Error('Text outside the root element');
       if (parent) parent.text += decodeText(chunk);

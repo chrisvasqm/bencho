@@ -31,6 +31,10 @@ function decodeText(text: string): string {
   return text.replace(ENTITY, (match, entity: string) => {
     if (!entity.startsWith('#')) return NAMED_ENTITIES[entity] ?? match;
     const code = entity.startsWith('#x') ? parseInt(entity.slice(2), 16) : Number(entity.slice(1));
+    // Only characters XML allows: tab, line breaks and everything from space up.
+    const allowed =
+      code === 0x9 || code === 0xa || code === 0xd || (code >= 0x20 && code <= 0x10ffff);
+    if (!allowed) throw new Error(`&${entity}; is not an XML character`);
     return String.fromCodePoint(code);
   });
 }
@@ -54,7 +58,8 @@ export function parseXml(text: string): XmlElement {
   while (index < text.length) {
     const parent = open[open.length - 1]?.element;
     if (text.charAt(index) !== '<') {
-      const end = text.indexOf('<', index) === -1 ? text.length : text.indexOf('<', index);
+      const next = text.indexOf('<', index);
+      const end = next === -1 ? text.length : next;
       const chunk = text.slice(index, end);
       if (!parent && chunk.trim() !== '') throw new Error('Text outside the root element');
       if (parent) parent.text += decodeText(chunk);
@@ -103,17 +108,18 @@ export function escapeXml(value: string): string {
     .replace(/'/g, '&apos;');
 }
 
+/** The outermost elements named `name` inside `element`: a match's own children are not searched. */
 function descendantsNamed(element: XmlElement, name: string): XmlElement[] {
-  return element.children.flatMap((child) => [
-    ...(child.name === name ? [child] : []),
-    ...descendantsNamed(child, name),
-  ]);
+  return element.children.flatMap((child) =>
+    child.name === name ? [child] : descendantsNamed(child, name),
+  );
 }
 
 /**
- * The trimmed text of the element at `path`, or undefined when there is none or it is empty. Each name finds
- * the elements with that name at any depth inside the first match so far (namespace prefixes
- * ignored), and a number picks one of the matches: Token, LoginResponse.Token or Item.1.Id.
+ * The trimmed text of the element at `path`, or undefined when there is none or it is empty.
+ * Each name finds the outermost elements with that name at any depth inside the matches so far
+ * (namespace prefixes ignored), and a number picks one of the matches: Token,
+ * LoginResponse.Token or Item.1.Id. The value is the first match's text.
  */
 export function xmlValue(document: XmlElement, path: string): string | undefined {
   let matches = [document];
@@ -122,9 +128,8 @@ export function xmlValue(document: XmlElement, path: string): string | undefined
       matches = matches.slice(Number(segment), Number(segment) + 1);
       continue;
     }
-    const scope = matches[0];
-    if (!scope) return undefined;
-    matches = descendantsNamed(scope, localName(segment));
+    const name = localName(segment);
+    matches = matches.flatMap((match) => descendantsNamed(match, name));
   }
   // An empty element, or one with only child elements, has no value to save.
   const value = matches[0] === document ? undefined : matches[0]?.text.trim();

@@ -406,6 +406,7 @@ describe('POST /api/v1/runs', () => {
       ['a SOAP body with a DOCTYPE', [soapStep('<!DOCTYPE a [<!ENTITY x "y">]><a>&x;</a>')]],
       ['a JSON body sent as SOAP', [soapStep('{"name": "pizza"}')]],
       ['an unknown placeholder in a SOAP body', [soapStep('<Id>{{userId}}</Id>')]],
+      ['a SOAP body with a NUL character reference', [soapStep('<a>&#0;</a>')]],
       ['a placeholder as a SOAP tag name', [soapStep('<{{iter}}/>')]],
       ['an invalid header name', [flowStep({ headers: { 'Bad Header': 'x' } })]],
       ['a line break in a header value', [flowStep({ headers: { 'X-Test': 'a\r\nInjected: 1' } })]],
