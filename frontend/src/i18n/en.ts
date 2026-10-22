@@ -11,7 +11,9 @@ export const en = {
     backendDown: 'Bencho cannot reach its server',
     backendDownHint: 'Start Bencho with docker compose up, then reload this page.',
     runsTitle: 'Runs',
-    runsDescription: 'Newest first. Select a run to see its results.',
+    runsDescription:
+      'Every type, newest first. Select a run to see its results, or tick two to compare them.',
+    newRun: 'New run',
     runsLoadError: 'Could not load the runs. Bencho tries again in a moment.',
   },
   prefs: {
@@ -78,12 +80,13 @@ export const en = {
   },
   panel: {
     title: 'New run',
-    tabs: {
+    close: 'Close',
+    sections: {
       setup: 'Setup',
       flow: 'Steps',
       limits: 'Pass rules',
     },
-    tabsLabel: 'Run settings',
+    filledFrom: 'Settings from the {{typeLower}} run of {{time}}. Change what you need.',
     loading: 'Loading settings…',
     start: 'Start {{typeLower}} test',
     starting: 'Starting…',
@@ -237,12 +240,13 @@ export const en = {
     how: 'Bencho looks at the free memory ({{memory}} GB) and CPU cores ({{cpus}}) of the server it runs on. Each virtual user needs up to about {{perUser}} MB. Long flows, large bodies, short pauses and other runs lower the number.',
   },
   runs: {
-    empty: 'No runs of this type yet. Start one from the panel.',
+    empty: 'No runs yet. Start one with New run.',
     selectAll: 'Select all finished runs on this page',
     selectRun: 'Select run from {{time}}',
     openRun: '{{status}}, run from {{time}}',
     headers: {
       status: 'Result',
+      type: 'Type',
       target: 'Address',
       peak: 'Peak',
       p95: 'p95',
@@ -277,6 +281,8 @@ export const en = {
   },
   detail: {
     title: '{{type}} run · {{time}}',
+    runAgain: 'Run again',
+    change: 'Change and run',
     stop: 'Stop',
     stopConfirm: 'Stop run',
     delete: 'Delete',
@@ -303,6 +309,37 @@ export const en = {
     waiting: 'Results appear when the run finishes. The charts below update every 2 seconds.',
     noTotals: 'No results were recorded.',
   },
+  verdict: {
+    latency: '{{key}} {{value}}, limit {{limit}}',
+    errors: 'errors {{value}}, limit {{limit}}',
+    checks: 'only {{value}} of the steps got their expected answer; above 99% needed',
+    dropped_one: '{{count}} planned flow run was dropped because all users were busy',
+    dropped_other: '{{count}} planned flow runs were dropped because all users were busy',
+    dropped_many: '{{count}} planned flow runs were dropped because all users were busy',
+    failedUnknown: 'A limit was crossed.',
+    passed: 'All limits held. p95 {{p95}}, limit {{limit}}.',
+    passedNoTotals: 'All limits held.',
+    stopped: 'You stopped this run. The results so far were kept.',
+    error: 'k6 could not finish this run. The message is below.',
+  },
+  compare: {
+    title: 'Compare 2 runs',
+    close: 'Close',
+    older: 'Older',
+    newer: 'Newer',
+    change: 'Change',
+    rows: {
+      status: 'Result',
+      type: 'Type',
+      baseUrl: 'Address',
+      peak: 'Peak',
+      stages: 'Stages',
+      steps: 'Steps',
+      errors: 'Errors',
+      requests: 'Requests/s',
+      started: 'Started',
+    },
+  },
   explain: {
     percentile:
       'These limits check how fast requests answered. A p95 of 300 ms means 95 of every 100 requests answered in 300 ms or less.',
@@ -328,12 +365,6 @@ export const en = {
       'For a success answer (2xx), only the field names show, because the content can hold passwords or tokens.',
   },
   charts: {
-    label: 'Run charts',
-    tabs: {
-      latency: 'Response time',
-      load: 'Load',
-      errors: 'Errors',
-    },
     waiting: 'Waiting for the first seconds of results…',
     none: 'No per-second results for this run.',
     latencyTitle: 'Response time per second',

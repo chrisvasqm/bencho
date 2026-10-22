@@ -11,7 +11,9 @@ export const es: Translation = {
     backendDown: 'Bencho no puede conectarse a su servidor',
     backendDownHint: 'Inicia Bencho con docker compose up y luego recarga esta página.',
     runsTitle: 'Ejecuciones',
-    runsDescription: 'Las más recientes primero. Selecciona una ejecución para ver sus resultados.',
+    runsDescription:
+      'De todos los tipos, las más recientes primero. Selecciona una ejecución para ver sus resultados, o marca dos para compararlas.',
+    newRun: 'Nueva ejecución',
     runsLoadError:
       'No se pudieron cargar las ejecuciones. Bencho lo intenta de nuevo en un momento.',
   },
@@ -82,12 +84,13 @@ export const es: Translation = {
   },
   panel: {
     title: 'Nueva ejecución',
-    tabs: {
+    close: 'Cerrar',
+    sections: {
       setup: 'Ajustes',
       flow: 'Pasos',
-      limits: 'Reglas',
+      limits: 'Reglas para aprobar',
     },
-    tabsLabel: 'Ajustes de la ejecución',
+    filledFrom: 'Ajustes de la ejecución de {{typeLower}} del {{time}}. Cambia lo que necesites.',
     loading: 'Cargando ajustes…',
     start: 'Iniciar prueba de {{typeLower}}',
     starting: 'Iniciando…',
@@ -244,12 +247,13 @@ export const es: Translation = {
     how: 'Bencho mira la memoria libre ({{memory}} GB) y los núcleos de CPU ({{cpus}}) del servidor donde corre. Cada usuario virtual necesita hasta unos {{perUser}} MB. Los flujos largos, los cuerpos grandes, las pausas cortas y otras ejecuciones bajan el número.',
   },
   runs: {
-    empty: 'Todavía no hay ejecuciones de este tipo. Inicia una desde el panel.',
+    empty: 'Todavía no hay ejecuciones. Inicia una con Nueva ejecución.',
     selectAll: 'Seleccionar todas las ejecuciones terminadas de esta página',
     selectRun: 'Seleccionar la ejecución del {{time}}',
     openRun: '{{status}}, ejecución del {{time}}',
     headers: {
       status: 'Resultado',
+      type: 'Tipo',
       target: 'Dirección',
       peak: 'Pico',
       p95: 'p95',
@@ -284,6 +288,8 @@ export const es: Translation = {
   },
   detail: {
     title: 'Ejecución de {{typeLower}} · {{time}}',
+    runAgain: 'Repetir',
+    change: 'Cambiar y ejecutar',
     stop: 'Detener',
     stopConfirm: 'Detener ejecución',
     delete: 'Eliminar',
@@ -311,6 +317,39 @@ export const es: Translation = {
       'Los resultados aparecen cuando termina la ejecución. Los gráficos de abajo se actualizan cada 2 segundos.',
     noTotals: 'No se registraron resultados.',
   },
+  verdict: {
+    latency: '{{key}} {{value}}, límite {{limit}}',
+    errors: 'errores {{value}}, límite {{limit}}',
+    checks: 'solo {{value}} de los pasos recibió la respuesta esperada; se necesita más del 99%',
+    dropped_one: 'Se descartó {{count}} flujo planeado porque todos los usuarios estaban ocupados',
+    dropped_other:
+      'Se descartaron {{count}} flujos planeados porque todos los usuarios estaban ocupados',
+    dropped_many:
+      'Se descartaron {{count}} flujos planeados porque todos los usuarios estaban ocupados',
+    failedUnknown: 'Se superó un límite.',
+    passed: 'Todos los límites se cumplieron. p95 {{p95}}, límite {{limit}}.',
+    passedNoTotals: 'Todos los límites se cumplieron.',
+    stopped: 'Detuviste esta ejecución. Se guardaron los resultados obtenidos hasta ahora.',
+    error: 'k6 no pudo terminar esta ejecución. El mensaje está abajo.',
+  },
+  compare: {
+    title: 'Comparar 2 ejecuciones',
+    close: 'Cerrar',
+    older: 'Anterior',
+    newer: 'Reciente',
+    change: 'Cambio',
+    rows: {
+      status: 'Resultado',
+      type: 'Tipo',
+      baseUrl: 'Dirección',
+      peak: 'Pico',
+      stages: 'Etapas',
+      steps: 'Pasos',
+      errors: 'Errores',
+      requests: 'Solicitudes/s',
+      started: 'Inicio',
+    },
+  },
   explain: {
     percentile:
       'Estos límites revisan qué tan rápido respondieron las solicitudes. Un p95 de 300 ms significa que 95 de cada 100 solicitudes respondieron en 300 ms o menos.',
@@ -336,12 +375,6 @@ export const es: Translation = {
       'En una respuesta correcta (2xx) solo se muestran los nombres de los campos, porque el contenido puede tener contraseñas o tokens.',
   },
   charts: {
-    label: 'Gráficos de la ejecución',
-    tabs: {
-      latency: 'Tiempo de respuesta',
-      load: 'Carga',
-      errors: 'Errores',
-    },
     waiting: 'Esperando los primeros segundos de resultados…',
     none: 'No hay resultados por segundo para esta ejecución.',
     latencyTitle: 'Tiempo de respuesta por segundo',

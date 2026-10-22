@@ -1,7 +1,8 @@
 import { expect, openApp, test } from './fixtures.ts';
+import { openNewRun } from './run-form.ts';
 
 test.describe('first load', () => {
-  test('shows the run form with the backend defaults and an empty runs list', async ({
+  test('shows an empty runs list and opens the form with the backend defaults', async ({
     page,
     api,
   }) => {
@@ -9,14 +10,19 @@ test.describe('first load', () => {
 
     await openApp(page);
 
-    await expect(page.getByTestId('base-url')).toHaveValue(defaults.baseUrl);
-    await expect(page.getByTestId('panel-tab-setup')).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByTestId('type-tab-load')).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByTestId('runs-empty')).toBeVisible();
     await expect(page.getByTestId('pagination-range')).toHaveText('No runs');
     await expect(page.getByTestId('pagination-previous')).toBeDisabled();
     await expect(page.getByTestId('pagination-next')).toBeDisabled();
     await expect(page.getByTestId('run-detail')).toHaveCount(0);
+    await expect(page.getByTestId('run-form-drawer')).toHaveCount(0);
+
+    await openNewRun(page);
+
+    await expect(page.getByTestId('base-url')).toHaveValue(defaults.baseUrl);
+    await expect(page.getByTestId('run-type')).toHaveValue('load');
+    await page.getByTestId('run-form-close').click();
+    await expect(page.getByTestId('run-form-drawer')).toHaveCount(0);
   });
 
   test.describe('base URL validation', () => {
@@ -26,6 +32,7 @@ test.describe('first load', () => {
     ] as const) {
       test(`refuses ${label} without calling the backend`, async ({ page, api }) => {
         await openApp(page);
+        await openNewRun(page);
         await page.getByTestId('base-url').fill(value);
         await page.getByTestId('start-run').click();
 
@@ -38,10 +45,10 @@ test.describe('first load', () => {
   test('shows the default stages of each test type', async ({ page, api }) => {
     const defaults = await api.defaults();
     await openApp(page);
-    await page.getByTestId('panel-tab-setup').click();
+    await openNewRun(page);
 
     for (const type of ['load', 'stress', 'spike'] as const) {
-      await page.getByTestId(`type-tab-${type}`).click();
+      await page.getByTestId('run-type').selectOption(type);
       const count = defaults.stages[type].length;
       await expect(page.getByTestId(`stage-${count - 1}-duration`)).toBeVisible();
       await expect(page.getByTestId(`stage-${count}-duration`)).toHaveCount(0);
@@ -50,7 +57,7 @@ test.describe('first load', () => {
 
   test('shows a rough VU estimate and warns when the stages go above it', async ({ page }) => {
     await openApp(page);
-    await page.getByTestId('panel-tab-setup').click();
+    await openNewRun(page);
 
     await expect(page.getByTestId('capacity-estimate')).toContainText('Rough estimate');
     await page.getByTestId('learn-capacity').click();
@@ -69,18 +76,15 @@ test.describe('first load', () => {
   });
 });
 
-test.describe('setup tab', () => {
-  test('opens Setup for a stage error and keeps edits across tabs', async ({ page }) => {
+test.describe('stage errors', () => {
+  test('brings a stage error into view after the form was scrolled away', async ({ page }) => {
     await openApp(page);
+    await openNewRun(page);
     await page.getByTestId('stage-0-duration').fill('abc');
-    await page.getByTestId('panel-tab-flow').click();
-    await page.getByTestId('panel-tab-setup').click();
-    await expect(page.getByTestId('stage-0-duration')).toHaveValue('abc');
-    await page.getByTestId('panel-tab-limits').click();
+    await page.getByTestId('limit-p99').scrollIntoViewIfNeeded();
 
     await page.getByTestId('start-run').click();
 
-    await expect(page.getByTestId('panel-tab-setup')).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByTestId('stages-error')).toBeInViewport();
     await expect(page.getByTestId('run-row')).toHaveCount(0);
   });
@@ -89,7 +93,7 @@ test.describe('setup tab', () => {
 test.describe('load shape chart', () => {
   test('puts time ticks on round steps that fit the stages', async ({ page }) => {
     await openApp(page);
-    await page.getByTestId('panel-tab-setup').click();
+    await openNewRun(page);
     await page.getByTestId('stage-0-duration').fill('2m');
     await page.getByTestId('stage-1-duration').fill('13m');
     await page.getByTestId('stage-2-duration').fill('1m30s');

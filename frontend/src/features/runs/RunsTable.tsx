@@ -30,11 +30,12 @@ const ROW_HEIGHT_PX = 34;
 const HEAD_HEIGHT_PX = 36;
 
 const HEADERS: ReadonlyArray<{
-  key: 'status' | 'target' | 'peak' | 'p95' | 'errors' | 'started';
+  key: 'status' | 'type' | 'target' | 'peak' | 'p95' | 'errors' | 'started';
   wide?: boolean;
   right?: boolean;
 }> = [
   { key: 'status' },
+  { key: 'type' },
   { key: 'target', wide: true },
   { key: 'peak', right: true },
   { key: 'p95', right: true },
@@ -153,6 +154,7 @@ export function RunsTable({
                     data-testid="run-row"
                     data-run-id={run.id}
                     data-status={run.status}
+                    data-type={run.type}
                     style={{ height: ROW_HEIGHT_PX }}
                     className={`cursor-pointer border-b border-line last:border-b-0 hover:bg-surface-sunken ${selected ? 'bg-accent-soft' : checkedIds.has(run.id) ? 'bg-surface-sunken' : ''}`}
                   >
@@ -184,6 +186,9 @@ export function RunsTable({
                           {t(`status.${run.status}`)}
                         </Badge>
                       </button>
+                    </td>
+                    <td className="px-3 py-0 text-xs text-fg-muted" data-testid="run-row-type">
+                      {t(`runType.${run.type}`)}
                     </td>
                     <td className="hidden max-w-56 truncate px-3 py-0 sm:table-cell text-xs">
                       {run.baseUrl}

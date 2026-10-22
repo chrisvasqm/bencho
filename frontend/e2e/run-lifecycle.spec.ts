@@ -1,9 +1,10 @@
 // Real k6 runs, started and controlled from the UI.
 import { expect, openApp, test } from './fixtures.ts';
-import { setLooseLimits, setSingleStage, startRun } from './run-form.ts';
+import { openNewRun, setLooseLimits, setSingleStage, startRun } from './run-form.ts';
 
 test.beforeEach(async ({ page }) => {
   await openApp(page);
+  await openNewRun(page);
 });
 
 test('a run within its limits passes and shows its numbers', async ({ page }) => {
@@ -21,7 +22,6 @@ test('a run within its limits passes and shows its numbers', async ({ page }) =>
 });
 
 test('a run with a random wait after a step passes', async ({ page }) => {
-  await page.getByTestId('panel-tab-flow').click();
   await page.getByTestId('step-wait-min').fill('.1');
   await page.getByTestId('step-wait-max').fill('0,3');
   await setSingleStage(page, '1s');
@@ -39,7 +39,6 @@ test('a run with a random wait after a step passes', async ({ page }) => {
 
 test('a SOAP step sends its XML body as SOAP and passes', async ({ page }) => {
   const body = '<Envelope><Body><Ping id="{{uuid}}">user-{{shortId}}</Ping></Body></Envelope>';
-  await page.getByTestId('panel-tab-flow').click();
   await page.getByTestId('step-body-format-soap').click();
   await page.getByTestId('step-body').fill(body);
   await setSingleStage(page, '1s');
@@ -57,16 +56,15 @@ test('a SOAP step sends its XML body as SOAP and passes', async ({ page }) => {
 
 test('the SOAP example runs against the SOAP demo app and passes', async ({ page, api }) => {
   const { soapExampleBaseUrl } = await api.defaults();
-  await page.getByTestId('panel-tab-flow').click();
   await page.getByTestId('load-soap-example').click();
+  await expect(page.getByTestId('base-url')).toHaveValue(soapExampleBaseUrl ?? '');
   await setSingleStage(page, '1s');
   await setLooseLimits(page);
 
   await startRun(page);
 
   await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'passed');
-  await page.getByTestId('panel-tab-setup').click();
-  await expect(page.getByTestId('base-url')).toHaveValue(soapExampleBaseUrl ?? '');
+  await expect(page.getByTestId('run-detail')).toContainText(soapExampleBaseUrl ?? '');
 });
 
 test('the QuickPizza example after the SOAP example points the run back at QuickPizza', async ({
@@ -74,11 +72,8 @@ test('the QuickPizza example after the SOAP example points the run back at Quick
   api,
 }) => {
   const { baseUrl } = await api.defaults();
-  await page.getByTestId('panel-tab-flow').click();
   await page.getByTestId('load-soap-example').click();
   await page.getByTestId('load-quickpizza-example').click();
-
-  await page.getByTestId('panel-tab-setup').click();
 
   await expect(page.getByTestId('base-url')).toHaveValue(baseUrl);
 });
@@ -87,7 +82,6 @@ test('a SOAP step with malformed XML shows the problem without calling the backe
   page,
   api,
 }) => {
-  await page.getByTestId('panel-tab-flow').click();
   await page.getByTestId('step-body-format-soap').click();
   await page.getByTestId('step-body').fill('<Envelope><Body></Envelope>');
 
@@ -127,14 +121,12 @@ test('a rate run that cannot keep its rate fails and shows the dropped runs', as
 
   await expect(page.getByTestId('run-detail')).toHaveAttribute('data-status', 'failed');
   await expect(page.getByTestId('run-dropped')).toBeVisible();
-  await page.getByTestId('chart-tab-load').click();
   const chart = page.getByTestId('rate-chart');
   await expect(chart).toContainText('Planned');
   await expect(chart).toContainText('Dropped');
 });
 
 test('accepts a rate below 1 per second and refuses unclear targets', async ({ page }) => {
-  await page.getByTestId('panel-tab-setup').click();
   // "1,000" users is a thousands separator, not 1: refused, never sent as 1 VU.
   await page.getByTestId('stage-0-target').fill('1,000');
   await page.getByTestId('start-run').click();
@@ -167,7 +159,6 @@ test('accepts a rate below 1 per second and refuses unclear targets', async ({ p
 });
 
 test('refuses a VU cap below 1 without starting a run', async ({ page }) => {
-  await page.getByTestId('panel-tab-setup').click();
   await page.getByTestId('load-mode-rate').click();
   await page.getByTestId('max-virtual-users').fill('0');
 
@@ -178,7 +169,6 @@ test('refuses a VU cap below 1 without starting a run', async ({ page }) => {
 });
 
 test('a failed run shows a sample of the failed responses', async ({ page }) => {
-  await page.getByTestId('panel-tab-flow').click();
   await page.getByTestId('step-expected-status').fill('418');
   await setSingleStage(page, '1s');
   await setLooseLimits(page);
@@ -190,7 +180,7 @@ test('a failed run shows a sample of the failed responses', async ({ page }) => 
   await expect(page.getByTestId('run-failure')).toContainText('status 200, expected 418');
 });
 
-test('a run sends the grace period from the Limits tab', async ({ page }) => {
+test('a run sends the grace period from Pass rules', async ({ page }) => {
   await setSingleStage(page, '1s');
   await setLooseLimits(page);
   await page.getByTestId('grace-period').fill('5');
@@ -206,7 +196,6 @@ test('a run sends the grace period from the Limits tab', async ({ page }) => {
 });
 
 test('refuses an empty grace period without starting a run', async ({ page }) => {
-  await page.getByTestId('panel-tab-limits').click();
   await page.getByTestId('grace-period').fill('');
 
   await page.getByTestId('start-run').click();

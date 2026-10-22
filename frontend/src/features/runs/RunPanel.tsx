@@ -1,11 +1,20 @@
-// Left-hand control panel: build a run across three tabs (Setup, Flow, Limits), start it from the pinned footer.
-import { AnimatePresence, m } from 'motion/react';
-import { Suspense, lazy, useCallback, useEffect, useState, type FormEvent } from 'react';
+// The run form: one scrolling card with three sections (Setup, Steps, Pass rules) and Start
+// pinned at the bottom. Opens with the backend defaults, or filled from a stored run.
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import {
   LOAD_MODES,
   RUN_TYPES,
   type CreateRunInput,
   type LoadMode,
+  type Run,
   type RunDefaults,
   type RunType,
 } from '../../api/runs.ts';
@@ -18,44 +27,19 @@ import {
   SegmentedControl,
   Select,
   Skeleton,
-  Tabs,
 } from '../../components/ui/index.ts';
 import { LearnMore } from '../learn/LearnMore.tsx';
 import { useCopy, type Copy } from '../../i18n/useCopy.ts';
-import { durationToSeconds, isValidTarget, peakTarget, runTypeVars } from './format.ts';
+import { durationToSeconds, formatTime, isValidTarget, peakTarget, runTypeVars } from './format.ts';
 import { CapacityHint } from './CapacityHint.tsx';
 import { StagesEditor } from './StagesEditor.tsx';
 import { parseTarget, toStageRow, type StageRow } from './stages.ts';
 import { FlowEditor } from './FlowEditor.tsx';
 import { draftProblem, flowProblem, fromDraft, toDraft, type StepDraft } from './flow.ts';
 
-type PanelTab = 'setup' | 'flow' | 'limits';
-
-const PANEL_TABS: readonly PanelTab[] = ['setup', 'flow', 'limits'];
-
-const ERROR_TAB: Record<string, PanelTab> = {
-  baseUrl: 'setup',
-  flow: 'flow',
-  flowStep: 'flow',
-  flowStepLabel: 'flow',
-  stages: 'setup',
-  maxVirtualUsers: 'setup',
-  thinkTime: 'limits',
-  gracePeriod: 'limits',
-  maxErrorRate: 'limits',
-  latency: 'limits',
-};
-
 const PERCENTILES = ['p50', 'p90', 'p95', 'p99'] as const;
 
-/** Setup errors in the order they appear on the tab, with the test id of their message. */
-const SETUP_ERROR_TEST_IDS: Record<string, string> = {
-  baseUrl: 'base-url-error',
-  stages: 'stages-error',
-  maxVirtualUsers: 'max-virtual-users-error',
-};
-
-// recharts is large; the preview loads after the panel is usable.
+// recharts is large; the preview loads after the form is usable.
 const LoadShapeChart = lazy(() => import('./LoadShapeChart.tsx'));
 // Mirrors the backend limits so the user sees which field to fix.
 const MAX_RUN_SECONDS = 3600;
@@ -124,10 +108,12 @@ function validate(input: CreateRunInput, steps: StepDraft[], t: Copy): Record<st
 
 export interface RunPanelProps {
   defaults?: RunDefaults;
-  type: RunType;
-  onTypeChange: (type: RunType) => void;
+  /** A stored run whose settings fill the form; without it, the backend defaults do. */
+  initial?: Run;
   onSubmit: (input: CreateRunInput) => Promise<void>;
   submitting: boolean;
+  /** Rendered in the card's header, e.g. a close button when the form is in a drawer. */
+  actions?: ReactNode;
   className?: string;
 }
 
@@ -138,35 +124,41 @@ function sameOrigin(url: string, other: string | undefined): boolean {
 }
 
 export function RunPanel({ defaults, ...props }: RunPanelProps) {
-  if (!defaults) return <RunPanelSkeleton className={props.className} />;
+  if (!defaults) return <RunPanelSkeleton className={props.className} actions={props.actions} />;
   return <RunPanelForm defaults={defaults} {...props} />;
 }
 
 function RunPanelForm({
   defaults,
-  type,
-  onTypeChange,
+  initial,
   onSubmit,
   submitting,
+  actions,
   className,
 }: RunPanelProps & { defaults: RunDefaults }) {
   const { t, language } = useCopy();
-  const [tab, setTab] = useState<PanelTab>('setup');
-  const [baseUrl, setBaseUrl] = useState(defaults.baseUrl);
-  const [stages, setStages] = useState<StageRow[]>(() => defaults.stages[type].map(toStageRow));
-  const [mode, setMode] = useState<LoadMode>('users');
-  const [maxVirtualUsers, setMaxVirtualUsers] = useState(defaults.maxVirtualUsers);
-  const [flowSteps, setFlowSteps] = useState<StepDraft[]>(() => defaults.flow.map(toDraft));
-  // Kept here, not in FlowEditor: switching tabs remounts the editor.
+  const [type, setType] = useState<RunType>(initial?.type ?? 'load');
+  const [baseUrl, setBaseUrl] = useState(initial?.baseUrl ?? defaults.baseUrl);
+  const [stages, setStages] = useState<StageRow[]>(() =>
+    (initial?.stages ?? defaults.stages[type]).map(toStageRow),
+  );
+  const [mode, setMode] = useState<LoadMode>(initial?.mode ?? 'users');
+  const [maxVirtualUsers, setMaxVirtualUsers] = useState(
+    initial?.maxVirtualUsers ?? defaults.maxVirtualUsers,
+  );
+  const [flowSteps, setFlowSteps] = useState<StepDraft[]>(() =>
+    (initial?.flow ?? defaults.flow).map(toDraft),
+  );
   const [openStepId, setOpenStepId] = useState<string | undefined>(flowSteps[0]?.id);
   const [submitCount, setSubmitCount] = useState(0);
-  // The submit whose flow problem was already scrolled into view; remounts do not scroll again.
+  // The submit whose flow problem was already scrolled into view.
   const [shownErrorRevision, setShownErrorRevision] = useState(0);
   const markErrorShown = useCallback(() => setShownErrorRevision(submitCount), [submitCount]);
-  const [thinkTime, setThinkTime] = useState(defaults.limits.thinkTimeSeconds);
-  const [gracePeriod, setGracePeriod] = useState(defaults.limits.gracePeriodSeconds);
-  const [maxErrorPercent, setMaxErrorPercent] = useState(defaults.limits.maxErrorRate * 100);
-  const [latency, setLatency] = useState(defaults.limits.latencyLimitsMs);
+  const limits = initial?.limits ?? defaults.limits;
+  const [thinkTime, setThinkTime] = useState(limits.thinkTimeSeconds);
+  const [gracePeriod, setGracePeriod] = useState(limits.gracePeriodSeconds);
+  const [maxErrorPercent, setMaxErrorPercent] = useState(limits.maxErrorRate * 100);
+  const [latency, setLatency] = useState(limits.latencyLimitsMs);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const currentInput = (): CreateRunInput => ({
     type,
@@ -196,58 +188,41 @@ function RunPanelForm({
       );
     }
   }
-  // Test id of a Setup error to bring into view once the tab has animated in.
-  const [setupErrorToShow, setSetupErrorToShow] = useState<string | undefined>();
+  // After a refused start, bring the first problem into view (the flow editor scrolls its own).
+  const [errorToShow, setErrorToShow] = useState(0);
   useEffect(() => {
-    if (!setupErrorToShow || tab !== 'setup') return;
-    let frame = 0;
-    let tries = 0;
-    const show = () => {
-      const element = document.querySelector(`[data-testid="${setupErrorToShow}"]`);
-      // The tab content mounts after the exit animation; look again for up to about a second.
-      if (!element && tries++ < 60) {
-        frame = requestAnimationFrame(show);
-        return;
-      }
-      element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      setSetupErrorToShow(undefined);
-    };
-    frame = requestAnimationFrame(show);
-    return () => cancelAnimationFrame(frame);
-  }, [setupErrorToShow, tab]);
+    if (errorToShow === 0) return;
+    document
+      .querySelector(`#${FORM_ID} [role="alert"]`)
+      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    setErrorToShow(0);
+  }, [errorToShow]);
 
-  // The type can also change from the Runs tabs; the stages must follow either way.
-  const [stagesType, setStagesType] = useState(type);
-  if (stagesType !== type) {
-    setStagesType(type);
-    setStages(defaults.stages[type].map(toStageRow));
-    // The new stages are VU targets; keeping Rate would reread them as runs per second.
+  const changeType = (next: RunType) => {
+    setType(next);
+    // Each type has its own default stages, as VU targets.
+    setStages(defaults.stages[next].map(toStageRow));
     setMode('users');
-  }
+    setErrors(({ stages: _stale, ...rest }) => rest);
+  };
 
   // Edits clear flow errors, so the marked step always still exists.
   const errorStepId = errors.flowStep;
-  const tabsWithErrors = new Set(Object.keys(errors).map((key) => ERROR_TAB[key]));
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const input = currentInput();
     const nextErrors = validate(input, flowSteps, t);
     setErrors(nextErrors);
-    // The first tab, in tab order, that has an error.
-    const errorTabs = new Set(Object.keys(nextErrors).map((key) => ERROR_TAB[key]));
-    const firstErrorTab = PANEL_TABS.find((value) => errorTabs.has(value));
     const revision = submitCount + 1;
     setSubmitCount(revision);
-    // Scroll to a flow problem only when this submit opens the Flow tab, not on a later visit.
-    if (firstErrorTab !== 'flow') setShownErrorRevision(revision);
     if (nextErrors.flowStep) setOpenStepId(nextErrors.flowStep);
     if (Object.keys(nextErrors).length > 0) {
-      // An error with no tab of its own still stops the run; Setup is the first tab.
-      setTab(firstErrorTab ?? 'setup');
-      const setupKey = Object.keys(SETUP_ERROR_TEST_IDS).find((key) => nextErrors[key]);
-      if ((firstErrorTab ?? 'setup') === 'setup' && setupKey) {
-        setSetupErrorToShow(SETUP_ERROR_TEST_IDS[setupKey]);
+      // A flow problem scrolls through the editor; anything else through the first alert.
+      if (nextErrors.flow) setShownErrorRevision(revision - 1);
+      else {
+        setShownErrorRevision(revision);
+        setErrorToShow(revision);
       }
       return;
     }
@@ -257,27 +232,19 @@ function RunPanelForm({
   return (
     <Card
       title={t('panel.title')}
-      description={t(`runTypeDescription.${type}`)}
+      description={
+        initial
+          ? t('panel.filledFrom', {
+              ...runTypeVars(initial.type, t),
+              time: formatTime(initial.createdAt, language),
+            })
+          : t(`runTypeDescription.${type}`)
+      }
+      actions={actions}
       scrollBody
       flushFooter
       className={className}
-      headerExtra={
-        <Tabs
-          label={t('panel.tabsLabel')}
-          testId="panel-tab"
-          value={tab}
-          onChange={(next) => {
-            setTab(next);
-            // A scroll still waiting for Setup to appear no longer applies on another tab.
-            setSetupErrorToShow(undefined);
-          }}
-          items={PANEL_TABS.map((value) => ({
-            value,
-            label: t(`panel.tabs.${value}`),
-            alert: tabsWithErrors.has(value),
-          }))}
-        />
-      }
+      data-testid="run-form-card"
       footer={
         <Button
           type="submit"
@@ -291,306 +258,280 @@ function RunPanelForm({
       }
     >
       <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
-        <fieldset disabled={submitting} className="m-0 min-w-0 border-0 p-0">
-          <AnimatePresence mode="wait" initial={false}>
-            <m.div
-              key={tab}
-              initial={{ opacity: 0, x: 8 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -8 }}
-              transition={{ duration: 0.15 }}
-              className="flex flex-col gap-5"
+        <fieldset disabled={submitting} className="m-0 flex min-w-0 flex-col gap-5 border-0 p-0">
+          <SectionTitle>{t('panel.sections.setup')}</SectionTitle>
+          <div className="flex items-start gap-3">
+            <Field label={t('panel.testType')} htmlFor="run-type" className="w-32 shrink-0">
+              <Select
+                id="run-type"
+                data-testid="run-type"
+                value={type}
+                onChange={changeType}
+                options={RUN_TYPES.map((value) => ({
+                  value,
+                  label: t(`runType.${value}`),
+                }))}
+              />
+            </Field>
+            <Field
+              label={t('panel.baseUrl')}
+              htmlFor="base-url"
+              className="min-w-0 flex-1"
+              hint={t('panel.baseUrlHint')}
+              error={errors.baseUrl}
             >
-              {tab === 'setup' && (
-                <>
-                  <div className="flex items-start gap-3">
-                    <Field label={t('panel.testType')} htmlFor="run-type" className="w-32 shrink-0">
-                      <Select
-                        id="run-type"
-                        data-testid="run-type"
-                        value={type}
-                        onChange={onTypeChange}
-                        options={RUN_TYPES.map((value) => ({
-                          value,
-                          label: t(`runType.${value}`),
-                        }))}
-                      />
-                    </Field>
-                    <Field
-                      label={t('panel.baseUrl')}
-                      htmlFor="base-url"
-                      className="min-w-0 flex-1"
-                      hint={t('panel.baseUrlHint')}
-                      error={errors.baseUrl}
-                    >
-                      <Input
-                        id="base-url"
-                        data-testid="base-url"
-                        mono
-                        value={baseUrl}
-                        onChange={(event) => setBaseUrl(event.target.value)}
-                        placeholder="https://api.example.com/health"
-                        invalid={Boolean(errors.baseUrl)}
-                      />
-                    </Field>
-                  </div>
-                  <h3 className="m-0 border-t border-line pt-4 text-sm font-semibold text-fg">
-                    {t('panel.loadShape')}
-                  </h3>
-                  <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
-                    <LoadShapeChart stages={stages} mode={mode} />
-                  </Suspense>
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-sm font-medium text-fg">{t('panel.targetsCount')}</span>
-                    <SegmentedControl
-                      label={t('panel.targetsCount')}
-                      testId="load-mode"
-                      value={mode}
-                      onChange={(next) => {
-                        setMode(next);
-                        // An error for the other mode no longer applies; the next start checks again.
-                        setErrors(({ stages: _stale, ...rest }) => rest);
-                        // The same text can be valid in one mode and not the other ("0,5").
-                        setStages(
-                          stages.map((stage) => ({
-                            ...stage,
-                            target: parseTarget(stage.targetText, next === 'rate'),
-                          })),
-                        );
-                      }}
-                      options={LOAD_MODES.map((value) => ({
-                        value,
-                        label: t(`panel.modes.${value}`),
-                      }))}
-                    />
-                    <p className="m-0 text-xs text-fg-muted" data-testid="load-mode-hint">
-                      {t(`panel.modeHint.${mode}`)}
-                    </p>
-                  </div>
-                  <Field
-                    label={t('panel.stages')}
-                    htmlFor="stage-0-duration"
-                    error={errors.stages}
-                    errorTestId="stages-error"
-                  >
-                    <StagesEditor
-                      stages={stages}
-                      onChange={setStages}
-                      targetLabel={t(`panel.target.${mode}`)}
-                      decimals={mode === 'rate'}
-                    />
-                  </Field>
-                  {mode === 'rate' && (
-                    <Field
-                      label={t('panel.maxUsers')}
-                      htmlFor="max-virtual-users"
-                      hint={t('panel.maxUsersHint')}
-                      error={errors.maxVirtualUsers}
-                      errorTestId="max-virtual-users-error"
-                    >
-                      <Input
-                        id="max-virtual-users"
-                        data-testid="max-virtual-users"
-                        mono
-                        type="number"
-                        min={1}
-                        step={1}
-                        value={maxVirtualUsers}
-                        onChange={(event) => setMaxVirtualUsers(Number(event.target.value))}
-                        invalid={Boolean(errors.maxVirtualUsers)}
-                      />
-                    </Field>
-                  )}
-                  <CapacityHint
-                    peakTarget={mode === 'rate' ? maxVirtualUsers : peakTarget(stages)}
-                    rate={mode === 'rate'}
-                  />
-                  <LearnMore
-                    testId="learn-shape"
-                    title={t('panel.shapeNoteTitle')}
-                    paragraphs={[
-                      t('panel.shapeNote1'),
-                      t('panel.shapeNote2'),
-                      t('panel.shapeNote3'),
-                    ]}
-                  />
-                </>
-              )}
+              <Input
+                id="base-url"
+                data-testid="base-url"
+                mono
+                value={baseUrl}
+                onChange={(event) => setBaseUrl(event.target.value)}
+                placeholder="https://api.example.com/health"
+                invalid={Boolean(errors.baseUrl)}
+              />
+            </Field>
+          </div>
+          <h4 className="m-0 text-sm font-semibold text-fg">{t('panel.loadShape')}</h4>
+          <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
+            <LoadShapeChart stages={stages} mode={mode} />
+          </Suspense>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-fg">{t('panel.targetsCount')}</span>
+            <SegmentedControl
+              label={t('panel.targetsCount')}
+              testId="load-mode"
+              value={mode}
+              onChange={(next) => {
+                setMode(next);
+                // An error for the other mode no longer applies; the next start checks again.
+                setErrors(({ stages: _stale, ...rest }) => rest);
+                // The same text can be valid in one mode and not the other ("0,5").
+                setStages(
+                  stages.map((stage) => ({
+                    ...stage,
+                    target: parseTarget(stage.targetText, next === 'rate'),
+                  })),
+                );
+              }}
+              options={LOAD_MODES.map((value) => ({
+                value,
+                label: t(`panel.modes.${value}`),
+              }))}
+            />
+            <p className="m-0 text-xs text-fg-muted" data-testid="load-mode-hint">
+              {t(`panel.modeHint.${mode}`)}
+            </p>
+          </div>
+          <Field
+            label={t('panel.stages')}
+            htmlFor="stage-0-duration"
+            error={errors.stages}
+            errorTestId="stages-error"
+          >
+            <StagesEditor
+              stages={stages}
+              onChange={setStages}
+              targetLabel={t(`panel.target.${mode}`)}
+              decimals={mode === 'rate'}
+            />
+          </Field>
+          {mode === 'rate' && (
+            <Field
+              label={t('panel.maxUsers')}
+              htmlFor="max-virtual-users"
+              hint={t('panel.maxUsersHint')}
+              error={errors.maxVirtualUsers}
+              errorTestId="max-virtual-users-error"
+            >
+              <Input
+                id="max-virtual-users"
+                data-testid="max-virtual-users"
+                mono
+                type="number"
+                min={1}
+                step={1}
+                value={maxVirtualUsers}
+                onChange={(event) => setMaxVirtualUsers(Number(event.target.value))}
+                invalid={Boolean(errors.maxVirtualUsers)}
+              />
+            </Field>
+          )}
+          <CapacityHint
+            peakTarget={mode === 'rate' ? maxVirtualUsers : peakTarget(stages)}
+            rate={mode === 'rate'}
+          />
+          <LearnMore
+            testId="learn-shape"
+            title={t('panel.shapeNoteTitle')}
+            paragraphs={[t('panel.shapeNote1'), t('panel.shapeNote2'), t('panel.shapeNote3')]}
+          />
 
-              {tab === 'flow' && (
-                <>
-                  <FlowEditor
-                    steps={flowSteps}
-                    onChange={(steps) => {
-                      setFlowSteps(steps);
-                      // An edit may fix the problem; it is checked again on the next start.
-                      if (errors.flow) {
-                        setErrors(
-                          Object.fromEntries(
-                            Object.entries(errors).filter(([key]) => !key.startsWith('flow')),
-                          ),
-                        );
-                      }
-                    }}
-                    openId={openStepId}
-                    onOpenChange={setOpenStepId}
-                    hasSoapExample={Boolean(defaults.soapExampleBaseUrl)}
-                    onExampleLoad={(example) => {
-                      const { soapExampleBaseUrl } = defaults;
-                      // The SOAP example needs its demo app. QuickPizza keeps a typed URL, but
-                      // not the SOAP demo's, which cannot serve it.
-                      const target =
-                        example === 'soap'
-                          ? soapExampleBaseUrl
-                          : sameOrigin(baseUrl, soapExampleBaseUrl)
-                            ? defaults.baseUrl
-                            : undefined;
-                      if (target === undefined) return;
-                      setBaseUrl(target);
-                      // The example's URL is valid: drop an earlier base URL problem.
-                      setErrors(({ baseUrl: _fixed, ...rest }) => rest);
-                    }}
-                    errorStepId={errorStepId}
-                    error={errors.flow}
-                    scrollToError={submitCount !== shownErrorRevision}
-                    onErrorShown={markErrorShown}
-                    errorLabel={errors.flowStepLabel}
-                  />
-                </>
-              )}
+          <SectionTitle>{t('panel.sections.flow')}</SectionTitle>
+          <FlowEditor
+            steps={flowSteps}
+            onChange={(steps) => {
+              setFlowSteps(steps);
+              // An edit may fix the problem; it is checked again on the next start.
+              if (errors.flow) {
+                setErrors(
+                  Object.fromEntries(
+                    Object.entries(errors).filter(([key]) => !key.startsWith('flow')),
+                  ),
+                );
+              }
+            }}
+            openId={openStepId}
+            onOpenChange={setOpenStepId}
+            hasSoapExample={Boolean(defaults.soapExampleBaseUrl)}
+            onExampleLoad={(example) => {
+              const { soapExampleBaseUrl } = defaults;
+              // The SOAP example needs its demo app. QuickPizza keeps a typed URL, but
+              // not the SOAP demo's, which cannot serve it.
+              const target =
+                example === 'soap'
+                  ? soapExampleBaseUrl
+                  : sameOrigin(baseUrl, soapExampleBaseUrl)
+                    ? defaults.baseUrl
+                    : undefined;
+              if (target === undefined) return;
+              setBaseUrl(target);
+              // The example's URL is valid: drop an earlier base URL problem.
+              setErrors(({ baseUrl: _fixed, ...rest }) => rest);
+            }}
+            errorStepId={errorStepId}
+            error={errors.flow}
+            scrollToError={submitCount !== shownErrorRevision}
+            onErrorShown={markErrorShown}
+            errorLabel={errors.flowStepLabel}
+          />
 
-              {tab === 'limits' && (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field
-                      label={t('panel.thinkTime')}
-                      htmlFor="think-time"
-                      hint={t('panel.thinkTimeHint')}
-                      error={errors.thinkTime}
-                    >
-                      <Input
-                        id="think-time"
-                        data-testid="think-time"
-                        mono
-                        type="number"
-                        min={0}
-                        step={0.1}
-                        value={thinkTime}
-                        onChange={(event) => setThinkTime(Number(event.target.value))}
-                      />
-                    </Field>
-                    <Field
-                      label={t('panel.maxErrorRate')}
-                      htmlFor="max-error-rate"
-                      hint={t('panel.maxErrorRateHint')}
-                      error={errors.maxErrorRate}
-                    >
-                      <Input
-                        id="max-error-rate"
-                        data-testid="max-error-rate"
-                        mono
-                        type="number"
-                        min={0}
-                        max={100}
-                        step={0.1}
-                        value={maxErrorPercent}
-                        onChange={(event) => setMaxErrorPercent(Number(event.target.value))}
-                      />
-                    </Field>
-                  </div>
-                  <Field
-                    label={t('panel.gracePeriod')}
-                    htmlFor="grace-period"
-                    hint={t('panel.gracePeriodHint')}
-                    error={errors.gracePeriod}
-                  >
-                    <Input
-                      id="grace-period"
-                      data-testid="grace-period"
-                      mono
-                      type="number"
-                      min={0}
-                      max={MAX_GRACE_PERIOD_SECONDS}
-                      step={1}
-                      value={Number.isNaN(gracePeriod) ? '' : gracePeriod}
-                      // An empty field is not 0 seconds: NaN fails validation.
-                      onChange={(event) =>
-                        setGracePeriod(
-                          event.target.value === '' ? Number.NaN : Number(event.target.value),
-                        )
-                      }
-                      invalid={Boolean(errors.gracePeriod)}
-                    />
-                  </Field>
-                  <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
-                    <legend className="mb-1.5 text-sm font-medium text-fg">
-                      {t('panel.latencyLimits')}
-                    </legend>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      {PERCENTILES.map((key) => (
-                        <div key={key} className="flex flex-col gap-1">
-                          <label htmlFor={`limit-${key}`} className="text-xs text-fg-muted">
-                            {key}
-                          </label>
-                          <Input
-                            id={`limit-${key}`}
-                            data-testid={`limit-${key}`}
-                            mono
-                            type="number"
-                            min={1}
-                            step={10}
-                            value={latency[key]}
-                            onChange={(event) =>
-                              setLatency({ ...latency, [key]: Number(event.target.value) })
-                            }
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    {errors.latency && (
-                      <p role="alert" data-testid="latency-error" className="text-xs text-danger">
-                        {errors.latency}
-                      </p>
-                    )}
-                  </fieldset>
-                  <LearnMore
-                    testId="learn-rules"
-                    title={t('panel.rulesNoteTitle')}
-                    paragraphs={[
-                      t('explain.failRule'),
-                      t('explain.percentile'),
-                      t('panel.percentileNote2'),
-                      t('explain.errorRate'),
-                      t('explain.failChecks'),
-                      ...(mode === 'rate' ? [t('explain.failRate')] : []),
-                    ]}
+          <SectionTitle>{t('panel.sections.limits')}</SectionTitle>
+          <div className="grid grid-cols-2 gap-3">
+            <Field
+              label={t('panel.thinkTime')}
+              htmlFor="think-time"
+              hint={t('panel.thinkTimeHint')}
+              error={errors.thinkTime}
+            >
+              <Input
+                id="think-time"
+                data-testid="think-time"
+                mono
+                type="number"
+                min={0}
+                step={0.1}
+                value={thinkTime}
+                onChange={(event) => setThinkTime(Number(event.target.value))}
+              />
+            </Field>
+            <Field
+              label={t('panel.maxErrorRate')}
+              htmlFor="max-error-rate"
+              hint={t('panel.maxErrorRateHint')}
+              error={errors.maxErrorRate}
+            >
+              <Input
+                id="max-error-rate"
+                data-testid="max-error-rate"
+                mono
+                type="number"
+                min={0}
+                max={100}
+                step={0.1}
+                value={maxErrorPercent}
+                onChange={(event) => setMaxErrorPercent(Number(event.target.value))}
+              />
+            </Field>
+          </div>
+          <Field
+            label={t('panel.gracePeriod')}
+            htmlFor="grace-period"
+            hint={t('panel.gracePeriodHint')}
+            error={errors.gracePeriod}
+          >
+            <Input
+              id="grace-period"
+              data-testid="grace-period"
+              mono
+              type="number"
+              min={0}
+              max={MAX_GRACE_PERIOD_SECONDS}
+              step={1}
+              value={Number.isNaN(gracePeriod) ? '' : gracePeriod}
+              // An empty field is not 0 seconds: NaN fails validation.
+              onChange={(event) =>
+                setGracePeriod(event.target.value === '' ? Number.NaN : Number(event.target.value))
+              }
+              invalid={Boolean(errors.gracePeriod)}
+            />
+          </Field>
+          <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
+            <legend className="mb-1.5 text-sm font-medium text-fg">
+              {t('panel.latencyLimits')}
+            </legend>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {PERCENTILES.map((key) => (
+                <div key={key} className="flex flex-col gap-1">
+                  <label htmlFor={`limit-${key}`} className="text-xs text-fg-muted">
+                    {key}
+                  </label>
+                  <Input
+                    id={`limit-${key}`}
+                    data-testid={`limit-${key}`}
+                    mono
+                    type="number"
+                    min={1}
+                    step={10}
+                    value={latency[key]}
+                    onChange={(event) =>
+                      setLatency({ ...latency, [key]: Number(event.target.value) })
+                    }
                   />
-                </>
-              )}
-            </m.div>
-          </AnimatePresence>
+                </div>
+              ))}
+            </div>
+            {errors.latency && (
+              <p role="alert" data-testid="latency-error" className="text-xs text-danger">
+                {errors.latency}
+              </p>
+            )}
+          </fieldset>
+          <LearnMore
+            testId="learn-rules"
+            title={t('panel.rulesNoteTitle')}
+            paragraphs={[
+              t('explain.failRule'),
+              t('explain.percentile'),
+              t('panel.percentileNote2'),
+              t('explain.errorRate'),
+              t('explain.failChecks'),
+              ...(mode === 'rate' ? [t('explain.failRate')] : []),
+            ]}
+          />
         </fieldset>
       </form>
     </Card>
   );
 }
 
-function RunPanelSkeleton({ className }: { className?: string }) {
+function SectionTitle({ children }: { children: string }) {
+  return (
+    <h3 className="m-0 border-b border-line pb-2 text-sm font-semibold text-fg [&:not(:first-child)]:mt-2">
+      {children}
+    </h3>
+  );
+}
+
+function RunPanelSkeleton({ className, actions }: { className?: string; actions?: ReactNode }) {
   const { t } = useCopy();
   return (
     <Card
       title={t('panel.title')}
       description={<Skeleton className="mt-1 h-4 w-56" />}
+      actions={actions}
       scrollBody
       flushFooter
       className={className}
-      headerExtra={
-        <div className="flex gap-4 pb-2">
-          {PANEL_TABS.map((value) => (
-            <Skeleton key={value} className="h-5 w-16" />
-          ))}
-        </div>
-      }
       footer={
         <Button loading disabled size="block">
           {t('panel.loading')}
@@ -599,11 +540,12 @@ function RunPanelSkeleton({ className }: { className?: string }) {
       aria-busy="true"
     >
       <div className="flex flex-col gap-5">
+        <Skeleton className="h-5 w-16" />
         <div className="flex gap-3">
           <FieldSkeleton className="w-32 shrink-0" />
           <FieldSkeleton className="min-w-0 flex-1" />
         </div>
-        {/* The Setup tab opens with the load shape chart and stages below the fields. */}
+        {/* The form opens with the load shape chart and stages below the fields. */}
         <Skeleton className="h-[164px] w-full" />
         <FieldSkeleton />
       </div>
