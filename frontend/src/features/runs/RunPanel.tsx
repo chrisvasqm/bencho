@@ -304,7 +304,7 @@ function RunPanelForm({
               {tab === 'setup' && (
                 <>
                   <div className="flex items-start gap-3">
-                    <Field label={t('panel.testType')} htmlFor="run-type" className="w-28 shrink-0">
+                    <Field label={t('panel.testType')} htmlFor="run-type" className="w-32 shrink-0">
                       <Select
                         id="run-type"
                         data-testid="run-type"
