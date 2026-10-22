@@ -1,6 +1,6 @@
-// Left-hand control panel: build a run across four tabs, start it from the pinned footer.
+// Left-hand control panel: build a run across three tabs (Setup, Flow, Limits), start it from the pinned footer.
 import { AnimatePresence, m } from 'motion/react';
-import { Suspense, lazy, useCallback, useState, type FormEvent } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useState, type FormEvent } from 'react';
 import {
   LOAD_MODES,
   RUN_TYPES,
@@ -38,22 +38,21 @@ import { parseTarget, toStageRow, type StageRow } from './stages.ts';
 import { FlowEditor } from './FlowEditor.tsx';
 import { draftProblem, flowProblem, fromDraft, toDraft, type StepDraft } from './flow.ts';
 
-type PanelTab = 'target' | 'flow' | 'shape' | 'limits';
+type PanelTab = 'setup' | 'flow' | 'limits';
 
 const PANEL_TABS: ReadonlyArray<{ value: PanelTab; label: string }> = [
-  { value: 'target', label: 'Target' },
+  { value: 'setup', label: 'Setup' },
   { value: 'flow', label: 'Flow' },
-  { value: 'shape', label: 'Load shape' },
   { value: 'limits', label: 'Limits' },
 ];
 
 const ERROR_TAB: Record<string, PanelTab> = {
-  baseUrl: 'target',
+  baseUrl: 'setup',
   flow: 'flow',
   flowStep: 'flow',
   flowStepLabel: 'flow',
-  stages: 'shape',
-  maxVirtualUsers: 'shape',
+  stages: 'setup',
+  maxVirtualUsers: 'setup',
   thinkTime: 'limits',
   gracePeriod: 'limits',
   maxErrorRate: 'limits',
@@ -61,6 +60,13 @@ const ERROR_TAB: Record<string, PanelTab> = {
 };
 
 const PERCENTILES = ['p50', 'p90', 'p95', 'p99'] as const;
+
+/** Setup errors in the order they appear on the tab, with the test id of their message. */
+const SETUP_ERROR_TEST_IDS: Record<string, string> = {
+  baseUrl: 'base-url-error',
+  stages: 'stages-error',
+  maxVirtualUsers: 'max-virtual-users-error',
+};
 
 // recharts is large; the preview loads after the panel is usable.
 const LoadShapeChart = lazy(() => import('./LoadShapeChart.tsx'));
@@ -151,7 +157,7 @@ function RunPanelForm({
   submitting,
   className,
 }: RunPanelProps & { defaults: RunDefaults }) {
-  const [tab, setTab] = useState<PanelTab>('target');
+  const [tab, setTab] = useState<PanelTab>('setup');
   const [baseUrl, setBaseUrl] = useState(defaults.baseUrl);
   const [stages, setStages] = useState<StageRow[]>(() => defaults.stages[type].map(toStageRow));
   const [mode, setMode] = useState<LoadMode>('users');
@@ -168,6 +174,25 @@ function RunPanelForm({
   const [maxErrorPercent, setMaxErrorPercent] = useState(defaults.limits.maxErrorRate * 100);
   const [latency, setLatency] = useState(defaults.limits.latencyLimitsMs);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Test id of a Setup error to bring into view once the tab has animated in.
+  const [setupErrorToShow, setSetupErrorToShow] = useState<string | undefined>();
+  useEffect(() => {
+    if (!setupErrorToShow || tab !== 'setup') return;
+    let frame = 0;
+    let tries = 0;
+    const show = () => {
+      const element = document.querySelector(`[data-testid="${setupErrorToShow}"]`);
+      // The tab content mounts after the exit animation; look again for up to about a second.
+      if (!element && tries++ < 60) {
+        frame = requestAnimationFrame(show);
+        return;
+      }
+      element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      setSetupErrorToShow(undefined);
+    };
+    frame = requestAnimationFrame(show);
+    return () => cancelAnimationFrame(frame);
+  }, [setupErrorToShow, tab]);
 
   // The type can also change from the Runs tabs; the stages must follow either way.
   const [stagesType, setStagesType] = useState(type);
@@ -198,14 +223,21 @@ function RunPanelForm({
     };
     const nextErrors = validate(input, flowSteps);
     setErrors(nextErrors);
-    const firstError = Object.keys(nextErrors)[0];
+    // The first tab, in tab order, that has an error.
+    const errorTabs = new Set(Object.keys(nextErrors).map((key) => ERROR_TAB[key]));
+    const firstErrorTab = PANEL_TABS.find((item) => errorTabs.has(item.value))?.value;
     const revision = submitCount + 1;
     setSubmitCount(revision);
     // Scroll to a flow problem only when this submit opens the Flow tab, not on a later visit.
-    if (ERROR_TAB[Object.keys(nextErrors)[0] ?? ''] !== 'flow') setShownErrorRevision(revision);
+    if (firstErrorTab !== 'flow') setShownErrorRevision(revision);
     if (nextErrors.flowStep) setOpenStepId(nextErrors.flowStep);
-    if (firstError) {
-      setTab(ERROR_TAB[firstError] ?? 'target');
+    if (Object.keys(nextErrors).length > 0) {
+      // An error with no tab of its own still stops the run; Setup is the first tab.
+      setTab(firstErrorTab ?? 'setup');
+      const setupKey = Object.keys(SETUP_ERROR_TEST_IDS).find((key) => nextErrors[key]);
+      if ((firstErrorTab ?? 'setup') === 'setup' && setupKey) {
+        setSetupErrorToShow(SETUP_ERROR_TEST_IDS[setupKey]);
+      }
       return;
     }
     await onSubmit(input);
@@ -223,7 +255,11 @@ function RunPanelForm({
           label="Run settings"
           testId="panel-tab"
           value={tab}
-          onChange={setTab}
+          onChange={(next) => {
+            setTab(next);
+            // A scroll still waiting for Setup to appear no longer applies on another tab.
+            setSetupErrorToShow(undefined);
+          }}
           items={PANEL_TABS.map((item) => ({ ...item, alert: tabsWithErrors.has(item.value) }))}
         />
       }
@@ -250,7 +286,7 @@ function RunPanelForm({
               transition={{ duration: 0.15 }}
               className="flex flex-col gap-5"
             >
-              {tab === 'target' && (
+              {tab === 'setup' && (
                 <>
                   <Field label="Test type" htmlFor="run-type">
                     <Select
@@ -280,37 +316,9 @@ function RunPanelForm({
                       invalid={Boolean(errors.baseUrl)}
                     />
                   </Field>
-                </>
-              )}
-
-              {tab === 'flow' && (
-                <>
-                  <FlowEditor
-                    steps={flowSteps}
-                    onChange={(steps) => {
-                      setFlowSteps(steps);
-                      // An edit may fix the problem; it is checked again on the next start.
-                      if (errors.flow) {
-                        setErrors(
-                          Object.fromEntries(
-                            Object.entries(errors).filter(([key]) => !key.startsWith('flow')),
-                          ),
-                        );
-                      }
-                    }}
-                    openId={openStepId}
-                    onOpenChange={setOpenStepId}
-                    errorStepId={errorStepId}
-                    error={errors.flow}
-                    scrollToError={submitCount !== shownErrorRevision}
-                    onErrorShown={markErrorShown}
-                    errorLabel={errors.flowStepLabel}
-                  />
-                </>
-              )}
-
-              {tab === 'shape' && (
-                <>
+                  <h3 className="m-0 border-t border-line pt-4 text-sm font-semibold text-fg">
+                    Load shape
+                  </h3>
                   <Suspense fallback={<Skeleton className="h-[164px] w-full" />}>
                     <LoadShapeChart stages={stages} mode={mode} />
                   </Suspense>
@@ -397,6 +405,32 @@ function RunPanelForm({
                       second. Each flow run sends one request per step.
                     </p>
                   </Note>
+                </>
+              )}
+
+              {tab === 'flow' && (
+                <>
+                  <FlowEditor
+                    steps={flowSteps}
+                    onChange={(steps) => {
+                      setFlowSteps(steps);
+                      // An edit may fix the problem; it is checked again on the next start.
+                      if (errors.flow) {
+                        setErrors(
+                          Object.fromEntries(
+                            Object.entries(errors).filter(([key]) => !key.startsWith('flow')),
+                          ),
+                        );
+                      }
+                    }}
+                    openId={openStepId}
+                    onOpenChange={setOpenStepId}
+                    errorStepId={errorStepId}
+                    error={errors.flow}
+                    scrollToError={submitCount !== shownErrorRevision}
+                    onErrorShown={markErrorShown}
+                    errorLabel={errors.flowStepLabel}
+                  />
                 </>
               )}
 
@@ -539,6 +573,9 @@ function RunPanelSkeleton({ className }: { className?: string }) {
     >
       <div className="flex flex-col gap-5">
         <FieldSkeleton />
+        <FieldSkeleton />
+        {/* The Setup tab opens with the load shape chart and stages below the fields. */}
+        <Skeleton className="h-[164px] w-full" />
         <FieldSkeleton />
       </div>
     </Card>

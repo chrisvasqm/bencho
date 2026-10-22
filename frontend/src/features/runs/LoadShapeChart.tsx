@@ -1,10 +1,11 @@
+import { memo } from 'react';
 import type { LoadMode, Stage } from '../../api/runs.ts';
 // Imported directly, not via the barrel, so recharts stays in the lazy chunk.
 import { LineChart } from '../../components/ui/LineChart.tsx';
 import { TARGET_LABELS, formatSeconds, plannedShape } from './format.ts';
 
 /** Planned stage targets over time for the stages being edited. Default export for lazy(). */
-export default function LoadShapeChart({ stages, mode }: { stages: Stage[]; mode: LoadMode }) {
+function LoadShapeChart({ stages, mode }: { stages: Stage[]; mode: LoadMode }) {
   const label = TARGET_LABELS[mode];
   return (
     <LineChart
@@ -23,3 +24,6 @@ export default function LoadShapeChart({ stages, mode }: { stages: Stage[]; mode
     />
   );
 }
+
+// Memoized: it shares the Setup tab with inputs such as the base URL, which do not change it.
+export default memo(LoadShapeChart);

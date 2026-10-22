@@ -10,7 +10,7 @@ test.describe('first load', () => {
     await openApp(page);
 
     await expect(page.getByTestId('base-url')).toHaveValue(defaults.baseUrl);
-    await expect(page.getByTestId('panel-tab-target')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('panel-tab-setup')).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByTestId('type-tab-load')).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByTestId('runs-empty')).toBeVisible();
     await expect(page.getByTestId('pagination-range')).toHaveText('No runs');
@@ -38,7 +38,7 @@ test.describe('first load', () => {
   test('shows the default stages of each test type', async ({ page, api }) => {
     const defaults = await api.defaults();
     await openApp(page);
-    await page.getByTestId('panel-tab-shape').click();
+    await page.getByTestId('panel-tab-setup').click();
 
     for (const type of ['load', 'stress', 'spike'] as const) {
       await page.getByTestId(`type-tab-${type}`).click();
@@ -50,7 +50,7 @@ test.describe('first load', () => {
 
   test('shows a rough VU estimate and warns when the stages go above it', async ({ page }) => {
     await openApp(page);
-    await page.getByTestId('panel-tab-shape').click();
+    await page.getByTestId('panel-tab-setup').click();
 
     await expect(page.getByTestId('capacity-estimate')).toContainText('Rough estimate');
     await expect(page.getByTestId('capacity-docker')).toBeVisible();
@@ -66,10 +66,27 @@ test.describe('first load', () => {
   });
 });
 
+test.describe('setup tab', () => {
+  test('opens Setup for a stage error and keeps edits across tabs', async ({ page }) => {
+    await openApp(page);
+    await page.getByTestId('stage-0-duration').fill('abc');
+    await page.getByTestId('panel-tab-flow').click();
+    await page.getByTestId('panel-tab-setup').click();
+    await expect(page.getByTestId('stage-0-duration')).toHaveValue('abc');
+    await page.getByTestId('panel-tab-limits').click();
+
+    await page.getByTestId('start-run').click();
+
+    await expect(page.getByTestId('panel-tab-setup')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('stages-error')).toBeInViewport();
+    await expect(page.getByTestId('run-row')).toHaveCount(0);
+  });
+});
+
 test.describe('load shape chart', () => {
   test('puts time ticks on round steps that fit the stages', async ({ page }) => {
     await openApp(page);
-    await page.getByTestId('panel-tab-shape').click();
+    await page.getByTestId('panel-tab-setup').click();
     await page.getByTestId('stage-0-duration').fill('2m');
     await page.getByTestId('stage-1-duration').fill('13m');
     await page.getByTestId('stage-2-duration').fill('1m30s');
