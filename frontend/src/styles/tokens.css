@@ -9,7 +9,7 @@
    Light is the base; dark overrides under the system preference or data-theme="dark". */
 :root {
   color-scheme: light;
-  --canvas: #f5f4fa;
+  --canvas: #e8e6f0;
   --surface: #ffffff;
   --surface-sunken: #efedf7;
   --line: #dfdbee;
@@ -56,7 +56,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --canvas: #110f1a;
+    --canvas: #0b0a10;
     --surface: #1a1726;
     --surface-sunken: #0d0b14;
     --line: #2c2840;
@@ -96,7 +96,7 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --canvas: #110f1a;
+  --canvas: #0b0a10;
   --surface: #1a1726;
   --surface-sunken: #0d0b14;
   --line: #2c2840;
