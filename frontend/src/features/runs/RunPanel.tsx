@@ -144,6 +144,12 @@ export interface RunPanelProps {
   className?: string;
 }
 
+/** True when both are URLs on the same scheme, host and port: http://Demo:8080/ is http://demo:8080. */
+function sameOrigin(url: string, other: string | undefined): boolean {
+  if (other === undefined || !URL.canParse(url.trim()) || !URL.canParse(other)) return false;
+  return new URL(url.trim()).origin === new URL(other).origin;
+}
+
 export function RunPanel({ defaults, ...props }: RunPanelProps) {
   if (!defaults) return <RunPanelSkeleton className={props.className} />;
   return <RunPanelForm defaults={defaults} {...props} />;
@@ -433,7 +439,7 @@ function RunPanelForm({
                       const target =
                         example === 'soap'
                           ? soapExampleBaseUrl
-                          : baseUrl.trim() === soapExampleBaseUrl
+                          : sameOrigin(baseUrl, soapExampleBaseUrl)
                             ? defaults.baseUrl
                             : undefined;
                       if (target === undefined) return;

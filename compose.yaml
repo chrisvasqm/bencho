@@ -9,7 +9,7 @@ services:
 
   # SOAP target for the SOAP example flow: Learn Web Services (SayHello, temperature converter).
   soap-demo:
-    image: vicziani/lwsapp:3.0.1
+    image: vicziani/lwsapp:3.0.1@sha256:7ebfad6577cb89e5d5ee6a2d6f646eff9f1cdd5fee2be45701aabe4e4cd72af0
     ports:
       - "127.0.0.1:${SOAP_DEMO_PORT:-10007}:8080"
     restart: unless-stopped
@@ -66,8 +66,6 @@ services:
       postgres:
         condition: service_healthy
       quickpizza:
-        condition: service_started
-      soap-demo:
         condition: service_started
     restart: unless-stopped
 
