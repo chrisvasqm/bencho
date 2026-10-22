@@ -121,7 +121,6 @@ test('a rate run that cannot keep its rate fails and shows the dropped runs', as
   await page.getByTestId('load-mode-rate').click();
   await page.getByTestId('max-virtual-users').fill('1');
   await setLooseLimits(page);
-  await page.getByTestId('think-time').fill('1');
 
   await startRun(page);
 

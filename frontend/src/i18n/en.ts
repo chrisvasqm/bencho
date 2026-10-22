@@ -203,13 +203,11 @@ export const en = {
     chartTitle: 'Planned {{labelLower}}',
     chartEmpty: 'Fix the stage durations to see the shape.',
     shapeNoteTitle: 'How users and stages work',
-    thinkTime: 'Pause between steps',
-    thinkTimeHint: 'Seconds each user waits after a step, like a person reading the page.',
     maxErrorRate: 'Allowed errors (%)',
     maxErrorRateHint: 'The run fails if more requests than this get a wrong answer.',
     gracePeriod: 'Grace period',
     gracePeriodHint:
-      'Seconds a user may finish its flow run after the last stage (and, with Users, when the load shape removes it). Past this, k6 cuts the flow run off.',
+      'Seconds a user can take to finish its flow run when the test ends or the user count goes down. After that, k6 stops it.',
     stopOnLimit: 'Stop when a limit breaks',
     stopOnLimitHint:
       'Ends the run at the first broken limit, after the first {{seconds}} seconds. On by default for load tests. Stress and spike tests run to the end to show how far the target degrades.',
@@ -225,7 +223,6 @@ export const en = {
     maxStages: 'Use at most {{max}} stages',
     maxDuration: 'All stages together can last at most 60 minutes',
     maxUsers: 'Use a whole number of 1 or more',
-    thinkTime: 'Use a number of seconds, 0 or more',
     gracePeriod: 'Use a whole number of seconds from 0 to {{max}}',
     maxErrorRate: 'Use a percentage between 0 and 100',
     latency: 'Every limit must be above 0 ms',
@@ -269,7 +266,7 @@ export const en = {
     },
     wait: 'Wait after this step',
     waitHint:
-      'Seconds, 0 to {{max}}. Each time, the user waits a random time in this range, like a real person reading or typing. Leave both empty to use the pause between steps.',
+      'Seconds, 0 to {{max}}. Each time, the user waits a random time in this range, like a real person reading or typing. Leave both empty to use the default pause.',
     shortest: 'Shortest',
     longest: 'Longest',
     waitPlaceholder: 'Pause',
