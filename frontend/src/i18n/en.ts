@@ -328,8 +328,6 @@ export const en = {
     filterAllTypes: 'All',
     filterFrom: 'From',
     filterTo: 'To',
-    filterRangeInverted:
-      'The end date is before the start date. Dates are ignored until it is fixed.',
     selectAll: 'Select all finished runs on this page',
     selectRun: 'Select run from {{time}}',
     openRun: '{{status}}, run from {{time}}',
@@ -344,6 +342,15 @@ export const en = {
     unitUsers_other: '{{count}} users',
     unitUsers_many: '{{count}} users',
     unitRate: '{{count}}/s',
+  },
+  datePicker: {
+    placeholder: 'Any day',
+    today: 'Today',
+    clear: 'Clear',
+    previous: 'Previous',
+    next: 'Next',
+    chooseMonth: 'Choose a month',
+    chooseYear: 'Choose a year',
   },
   pagination: {
     label: 'Pages',

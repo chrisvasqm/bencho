@@ -80,22 +80,24 @@ test.describe('runs list filters', () => {
     await openRuns(page);
     const rows = page.getByTestId('run-row');
     await expect(rows).toHaveCount(2);
-    const today = isoDay(new Date());
-    const tomorrow = isoDay(new Date(Date.now() + DAY_MS));
 
-    // A range that starts tomorrow holds nothing; one that starts today holds both runs.
-    await page.getByTestId('runs-filter-from').fill(tomorrow);
+    // A range that ends yesterday holds nothing; one from today holds both runs.
+    await page.getByTestId('runs-filter-to').click();
+    // Keys go to the grid once the open calendar has focused today.
+    await expect(page.getByTestId(`runs-filter-to-day-${isoDay(new Date())}`)).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Enter');
     await expect(page.getByTestId('runs-empty')).toBeVisible();
 
-    await page.getByTestId('runs-filter-from').fill(today);
-    await page.getByTestId('runs-filter-to').fill(today);
+    await page.getByTestId('runs-filter-to').click();
+    await page.getByTestId('runs-filter-to-clear').click();
+    await page.getByTestId('runs-filter-from').click();
+    await page.getByTestId('runs-filter-from-today').click();
     await expect(rows).toHaveCount(2);
   });
 });
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** The browser's calendar day as `YYYY-MM-DD`, for `<input type="date">`. */
+/** The browser's calendar day as `YYYY-MM-DD`, as the picker's day test ids use it. */
 function isoDay(date: Date): string {
   const pad = (part: number) => String(part).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;

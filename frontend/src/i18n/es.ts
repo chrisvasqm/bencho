@@ -339,8 +339,6 @@ export const es: Translation = {
     filterAllTypes: 'Todas',
     filterFrom: 'Desde',
     filterTo: 'Hasta',
-    filterRangeInverted:
-      'La fecha final es anterior a la inicial. Las fechas se ignoran hasta que se corrija.',
     selectAll: 'Seleccionar todas las ejecuciones terminadas de esta página',
     selectRun: 'Seleccionar la ejecución del {{time}}',
     openRun: '{{status}}, ejecución del {{time}}',
@@ -355,6 +353,15 @@ export const es: Translation = {
     unitUsers_other: '{{count}} usuarios',
     unitUsers_many: '{{count}} usuarios',
     unitRate: '{{count}}/s',
+  },
+  datePicker: {
+    placeholder: 'Cualquier día',
+    today: 'Hoy',
+    clear: 'Borrar',
+    previous: 'Anterior',
+    next: 'Siguiente',
+    chooseMonth: 'Elegir un mes',
+    chooseYear: 'Elegir un año',
   },
   pagination: {
     label: 'Páginas',
