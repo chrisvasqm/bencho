@@ -149,7 +149,7 @@ export function App() {
   // New run opens the form with the newest run's settings, or the defaults when there is none.
   // Page 1 is newest first, so it already holds that run; another page needs one fetch.
   // Each open or close of the form counts; a fetch for an earlier open gives up when a later
-  // action (Change and run, a close, another New run) came first.
+  // action (Reuse, a close, another New run) came first.
   const formRequest = useRef(0);
   const openNewRun = async () => {
     const request = ++formRequest.current;

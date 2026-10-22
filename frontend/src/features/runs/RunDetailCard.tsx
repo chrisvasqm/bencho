@@ -118,6 +118,18 @@ export function RunDetailCard({
     const timer = setTimeout(() => setConfirming(false), CONFIRM_TIMEOUT_MS);
     return () => clearTimeout(timer);
   }, [confirming]);
+  // Retry starts a new run, so it also takes a second click; another run cancels it.
+  const [confirmingRunAgain, setConfirmingRunAgain] = useState(false);
+  const [runAgainFor, setRunAgainFor] = useState(run.id);
+  if (runAgainFor !== run.id) {
+    setRunAgainFor(run.id);
+    setConfirmingRunAgain(false);
+  }
+  useEffect(() => {
+    if (!confirmingRunAgain) return;
+    const timer = setTimeout(() => setConfirmingRunAgain(false), CONFIRM_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [confirmingRunAgain]);
 
   const duration = run.summary?.metrics.http_req_duration;
   const failed = run.summary?.metrics.http_req_failed;
@@ -152,17 +164,32 @@ export function RunDetailCard({
   const secrets = hasRedactedSecrets(run);
   const reuseButtons = !active && (
     <>
-      <Button
-        size="sm"
-        onClick={() => onRunAgain(run)}
-        loading={starting}
-        disabled={secrets}
-        title={secrets ? t('detail.runAgainSecrets') : undefined}
-        data-testid="run-again"
-      >
-        <RotateCcw size={14} aria-hidden />
-        {t('detail.runAgain')}
-      </Button>
+      {confirmingRunAgain ? (
+        <Button
+          size="sm"
+          onClick={() => {
+            setConfirmingRunAgain(false);
+            onRunAgain(run);
+          }}
+          loading={starting}
+          data-testid="run-again-confirm"
+        >
+          <RotateCcw size={14} aria-hidden />
+          {t('detail.runAgainConfirm')}
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          onClick={() => setConfirmingRunAgain(true)}
+          loading={starting}
+          disabled={secrets}
+          title={secrets ? t('detail.runAgainSecrets') : undefined}
+          data-testid="run-again"
+        >
+          <RotateCcw size={14} aria-hidden />
+          {t('detail.runAgain')}
+        </Button>
+      )}
       <Button
         variant="secondary"
         size="sm"

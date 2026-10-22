@@ -30,7 +30,7 @@ test('a failed run names the limit it broke', async ({ page }) => {
   await expect(page.getByTestId('run-verdict')).toContainText('errors 100.00%, limit 50.00%');
 });
 
-test('Run again starts a run with the same settings in one click', async ({ page, api }) => {
+test('Retry starts a run with the same settings after a confirm', async ({ page, api }) => {
   const seeded = await api.seedFinished('stress');
   await openApp(page);
   await expect(page.getByTestId('run-detail')).toHaveAttribute('data-run-id', seeded.id);
@@ -39,6 +39,7 @@ test('Run again starts a run with the same settings in one click', async ({ page
   );
 
   await page.getByTestId('run-again').click();
+  await page.getByTestId('run-again-confirm').click();
 
   const body = (await post).postDataJSON() as { type: string; stages: unknown[] };
   expect(body).toMatchObject({ type: 'stress', stages: [{ duration: '1m', target: 1 }] });
@@ -49,7 +50,7 @@ test('Run again starts a run with the same settings in one click', async ({ page
   await expect(page.getByTestId('run-detail')).not.toHaveAttribute('data-run-id', seeded.id);
 });
 
-test('Change and run opens the form filled from the run', async ({ page, api }) => {
+test('Reuse opens the form filled from the run', async ({ page, api }) => {
   const seeded = await api.seedFinished('spike');
   await openApp(page);
   await expect(page.getByTestId('run-detail')).toHaveAttribute('data-run-id', seeded.id);

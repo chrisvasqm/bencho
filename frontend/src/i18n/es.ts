@@ -363,10 +363,11 @@ export const es: Translation = {
   },
   detail: {
     title: 'Ejecución de {{typeLower}} · {{time}}',
-    runAgain: 'Repetir',
+    runAgain: 'Reintentar',
+    runAgainConfirm: 'Confirmar reintento',
     runAgainSecrets:
-      'Esta ejecución envió un encabezado secreto, que Bencho no guarda. Usa Cambiar y ejecutar y escríbelo de nuevo.',
-    change: 'Cambiar y ejecutar',
+      'Esta ejecución envió un encabezado secreto, que Bencho no guarda. Usa Reutilizar y escríbelo de nuevo.',
+    change: 'Reutilizar',
     stop: 'Detener',
     stopConfirm: 'Detener ejecución',
     delete: 'Eliminar',

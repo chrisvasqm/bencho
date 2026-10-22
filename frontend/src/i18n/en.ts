@@ -352,10 +352,11 @@ export const en = {
   },
   detail: {
     title: '{{type}} run · {{time}}',
-    runAgain: 'Run again',
+    runAgain: 'Retry',
+    runAgainConfirm: 'Confirm retry',
     runAgainSecrets:
-      'This run sent a secret header, which Bencho does not keep. Use Change and run and enter it again.',
-    change: 'Change and run',
+      'This run sent a secret header, which Bencho does not keep. Use Reuse and enter it again.',
+    change: 'Reuse',
     stop: 'Stop',
     stopConfirm: 'Stop run',
     delete: 'Delete',
