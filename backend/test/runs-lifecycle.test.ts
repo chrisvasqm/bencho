@@ -224,7 +224,7 @@ describe('run lifecycle', () => {
     // the Order body would hold a&amp;amp;b... instead.
     const ESCAPED_TOKEN = 'a&amp;b&lt;c';
     const envelope = (content: string) =>
-      `<?xml version="1.0"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>${content}</soap:Body></soap:Envelope>`;
+      `<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>${content}</soap:Body></soap:Envelope>`;
     const received: { path: string; contentType: string; body: string }[] = [];
     let server: Server;
     let baseUrl: string;
@@ -235,6 +235,7 @@ describe('run lifecycle', () => {
       return body;
     }
 
+    // No XML declaration: a response that starts with its root tag once broke k6's tag regex.
     // A SOAP service: Login answers a token; Order accepts only that token, escaped.
     beforeAll(async () => {
       server = createServer((request, response) => {
@@ -248,7 +249,7 @@ describe('run lifecycle', () => {
               : isXml && body.includes(`<Token>${ESCAPED_TOKEN}</Token>`);
           const content =
             request.url === '/login'
-              ? `<LoginResponse><Token>${ESCAPED_TOKEN}</Token></LoginResponse>`
+              ? `<LoginResponse><Token>${ESCAPED_TOKEN}</Token><session>s-1</session></LoginResponse>`
               : '<OrderResponse><Id>7</Id></OrderResponse>';
           response.writeHead(ok ? 200 : 500, { 'Content-Type': 'text/xml; charset=utf-8' });
           response.end(envelope(ok ? content : '<soap:Fault/>'));
@@ -271,7 +272,10 @@ describe('run lifecycle', () => {
             soapStep(envelope('<Login><User>user-{{shortId}}</User></Login>'), {
               name: 'Login',
               path: '/login',
-              extract: [{ name: 'token', path: 'LoginResponse.Token' }],
+              extract: [
+                { name: 'token', path: 'LoginResponse.Token' },
+                { name: 'session', path: 'session' },
+              ],
             }),
             soapStep(envelope('<Order><Token>{{token}}</Token></Order>'), {
               name: 'Order',
@@ -306,7 +310,7 @@ describe('run lifecycle', () => {
           step: 'Login',
           reason: 'extract',
           status: 200,
-          body: '<Envelope><Body><LoginResponse><Token/></LoginResponse></Body></Envelope>',
+          body: '<Envelope><Body><LoginResponse><Token/><session/></LoginResponse></Body></Envelope>',
         },
       ]);
     });

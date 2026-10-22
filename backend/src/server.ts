@@ -17,6 +17,7 @@ const { db } = connectDatabase(config.DATABASE_URL);
 const runsService = new RunsService(new RunsRepository(db), {
   bundleDir: config.K6_BUNDLE_DIR,
   defaultBaseUrl: config.DEFAULT_BASE_URL,
+  soapExampleBaseUrl: config.SOAP_EXAMPLE_BASE_URL,
   allowPrivateTargets: () => config.allowPrivateTargets,
 });
 if (!config.allowPrivateTargets) console.log('private and local targets are blocked');

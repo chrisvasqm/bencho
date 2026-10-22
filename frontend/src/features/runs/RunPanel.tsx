@@ -425,6 +425,11 @@ function RunPanelForm({
                     }}
                     openId={openStepId}
                     onOpenChange={setOpenStepId}
+                    exampleBaseUrls={{
+                      quickPizza: defaults.baseUrl,
+                      soap: defaults.soapExampleBaseUrl,
+                    }}
+                    onBaseUrlChange={setBaseUrl}
                     errorStepId={errorStepId}
                     error={errors.flow}
                     scrollToError={submitCount !== shownErrorRevision}

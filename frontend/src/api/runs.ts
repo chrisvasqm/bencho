@@ -132,6 +132,8 @@ export type RunsPage = z.infer<typeof runsPageSchema>;
 
 const defaultsSchema = z.object({
   baseUrl: z.string(),
+  /** Target of the SOAP example flow; a backend without it offers no SOAP example. */
+  soapExampleBaseUrl: z.string().optional(),
   stages: z.record(z.enum(RUN_TYPES), z.array(stageSchema)),
   maxVirtualUsers: z.number(),
   limits: limitsSchema,

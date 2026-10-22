@@ -41,12 +41,13 @@ describe('GET /api/v1/health', () => {
 });
 
 describe('GET /api/v1/defaults', () => {
-  it('returns the configured target and the default stages, VU cap, limits and flow', async () => {
+  it('returns the configured targets and the default stages, VU cap, limits and flow', async () => {
     const response = await app.request().get('/api/v1/defaults');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       baseUrl: app.k6.defaultBaseUrl,
+      soapExampleBaseUrl: app.k6.soapExampleBaseUrl,
       stages: DEFAULT_STAGES,
       maxVirtualUsers: DEFAULT_MAX_VIRTUAL_USERS,
       limits: DEFAULT_LIMITS,

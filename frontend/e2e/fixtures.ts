@@ -26,7 +26,11 @@ export class RunsApi {
 
   constructor(private readonly request: APIRequestContext) {}
 
-  async defaults(): Promise<{ baseUrl: string; stages: Record<RunType, unknown[]> }> {
+  async defaults(): Promise<{
+    baseUrl: string;
+    soapExampleBaseUrl?: string;
+    stages: Record<RunType, unknown[]>;
+  }> {
     return this.json(this.request.get('/api/v1/defaults'));
   }
 
