@@ -23,7 +23,95 @@ export const en = {
     theme: 'Theme',
     switchTheme: { light: 'Change to light theme', dark: 'Change to dark theme' },
   },
-  learn: { open: 'Learn', close: 'Close' },
+  learn: {
+    open: 'Learn',
+    close: 'Close',
+    fail: {
+      term: 'When a run fails',
+      limit: 'A response time reaches its limit.',
+      errors: 'Errors reach Allowed errors.',
+      checks:
+        '1 in 100 steps or more miss their expected status or cannot save a value they need. So a run can fail with 0% errors.',
+      rate: 'Rate only: it skips more planned flow runs than Allowed errors, because all users were busy.',
+    },
+    percentile: {
+      p95Term: 'p95 of 300 ms',
+      p95: '95 of every 100 requests answered in 300 ms or less.',
+      otherTerm: 'p50 and p99',
+      p50: 'p50: a typical request.',
+      p99: 'p99: the slow ones. Only 1 in 100 requests took longer.',
+      average: 'An average would hide those slow requests.',
+    },
+    rules: {
+      errorTerm: 'Errors',
+      error: 'Requests that did not get the status their step expects.',
+    },
+    shape: {
+      userTerm: 'Simulated user (VU)',
+      user1: 'Goes through your steps in order, with a pause after each one.',
+      user2: 'Starts over until the run ends.',
+      user3: 'If a step fails, skips the rest and starts over.',
+      stageTerm: 'Stages',
+      stage1: 'Run in order.',
+      stage2: 'During each stage, the number of users changes smoothly to the stage number.',
+      stage3:
+        'Example: 30s → 20, then 1m → 20 adds users for 30 seconds, then keeps 20 users for 1 minute.',
+      modeTerm: 'Users or Rate',
+      users: 'Users: how many people are active at once.',
+      rate: 'Rate: how many flow runs start each second, even if the site gets slow.',
+      flowRun: 'A flow run is one pass through all your steps.',
+      goal: 'Use Rate for a goal such as 50 sign-ins per second.',
+    },
+    results: {
+      colorTerm: 'Colors',
+      green: 'Green: the number is within its limit.',
+      red: 'Red: the number broke its limit.',
+      errorTerm: 'Errors',
+      error: 'The share of requests that did not get the expected answer.',
+      requestTerm: 'Requests',
+      request: 'How many were sent in total, with the average per second.',
+    },
+    capacity: {
+      howTerm: 'What Bencho counts',
+      memory: 'Free memory on the Bencho server: {{memory}} GB.',
+      cpus: 'CPU cores: {{cpus}}.',
+      perUser: 'Each virtual user needs up to about {{perUser}} MB.',
+      lowerTerm: 'What lowers the number',
+      lower: 'Long flows, large bodies, short pauses and other runs.',
+      dockerTerm: 'Docker Desktop',
+      docker:
+        'Bencho only sees the memory you give Docker: Settings → Resources → Advanced → Memory limit.',
+    },
+    failures: {
+      whichTerm: 'Examples, not every failure',
+      which1: 'Answers from 1 in every 20 flow runs.',
+      which2: 'From every flow run for steps that save values.',
+      which3: 'Up to 10 per step and 3 per status.',
+      privateTerm: 'Success answers (2xx)',
+      private: 'Only the field names show, because the content can hold passwords or tokens.',
+    },
+    chart: {
+      latencyTerm: 'Response time',
+      latency1: 'Each point is one second of the run.',
+      latency2: 'p95: 95 of every 100 requests in that second stayed within this time.',
+      latency3: 'p50 shows a typical request, p99 the slow ones.',
+      latency4: 'When a second has few requests, the lines can meet.',
+      latency5: 'Lines that climb as users are added mean the site is slowing down.',
+      rateTerm: 'Flow runs per second',
+      rate1: 'Planned: flow runs set to start each second.',
+      rate2:
+        'Finished: flow runs that ended. They count when they end, so they run a little behind.',
+      rate3: 'Dropped: skipped because all users were busy.',
+      loadTerm: 'Users and requests',
+      load1: 'Users: how many simulated users were active.',
+      load2: 'Requests per second: how many requests they sent.',
+      load3:
+        'Users keep rising but requests per second stops rising: the site has reached its limit.',
+      errorTerm: 'Failed requests',
+      error1: 'The share of requests in each second that did not get the expected answer.',
+      error2: 'Errors that start when the load peaks mean the site cannot handle that load.',
+    },
+  },
   runType: { load: 'Load', stress: 'Stress', spike: 'Spike' },
   runTypeLower: { load: 'load', stress: 'stress', spike: 'spike' },
   runTypeDescription: {
@@ -115,12 +203,6 @@ export const en = {
     chartTitle: 'Planned {{labelLower}}',
     chartEmpty: 'Fix the stage durations to see the shape.',
     shapeNoteTitle: 'How users and stages work',
-    shapeNote1:
-      'Each simulated user (also called a virtual user, or VU) goes through your steps in order, pauses after each one, and starts over until the run ends. If a step fails, it skips the rest and starts over.',
-    shapeNote2:
-      'Stages run in order. During each stage, the number of users changes smoothly to the stage number. For example, 30s → 20, then 1m → 20 adds users for 30 seconds, then keeps 20 users for 1 minute.',
-    shapeNote3:
-      'Users sets how many people are active at once. Rate sets how many flow runs start each second, even if the site gets slow. A flow run is one pass through all your steps. Use Rate for a goal such as 50 sign-ins per second.',
     thinkTime: 'Pause between steps',
     thinkTimeHint: 'Seconds each user waits after a step, like a person reading the page.',
     maxErrorRate: 'Allowed errors (%)',
@@ -130,8 +212,6 @@ export const en = {
       'Seconds a user may finish its flow run after the last stage (and, with Users, when the load shape removes it). Past this, k6 cuts the flow run off.',
     latencyLimits: 'Latency limits (ms)',
     rulesNoteTitle: 'How pass rules work',
-    percentileNote2:
-      'p50 is a typical request. p99 shows the slow ones: only 1 in 100 requests took longer. An average would hide those slow requests.',
   },
   validation: {
     baseUrl: 'Enter a full address, starting with http:// or https://',
@@ -233,13 +313,10 @@ export const en = {
   capacity: {
     title: 'How is this estimated?',
     estimate: 'Rough estimate: about {{estimate}} virtual users at once on the Bencho server.',
-    docker:
-      'On Docker Desktop, Bencho only sees the memory you give Docker: Settings → Resources → Advanced → Memory limit.',
     warning:
       'Your stages go up to {{value}} virtual users, more than the estimate of {{estimate}}. The run can slow down or stop the server.',
     warningRate:
       'Max virtual users is {{value}}, more than the estimate of {{estimate}}. The run can slow down or stop the server.',
-    how: 'Bencho looks at the free memory ({{memory}} GB) and CPU cores ({{cpus}}) of the server it runs on. Each virtual user needs up to about {{perUser}} MB. Long flows, large bodies, short pauses and other runs lower the number.',
   },
   runs: {
     empty: 'No runs yet. Start one with New run.',
@@ -302,9 +379,6 @@ export const en = {
     errorsUnder: 'errors < {{limit}}',
     requests: 'Requests',
     readTitle: 'How to read these numbers',
-    read1: 'Green means the number is within its limit. Red means it broke the limit.',
-    read2:
-      'Errors is the share of requests that did not get the expected answer. Requests is how many were sent in total, with the average per second.',
     waiting: 'Results appear when the run finishes. The charts below update every 2 seconds.',
     noTotals: 'No results were recorded.',
   },
@@ -341,17 +415,6 @@ export const en = {
       started: 'Started',
     },
   },
-  explain: {
-    percentile:
-      'These limits check how fast requests answered. A p95 of 300 ms means 95 of every 100 requests answered in 300 ms or less.',
-    errorRate: 'Errors are requests that did not get the status their step expects.',
-    failRule:
-      'A run fails when a response time reaches its limit, or when the errors reach Allowed errors.',
-    failChecks:
-      'It also fails when 1 in 100 or more steps do not get their expected status or cannot save a value they need. So a run can fail with 0% errors.',
-    failRate:
-      'A rate run also fails when it skips more planned flow runs than Allowed errors, because all its users were busy.',
-  },
   failures: {
     title: 'Failed answers (examples)',
     hint: 'Examples of what the site answered when a step failed.',
@@ -361,9 +424,6 @@ export const en = {
     statusExpected: 'status {{status}}, expected {{expected}}',
     emptyBody: '(empty body)',
     learnTitle: 'Which answers are shown?',
-    how: 'These are examples, not every failure. Bencho keeps answers from 1 in every 20 flow runs (every flow run for steps that save values), up to 10 per step and 3 per status.',
-    private:
-      'For a success answer (2xx), only the field names show, because the content can hold passwords or tokens.',
   },
   charts: {
     waiting: 'Waiting for the first seconds of results…',
@@ -378,14 +438,6 @@ export const en = {
     requests: 'Requests/s',
     errorsTitle: 'Failed requests (share of each second)',
     errorRate: 'Errors',
-    noteLatency:
-      'Each point is one second of the run. p95 is the time 95 of every 100 requests in that second stayed within; p50 shows a typical request and p99 the slow ones. When a second has few requests, the lines can meet. Lines that climb as users are added mean the site is slowing down.',
-    noteLoad:
-      'Users is how many simulated users were active. Requests per second is how many requests they sent. When users keep rising but requests per second stops rising, the site has reached its limit.',
-    noteRate:
-      'Compares the flow runs planned each second with the ones that finished and the ones skipped because all users were busy. A flow run counts when it ends, so Finished runs a little behind Planned.',
-    noteErrors:
-      'The share of requests in each second that did not get the expected answer. Errors that start when the load peaks mean the site cannot handle that load.',
     learnTitle: 'How to read this chart',
   },
 };

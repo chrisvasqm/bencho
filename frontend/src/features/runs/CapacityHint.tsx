@@ -29,21 +29,32 @@ export function CapacityHint({ peakTarget, rate }: CapacityHintProps) {
   const estimate = estimatedVirtualUsers.toLocaleString(language);
   return (
     <div className="flex flex-col gap-1 text-xs text-fg-muted">
-      <p className="m-0" data-testid="capacity-estimate">
-        {t('capacity.estimate', { estimate })}
-      </p>
-      <LearnMore
-        testId="learn-capacity"
-        title={t('capacity.title')}
-        paragraphs={[
-          t('capacity.how', {
-            memory: (availableMemoryBytes / GIGABYTE).toFixed(1),
-            cpus: cpuCount,
-            perUser: Math.round(memoryPerVirtualUserBytes / MEGABYTE),
-          }),
-          t('capacity.docker'),
-        ]}
-      />
+      <div className="flex items-start justify-between gap-3">
+        <p className="m-0" data-testid="capacity-estimate">
+          {t('capacity.estimate', { estimate })}
+        </p>
+        <LearnMore
+          testId="learn-capacity"
+          className="shrink-0"
+          title={t('capacity.title')}
+          items={[
+            {
+              term: t('learn.capacity.howTerm'),
+              points: [
+                t('learn.capacity.memory', {
+                  memory: (availableMemoryBytes / GIGABYTE).toFixed(1),
+                }),
+                t('learn.capacity.cpus', { cpus: cpuCount }),
+                t('learn.capacity.perUser', {
+                  perUser: Math.round(memoryPerVirtualUserBytes / MEGABYTE),
+                }),
+              ],
+            },
+            { term: t('learn.capacity.lowerTerm'), points: [t('learn.capacity.lower')] },
+            { term: t('learn.capacity.dockerTerm'), points: [t('learn.capacity.docker')] },
+          ]}
+        />
+      </div>
       {/* Always mounted (hidden when empty), so screen readers announce changes politely. */}
       <p
         role="status"

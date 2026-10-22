@@ -4,6 +4,7 @@ import type { Run } from '../../api/runs.ts';
 import { Button, Card, Skeleton, Stat, type StatTone } from '../../components/ui/index.ts';
 import { hasRedactedSecrets } from './input.ts';
 import { verdictReason } from './verdict.ts';
+import { failItem, percentileItems } from '../learn/items.ts';
 import { LearnMore } from '../learn/LearnMore.tsx';
 import { useCopy } from '../../i18n/useCopy.ts';
 import {
@@ -196,7 +197,29 @@ export function RunDetailCard({
         ...runTypeVars(run.type, t),
         time: formatTime(run.createdAt, language),
       })}
-      actions={actionButtons}
+      actions={
+        run.summary ? (
+          <div className="flex items-center gap-3">
+            <LearnMore
+              testId="learn-results"
+              title={t('detail.readTitle')}
+              items={[
+                {
+                  term: t('learn.results.colorTerm'),
+                  points: [t('learn.results.green'), t('learn.results.red')],
+                },
+                ...percentileItems(t),
+                { term: t('learn.results.errorTerm'), points: [t('learn.results.error')] },
+                { term: t('learn.results.requestTerm'), points: [t('learn.results.request')] },
+                failItem(t, run.mode),
+              ]}
+            />
+            {actionButtons}
+          </div>
+        ) : (
+          actionButtons
+        )
+      }
       data-testid="run-detail"
       data-run-id={run.id}
       data-status={run.status}
@@ -279,20 +302,6 @@ export function RunDetailCard({
               value={requests ? String(requests.count) : '–'}
               unit={requests ? `${requests.rate.toFixed(1)}/s` : undefined}
             />
-            <LearnMore
-              testId="learn-results"
-              className="col-span-full"
-              title={t('detail.readTitle')}
-              paragraphs={[
-                t('detail.read1'),
-                t('explain.percentile'),
-                t('panel.percentileNote2'),
-                t('detail.read2'),
-                t('explain.failRule'),
-                t('explain.failChecks'),
-                ...(run.mode === 'rate' ? [t('explain.failRate')] : []),
-              ]}
-            />
           </div>
         ) : (
           !active && <p className="text-sm text-fg-muted">{t('detail.noTotals')}</p>
@@ -323,13 +332,25 @@ function FailureList({ run }: { run: Run }) {
   return (
     <section className="flex flex-col gap-3" data-testid="run-failures">
       <div className="flex flex-col gap-1">
-        <h3 className="m-0 text-sm font-medium text-fg">{t('failures.title')}</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="m-0 text-sm font-medium text-fg">{t('failures.title')}</h3>
+          <LearnMore
+            testId="learn-failures"
+            title={t('failures.learnTitle')}
+            items={[
+              {
+                term: t('learn.failures.whichTerm'),
+                points: [
+                  t('learn.failures.which1'),
+                  t('learn.failures.which2'),
+                  t('learn.failures.which3'),
+                ],
+              },
+              { term: t('learn.failures.privateTerm'), points: [t('learn.failures.private')] },
+            ]}
+          />
+        </div>
         <p className="m-0 text-xs text-fg-muted">{t('failures.hint')}</p>
-        <LearnMore
-          testId="learn-failures"
-          title={t('failures.learnTitle')}
-          paragraphs={[t('failures.how'), t('failures.private')]}
-        />
       </div>
       <ul className="m-0 flex list-none flex-col gap-3 p-0">
         {run.failures.map((failure, index) => {

@@ -70,6 +70,46 @@ export function RunCharts({ run }: { run: Run }) {
         integerX
         {...shared}
         title={t('charts.latencyTitle')}
+        action={
+          data.length > 0 && (
+            <LearnMore
+              testId="learn-chart"
+              title={t('charts.learnTitle')}
+              items={[
+                {
+                  term: t('learn.chart.latencyTerm'),
+                  points: [
+                    t('learn.chart.latency1'),
+                    t('learn.chart.latency2'),
+                    t('learn.chart.latency3'),
+                    t('learn.chart.latency4'),
+                    t('learn.chart.latency5'),
+                  ],
+                },
+                ...(run.mode === 'rate'
+                  ? [
+                      {
+                        term: t('learn.chart.rateTerm'),
+                        points: [
+                          t('learn.chart.rate1'),
+                          t('learn.chart.rate2'),
+                          t('learn.chart.rate3'),
+                        ],
+                      },
+                    ]
+                  : []),
+                {
+                  term: t('learn.chart.loadTerm'),
+                  points: [t('learn.chart.load1'), t('learn.chart.load2'), t('learn.chart.load3')],
+                },
+                {
+                  term: t('learn.chart.errorTerm'),
+                  points: [t('learn.chart.error1'), t('learn.chart.error2')],
+                },
+              ]}
+            />
+          )
+        }
         series={LATENCY_SERIES}
         minYStep={0.1}
         formatY={(value) => formatMs(value)}
@@ -131,18 +171,6 @@ export function RunCharts({ run }: { run: Run }) {
         minYStep={0.001}
         formatY={(value) => `${(value * 100).toFixed(1)}%`}
       />
-      {data.length > 0 && (
-        <LearnMore
-          testId="learn-chart"
-          title={t('charts.learnTitle')}
-          paragraphs={[
-            t('charts.noteLatency'),
-            ...(run.mode === 'rate' ? [t('charts.noteRate')] : []),
-            t('charts.noteLoad'),
-            t('charts.noteErrors'),
-          ]}
-        />
-      )}
     </div>
   );
 }
