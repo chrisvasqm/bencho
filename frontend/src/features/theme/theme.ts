@@ -8,6 +8,8 @@ export type ResolvedTheme = Exclude<Theme, 'system'>;
 
 export const THEME_STORAGE_KEY = 'theme';
 const listeners = new Set<() => void>();
+// The choice when storage is blocked, so the toggle still flips within this page view.
+let memoryTheme: Theme = 'system';
 
 function isTheme(value: unknown): value is Theme {
   return THEMES.includes(value as Theme);
@@ -18,7 +20,7 @@ export function readTheme(): Theme {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     return isTheme(stored) ? stored : 'system';
   } catch {
-    return 'system';
+    return memoryTheme;
   }
 }
 
@@ -33,6 +35,7 @@ function writeTheme(theme: Theme): void {
     else localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch {
     // Storage blocked: the choice still applies for this page view.
+    memoryTheme = theme;
   }
   applyTheme(theme);
   for (const listener of listeners) listener();

@@ -14,7 +14,7 @@ export function ThemeSwitch() {
     <button
       type="button"
       data-testid="theme"
-      data-theme={resolved}
+      data-resolved-theme={resolved}
       aria-label={`${t('prefs.theme')}: ${label}`}
       title={label}
       onClick={toggle}
