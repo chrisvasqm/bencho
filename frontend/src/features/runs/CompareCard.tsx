@@ -1,6 +1,7 @@
 // Two runs side by side: the same numbers as the run card, with the change from older to newer.
 import type { Run } from '../../api/runs.ts';
 import { Badge, Button, Card } from '../../components/ui/index.ts';
+import { RunSparkline } from './RunSparkline.tsx';
 import { useCopy, type Copy } from '../../i18n/useCopy.ts';
 import {
   LATENCY_KEYS,
@@ -146,6 +147,24 @@ export function CompareCard({ runs, onClose }: CompareCardProps) {
             })}
           </tbody>
         </table>
+      </div>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2" data-testid="compare-sparklines">
+        {[
+          { run: older, label: t('compare.p95Older') },
+          { run: newer, label: t('compare.p95Newer') },
+        ].map(({ run, label }) => (
+          <div key={run.id} className="flex flex-col gap-1">
+            <div className="flex justify-between text-xs font-medium text-fg-muted">
+              <span>{label}</span>
+              <span className="font-mono tabular-nums">
+                {formatMs(run.summary?.metrics.http_req_duration?.['p(95)'])}
+              </span>
+            </div>
+            <div className="w-full [&>svg]:w-full!">
+              <RunSparkline run={run} width={300} height={56} detailed />
+            </div>
+          </div>
+        ))}
       </div>
     </Card>
   );

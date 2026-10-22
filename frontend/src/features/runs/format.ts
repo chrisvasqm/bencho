@@ -142,6 +142,11 @@ export function targetAt(points: PlannedPoint[], second: number): number {
   return 0;
 }
 
+/** Seconds all stages take together: how long the run was planned to last. */
+export function plannedSeconds(stages: Stage[]): number {
+  return stages.reduce((total, stage) => total + (durationToSeconds(stage.duration) || 0), 0);
+}
+
 export function formatSeconds(value: number | string): string {
   if (Number(value) < 60) return `${Number(value)}s`;
   // Round once, so 3599.6 s reads 1h and never 59m60s.

@@ -4,7 +4,7 @@ import { m } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ApiError, runsApi, type CreateRunInput, type Run, type RunsPage } from './api/runs.ts';
-import { Button, Card, Pagination, Skeleton } from './components/ui/index.ts';
+import { Button, Card, Checkbox, Pagination, Skeleton } from './components/ui/index.ts';
 import { isActive, runTypeVars } from './features/runs/format.ts';
 import { LanguageSwitch } from './features/preferences/PreferenceSwitches.tsx';
 import { useCopy, type Copy } from './i18n/useCopy.ts';
@@ -13,7 +13,7 @@ import { BulkDeleteBar } from './features/runs/BulkDeleteBar.tsx';
 import { CompareCard } from './features/runs/CompareCard.tsx';
 import { RunDetailCard } from './features/runs/RunDetailCard.tsx';
 import { RunFormDrawer } from './features/runs/RunFormDrawer.tsx';
-import { RunsTable } from './features/runs/RunsTable.tsx';
+import { RunList } from './features/runs/RunList.tsx';
 import { runToInput } from './features/runs/input.ts';
 import { useRunWatcher } from './features/runs/useRunWatcher.ts';
 import { ThemeSwitch } from './features/theme/ThemeSwitch.tsx';
@@ -95,6 +95,17 @@ export function App() {
   // Two ticked runs are compared in place of the selected run's results. Each has its own
   // query, so a run ticked on another page stays known after that page leaves the cache.
   const selectionKey = [...checkedIds].sort().join(',');
+  const checkable = list.filter((run) => !isActive(run.status));
+  const checkedOnPage = checkable.filter((run) => checkedIds.has(run.id)).length;
+  const allChecked = checkable.length > 0 && checkedOnPage === checkable.length;
+  const toggleAll = () => {
+    const next = new Set(checkedIds);
+    for (const run of checkable) {
+      if (allChecked) next.delete(run.id);
+      else next.add(run.id);
+    }
+    setCheckedIds(next);
+  };
   const comparedIds = checkedIds.size === 2 ? selectionKey.split(',') : [];
   const comparedQueries = useQueries({
     queries: comparedIds.map((id) => ({
@@ -241,30 +252,45 @@ export function App() {
         </div>
       </header>
 
-      <main className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 gap-4 p-4 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
+      <main className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 gap-4 p-4 lg:min-h-0 lg:grid-cols-[340px_minmax(0,1fr)]">
         <Card
           ref={runsCardRef}
-          title={t('app.runsTitle')}
-          description={t('app.runsDescription')}
           className="lg:min-h-0"
-          actions={
-            <div className="flex items-center gap-2">
-              <BulkDeleteBar
-                count={checkedIds.size}
-                selectionKey={selectionKey}
-                deleting={removeMany.isPending}
-                onClear={() => setCheckedIds(new Set())}
-                onDelete={() => removeMany.mutate([...checkedIds])}
-              />
+          bodyClassName="p-0"
+          headerExtra={
+            <div className="flex flex-col gap-2">
+              <h2 className="sr-only">{t('app.runsTitle')}</h2>
               <Button
-                size="sm"
+                size="md"
+                className="w-full"
                 onClick={() => void openNewRun()}
                 disabled={!defaults.data}
                 data-testid="new-run"
               >
-                <Plus size={14} aria-hidden />
+                <Plus size={16} aria-hidden />
                 {t('app.newRun')}
               </Button>
+              <div className="flex min-h-8 items-center gap-2 text-xs text-fg-muted">
+                <Checkbox
+                  aria-label={t('runs.selectAll')}
+                  data-testid="select-all-runs"
+                  checked={allChecked}
+                  indeterminate={checkedOnPage > 0 && !allChecked}
+                  disabled={runs.isPending || checkable.length === 0}
+                  onChange={toggleAll}
+                />
+                {checkedIds.size > 0 ? (
+                  <BulkDeleteBar
+                    count={checkedIds.size}
+                    selectionKey={selectionKey}
+                    deleting={removeMany.isPending}
+                    onClear={() => setCheckedIds(new Set())}
+                    onDelete={() => removeMany.mutate([...checkedIds])}
+                  />
+                ) : (
+                  <span>{t('runs.compareHint')}</span>
+                )}
+              </div>
             </div>
           }
           footer={
@@ -281,11 +307,11 @@ export function App() {
           }
         >
           {runs.isError ? (
-            <p role="alert" data-testid="runs-error" className="text-sm text-danger">
+            <p role="alert" data-testid="runs-error" className="px-4 py-3 text-sm text-danger">
               {t('app.runsLoadError')}
             </p>
           ) : (
-            <RunsTable
+            <RunList
               runs={list}
               loading={runs.isPending}
               selectedId={comparing ? undefined : selectedRun?.id}
