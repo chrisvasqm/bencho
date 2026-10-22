@@ -118,13 +118,8 @@ export function RunDetailCard({
     const timer = setTimeout(() => setConfirming(false), CONFIRM_TIMEOUT_MS);
     return () => clearTimeout(timer);
   }, [confirming]);
-  // Retry starts a new run, so it also takes a second click; another run cancels it.
+  // Retry starts a new run, so it also takes a second click. Only one confirm is armed at a time.
   const [confirmingRunAgain, setConfirmingRunAgain] = useState(false);
-  const [runAgainFor, setRunAgainFor] = useState(run.id);
-  if (runAgainFor !== run.id) {
-    setRunAgainFor(run.id);
-    setConfirmingRunAgain(false);
-  }
   useEffect(() => {
     if (!confirmingRunAgain) return;
     const timer = setTimeout(() => setConfirmingRunAgain(false), CONFIRM_TIMEOUT_MS);
@@ -165,22 +160,37 @@ export function RunDetailCard({
   const reuseButtons = !active && (
     <>
       {confirmingRunAgain ? (
-        <Button
-          size="sm"
-          onClick={() => {
-            setConfirmingRunAgain(false);
-            onRunAgain(run);
-          }}
-          loading={starting}
-          data-testid="run-again-confirm"
-        >
-          <RotateCcw size={14} aria-hidden />
-          {t('detail.runAgainConfirm')}
-        </Button>
+        <>
+          <Button
+            key="run-again-cancel"
+            variant="secondary"
+            size="sm"
+            onClick={() => setConfirmingRunAgain(false)}
+            data-testid="run-again-cancel"
+          >
+            {t('detail.cancel')}
+          </Button>
+          <Button
+            key="run-again-confirm"
+            size="sm"
+            onClick={() => {
+              setConfirmingRunAgain(false);
+              onRunAgain(run);
+            }}
+            data-testid="run-again-confirm"
+          >
+            <RotateCcw size={14} aria-hidden />
+            {t('detail.runAgainConfirm')}
+          </Button>
+        </>
       ) : (
         <Button
+          key="run-again"
           size="sm"
-          onClick={() => setConfirmingRunAgain(true)}
+          onClick={() => {
+            setConfirming(false);
+            setConfirmingRunAgain(true);
+          }}
           loading={starting}
           disabled={secrets}
           title={secrets ? t('detail.runAgainSecrets') : undefined}
@@ -226,7 +236,10 @@ export function RunDetailCard({
     <Button
       variant={active ? 'danger' : 'secondary'}
       size="sm"
-      onClick={() => setConfirming(true)}
+      onClick={() => {
+        setConfirmingRunAgain(false);
+        setConfirming(true);
+      }}
       data-testid={active ? 'run-stop' : 'run-delete'}
     >
       {action.label}

@@ -373,6 +373,7 @@ export const es: Translation = {
     delete: 'Eliminar',
     deleteConfirm: 'Eliminar ejecución',
     keep: 'Conservar',
+    cancel: 'Cancelar',
     rateCap_one: 'tasa, hasta {{count}} VU',
     rateCap_many: 'tasa, hasta {{count}} VUs',
     rateCap_other: 'tasa, hasta {{count}} VUs',

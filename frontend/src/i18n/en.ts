@@ -362,6 +362,7 @@ export const en = {
     delete: 'Delete',
     deleteConfirm: 'Delete run',
     keep: 'Keep',
+    cancel: 'Cancel',
     rateCap_one: 'rate, up to {{count}} VU',
     rateCap_many: 'rate, up to {{count}} VUs',
     rateCap_other: 'rate, up to {{count}} VUs',
