@@ -49,7 +49,11 @@ export function Card({
         </header>
       )}
       <div
-        className={cn('px-5 py-4', scrollBody && 'relative min-h-0 flex-1 overflow-y-auto', bodyClassName)}
+        className={cn(
+          'px-5 py-4',
+          scrollBody && 'relative min-h-0 flex-1 overflow-y-auto',
+          bodyClassName,
+        )}
       >
         {children}
       </div>
