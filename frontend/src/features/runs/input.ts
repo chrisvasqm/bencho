@@ -1,4 +1,4 @@
-// A stored run as the input that starts a run: Run again sends it as is, Change and run edits it.
+// A stored run as the input that starts a run: Retry sends it as is, Reuse edits it.
 import type { CreateRunInput, Run } from '../../api/runs.ts';
 
 /** What the API returns in place of a secret header value (Authorization, cookies, keys...). */

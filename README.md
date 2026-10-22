@@ -12,7 +12,7 @@ cd bencho
 docker compose up -d --build
 ```
 
-Open http://localhost:10004, click **New run**, pick a test type and click **Start load test** (or stress/spike). The default target `http://quickpizza:3333` is a demo app in the stack; any URL works. Every run keeps its settings: **Run again** repeats it, **Change and run** opens the form filled in, and ticking two runs compares them. In the Steps section, **Load SOAP example** sets the target to the SOAP demo app (`http://soap-demo:8080`, [Learn Web Services](https://www.learnwebservices.com/): SayHello and a temperature converter) and loads a three-step SOAP flow.
+Open http://localhost:10004, click **New run**, pick a test type and click **Start load test** (or stress/spike). The default target `http://quickpizza:3333` is a demo app in the stack; any URL works. Every run keeps its settings: **Retry** repeats it (after a confirm), **Reuse** opens the form filled in, and ticking two runs compares them. In the Steps section, **Load SOAP example** sets the target to the SOAP demo app (`http://soap-demo:8080`, [Learn Web Services](https://www.learnwebservices.com/): SayHello and a temperature converter) and loads a three-step SOAP flow.
 
 Stop with `docker compose down` (add `-v` to delete stored runs).
 

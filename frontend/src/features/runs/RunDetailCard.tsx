@@ -107,17 +107,19 @@ export function RunDetailCard({
   canChange,
 }: RunDetailCardProps) {
   const { t, language } = useCopy();
-  const [confirming, setConfirming] = useState(false);
-  const [confirmingFor, setConfirmingFor] = useState(run.status);
-  if (confirmingFor !== run.status) {
-    setConfirmingFor(run.status);
-    setConfirming(false);
+  // Stop/delete and Retry each take a second click; only one of them is armed at a time.
+  const [armed, setArmed] = useState<'action' | 'retry' | undefined>();
+  const [armedFor, setArmedFor] = useState(run.status);
+  if (armedFor !== run.status) {
+    setArmedFor(run.status);
+    setArmed(undefined);
   }
   useEffect(() => {
-    if (!confirming) return;
-    const timer = setTimeout(() => setConfirming(false), CONFIRM_TIMEOUT_MS);
+    if (!armed) return;
+    const timer = setTimeout(() => setArmed(undefined), CONFIRM_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [confirming]);
+  }, [armed]);
+  const confirming = armed === 'action';
 
   const duration = run.summary?.metrics.http_req_duration;
   const failed = run.summary?.metrics.http_req_failed;
@@ -176,21 +178,53 @@ export function RunDetailCard({
   const secrets = hasRedactedSecrets(run);
   const reuseButtons = !active && (
     <>
-      <Button
-        size="sm"
-        onClick={() => onRunAgain(run)}
-        loading={starting}
-        disabled={secrets}
-        title={secrets ? t('detail.runAgainSecrets') : undefined}
-        data-testid="run-again"
-      >
-        <RotateCcw size={14} aria-hidden />
-        {t('detail.runAgain')}
-      </Button>
+      {armed === 'retry' ? (
+        <>
+          <Button
+            key="run-again-cancel"
+            variant="secondary"
+            size="sm"
+            onClick={() => setArmed(undefined)}
+            data-testid="run-again-cancel"
+          >
+            {t('detail.cancel')}
+          </Button>
+          <Button
+            key="run-again-confirm"
+            size="sm"
+            onClick={() => {
+              setArmed(undefined);
+              onRunAgain(run);
+            }}
+            disabled={starting}
+            autoFocus
+            data-testid="run-again-confirm"
+          >
+            <RotateCcw size={14} aria-hidden />
+            {t('detail.runAgainConfirm')}
+          </Button>
+        </>
+      ) : (
+        <Button
+          key="run-again"
+          size="sm"
+          onClick={() => setArmed('retry')}
+          loading={starting}
+          disabled={secrets || starting}
+          title={secrets ? t('detail.runAgainSecrets') : undefined}
+          data-testid="run-again"
+        >
+          <RotateCcw size={14} aria-hidden />
+          {t('detail.runAgain')}
+        </Button>
+      )}
       <Button
         variant="secondary"
         size="sm"
-        onClick={() => onChange(run)}
+        onClick={() => {
+          setArmed(undefined);
+          onChange(run);
+        }}
         disabled={starting || !canChange}
         data-testid="run-change"
       >
@@ -204,7 +238,7 @@ export function RunDetailCard({
       <Button
         variant="secondary"
         size="sm"
-        onClick={() => setConfirming(false)}
+        onClick={() => setArmed(undefined)}
         data-testid="run-action-keep"
       >
         {t('detail.keep')}
@@ -223,7 +257,7 @@ export function RunDetailCard({
     <Button
       variant={active ? 'danger' : 'secondary'}
       size="sm"
-      onClick={() => setConfirming(true)}
+      onClick={() => setArmed('action')}
       data-testid={active ? 'run-stop' : 'run-delete'}
     >
       {action.label}
