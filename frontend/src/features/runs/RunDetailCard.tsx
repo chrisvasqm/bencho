@@ -328,9 +328,15 @@ export function RunDetailCard({
             <Stat
               label={t('detail.requests')}
               value={requests ? requests.count.toLocaleString(language) : '–'}
-              unit={
-                requests ? t('detail.perSecond', { rate: requests.rate.toFixed(1) }) : undefined
-              }
+              footer={{
+                left: requests
+                  ? t('detail.perSecond', { rate: requests.rate.toFixed(1) })
+                  : undefined,
+                right:
+                  elapsed === undefined
+                    ? undefined
+                    : t('detail.over', { seconds: elapsed.toFixed(0) }),
+              }}
             />
           </div>
         ) : (
