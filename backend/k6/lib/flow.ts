@@ -187,7 +187,11 @@ export function flowProblem(steps: FlowStep[]): string | null {
     }
     if (step.body !== null && step.bodyFormat === 'soap') {
       try {
-        parseXml(fillBody(step, Object.fromEntries([...known].map((name) => [name, 'x']))) ?? '');
+        // A string and a number, as for JSON: <{{x}}> is a valid tag with x, not with 0.
+        for (const sampleValue of ['x', 0]) {
+          const sample = Object.fromEntries([...known].map((name) => [name, sampleValue]));
+          parseXml(fillBody(step, sample) ?? '');
+        }
       } catch {
         return `${label}: the body must be well-formed XML`;
       }

@@ -77,12 +77,12 @@ function jsonShape(value: unknown): unknown {
  * What to store of a success response (2xx): it may hold tokens, so keys (or element names for
  * SOAP steps) and no values.
  */
-function successBody(text: string, step: FlowStep): string {
+function successBody(text: string, step: FlowStep, xml?: XmlElement): string {
   // Parsing a huge body in every VU at once would load the load generator itself.
   if (text.length > MAX_SHAPE_SOURCE_CHARS) return `(${text.length} characters)`;
   if (step.bodyFormat === 'soap') {
     try {
-      return xmlShape(parseXml(text));
+      return xmlShape(xml ?? parseXml(text));
     } catch {
       return `(not XML, ${text.length} characters)`;
     }
@@ -102,13 +102,14 @@ function reportFailure(
   step: FlowStep,
   reason: FailureSample['reason'],
   response: ReturnType<typeof http.request>,
+  xml?: XmlElement,
 ): void {
   const key = `${step.name}|${reason}|${response.status}|${response.status === 0 ? response.error_code : ''}`;
   if (reportedFailures.has(key)) return;
   reportedFailures.add(key);
   const text = (typeof response.body === 'string' ? response.body : response.error) || '';
   const success = response.status >= 200 && response.status < 300;
-  const body = (success ? successBody(text, step) : text).slice(0, MAX_FAILURE_BODY_CHARS);
+  const body = (success ? successBody(text, step, xml) : text).slice(0, MAX_FAILURE_BODY_CHARS);
   const sample: FailureSample = { step: step.name, reason, status: response.status, body };
   // Base64 keeps the line free of quotes and line breaks in k6's log format.
   console.log(FAILURE_LOG_PREFIX + encoding.b64encode(JSON.stringify(sample)));
@@ -188,7 +189,7 @@ function runStep(
         checked !== undefined && checked !== null,
     });
     if (!saved) {
-      reportFailure(step, 'extract', response);
+      reportFailure(step, 'extract', response, xml);
       return false;
     }
     values[extract.name] = value;

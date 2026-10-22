@@ -238,9 +238,11 @@ function stepProblem(step: FlowStep, known: Set<string>): string | undefined {
   }
   const soap = step.bodyFormat === 'soap';
   if (step.body !== null && soap) {
-    // Values are escaped as XML text, so any sample value keeps the document the same shape.
-    const sample = step.body.replace(PLACEHOLDER_PATTERN, 'x');
-    if (!isWellFormedXml(sample)) return 'the body must be well-formed XML';
+    // Values are escaped as XML text; a string and a number catch <{{x}}>, a valid tag only with x.
+    const wellFormed = ['x', '0'].every((sample) =>
+      isWellFormedXml(step.body?.replace(PLACEHOLDER_PATTERN, sample) ?? ''),
+    );
+    if (!wellFormed) return 'the body must be well-formed XML';
   } else if (step.body !== null) {
     try {
       // Values can be strings or numbers; each sample catches misuse the other misses.

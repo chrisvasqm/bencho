@@ -93,15 +93,6 @@ export function parseXml(text: string): XmlElement {
   return document;
 }
 
-export function isWellFormedXml(text: string): boolean {
-  try {
-    parseXml(text);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 /** Escapes a value for XML text or a quoted attribute value. */
 export function escapeXml(value: string): string {
   return value
@@ -120,7 +111,7 @@ function descendantsNamed(element: XmlElement, name: string): XmlElement[] {
 }
 
 /**
- * The trimmed text of the element at `path`, or undefined when there is none. Each name finds
+ * The trimmed text of the element at `path`, or undefined when there is none or it is empty. Each name finds
  * the elements with that name at any depth inside the first match so far (namespace prefixes
  * ignored), and a number picks one of the matches: Token, LoginResponse.Token or Item.1.Id.
  */
@@ -135,7 +126,9 @@ export function xmlValue(document: XmlElement, path: string): string | undefined
     if (!scope) return undefined;
     matches = descendantsNamed(scope, localName(segment));
   }
-  return matches[0] === document ? undefined : matches[0]?.text.trim();
+  // An empty element, or one with only child elements, has no value to save.
+  const value = matches[0] === document ? undefined : matches[0]?.text.trim();
+  return value === '' ? undefined : value;
 }
 
 /** Element names only, no text or attributes; repeated siblings show once: <Envelope><Body/>... */

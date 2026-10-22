@@ -1,6 +1,6 @@
 // Ordered steps one virtual user runs per iteration. One step is open for editing at a time.
 import { useEffect, useRef } from 'react';
-import { HTTP_METHODS, type BodyFormat, type HttpMethod } from '../../api/runs.ts';
+import { BODY_FORMATS, HTTP_METHODS, type BodyFormat, type HttpMethod } from '../../api/runs.ts';
 import {
   Button,
   Field,
@@ -39,10 +39,7 @@ export interface FlowEditorProps {
 }
 
 const METHOD_OPTIONS = HTTP_METHODS.map((value) => ({ value, label: value }));
-const BODY_FORMAT_OPTIONS = [
-  { value: 'json', label: 'JSON' },
-  { value: 'soap', label: 'SOAP' },
-] as const;
+const BODY_FORMAT_OPTIONS = BODY_FORMATS.map((value) => ({ value, label: value.toUpperCase() }));
 const SOAP_BODY_PLACEHOLDER = [
   '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">',
   '  <soap:Body>',
