@@ -3,6 +3,7 @@ import type { Run } from '../../api/runs.ts';
 import { Badge, Button, Card } from '../../components/ui/index.ts';
 import { useCopy, type Copy } from '../../i18n/useCopy.ts';
 import {
+  LATENCY_KEYS,
   STATUS_TONES,
   formatMs,
   formatPeak,
@@ -16,18 +17,13 @@ export interface CompareCardProps {
   onClose: () => void;
 }
 
-const LATENCY_KEYS = [
-  ['p50', 'med'],
-  ['p90', 'p(90)'],
-  ['p95', 'p(95)'],
-  ['p99', 'p(99)'],
-] as const;
-
 interface Row {
   label: string;
   cells: [React.ReactNode, React.ReactNode];
-  /** Numbers to compare; positive means the newer run is worse. */
-  worse?: number;
+  /** Newer minus older, when both runs have the number. */
+  delta?: number;
+  /** True when a higher number is better (requests per second), so a drop reads as worse. */
+  higherIsBetter?: boolean;
   format?: (value: number) => string;
 }
 
@@ -68,20 +64,20 @@ function rows(older: Run, newer: Run, t: Copy, language: string): Row[] {
         string,
         string,
       ],
-      worse: diff(latency(older, metricKey), latency(newer, metricKey)),
+      delta: diff(latency(older, metricKey), latency(newer, metricKey)),
       format: formatMs,
     })),
     {
       label: t('compare.rows.errors'),
       cells: [formatPercent(errors(older)), formatPercent(errors(newer))],
-      worse: diff(errors(older), errors(newer)),
+      delta: diff(errors(older), errors(newer)),
       format: formatPercent,
     },
     {
       label: t('compare.rows.requests'),
       cells: [rate(older)?.toFixed(1) ?? '–', rate(newer)?.toFixed(1) ?? '–'],
-      // More requests per second is better, so the sign flips.
-      worse: diff(rate(newer), rate(older)),
+      delta: diff(rate(older), rate(newer)),
+      higherIsBetter: true,
       format: (value) => value.toFixed(1),
     },
     {
@@ -126,28 +122,28 @@ export function CompareCard({ runs, onClose }: CompareCardProps) {
             </tr>
           </thead>
           <tbody>
-            {rows(older, newer, t, language).map((row) => (
-              <tr key={row.label} className="border-b border-line last:border-b-0">
-                <th scope="row" className="py-2 pr-3 text-left text-xs font-medium text-fg-muted">
-                  {row.label}
-                </th>
-                <td className="max-w-64 truncate px-3 py-2">{row.cells[0]}</td>
-                <td className="max-w-64 truncate px-3 py-2">{row.cells[1]}</td>
-                <td
-                  className={`px-3 py-2 text-right tabular-nums ${
-                    row.worse === undefined || row.worse === 0
-                      ? 'text-fg-faint'
-                      : row.worse > 0
-                        ? 'text-danger'
-                        : 'text-success'
-                  }`}
-                >
-                  {row.worse === undefined || row.format === undefined
-                    ? ''
-                    : `${row.worse > 0 ? '+' : row.worse < 0 ? '−' : ''}${row.format(Math.abs(row.worse))}`}
-                </td>
-              </tr>
-            ))}
+            {rows(older, newer, t, language).map((row) => {
+              const worse =
+                row.delta === undefined ? 0 : row.higherIsBetter ? -row.delta : row.delta;
+              return (
+                <tr key={row.label} className="border-b border-line last:border-b-0">
+                  <th scope="row" className="py-2 pr-3 text-left text-xs font-medium text-fg-muted">
+                    {row.label}
+                  </th>
+                  <td className="max-w-64 truncate px-3 py-2">{row.cells[0]}</td>
+                  <td className="max-w-64 truncate px-3 py-2">{row.cells[1]}</td>
+                  <td
+                    className={`px-3 py-2 text-right tabular-nums ${
+                      worse === 0 ? 'text-fg-faint' : worse > 0 ? 'text-danger' : 'text-success'
+                    }`}
+                  >
+                    {row.delta === undefined || row.format === undefined
+                      ? ''
+                      : `${row.delta > 0 ? '+' : row.delta < 0 ? '−' : ''}${row.format(Math.abs(row.delta))}`}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

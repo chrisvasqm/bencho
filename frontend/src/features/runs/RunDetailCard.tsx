@@ -6,6 +6,7 @@ import { verdictReason } from './verdict.ts';
 import { LearnMore } from '../learn/LearnMore.tsx';
 import { useCopy } from '../../i18n/useCopy.ts';
 import {
+  LATENCY_KEYS,
   STATUS_TONES,
   durationSeconds,
   formatMs,
@@ -27,14 +28,9 @@ export interface RunDetailCardProps {
   /** Opens the form filled with this run's settings. */
   onChange: (run: Run) => void;
   starting: boolean;
+  /** False until the form's defaults have loaded: the drawer would show only a skeleton. */
+  canChange: boolean;
 }
-
-const PERCENTILE_KEYS = [
-  ['p50', 'med'],
-  ['p90', 'p(90)'],
-  ['p95', 'p(95)'],
-  ['p99', 'p(99)'],
-] as const;
 
 const CONFIRM_TIMEOUT_MS = 4000;
 
@@ -67,6 +63,7 @@ export function RunDetailCard({
   onRunAgain,
   onChange,
   starting,
+  canChange,
 }: RunDetailCardProps) {
   const { t, language } = useCopy();
   const [confirming, setConfirming] = useState(false);
@@ -108,7 +105,7 @@ export function RunDetailCard({
         variant="secondary"
         size="sm"
         onClick={() => onChange(run)}
-        disabled={starting}
+        disabled={starting || !canChange}
         data-testid="run-change"
       >
         <SlidersHorizontal size={14} aria-hidden />
@@ -214,7 +211,7 @@ export function RunDetailCard({
             data-testid="run-summary"
             className="grid grid-cols-2 gap-4 sm:grid-cols-3 2xl:grid-cols-6"
           >
-            {PERCENTILE_KEYS.map(([label, metricKey]) => (
+            {LATENCY_KEYS.map(([label, metricKey]) => (
               <Stat
                 key={label}
                 label={label}

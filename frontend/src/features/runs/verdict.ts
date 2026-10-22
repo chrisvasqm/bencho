@@ -2,14 +2,7 @@
 // with. Mirrors the k6 thresholds the backend sets (backend/k6/lib/options.ts).
 import type { CreateRunInput, Run } from '../../api/runs.ts';
 import type { Copy } from '../../i18n/useCopy.ts';
-import { formatMs, formatPercent } from './format.ts';
-
-const LATENCY_KEYS = [
-  ['p50', 'med'],
-  ['p90', 'p(90)'],
-  ['p95', 'p(95)'],
-  ['p99', 'p(99)'],
-] as const;
+import { LATENCY_KEYS, formatMs, formatPercent, plannedRuns } from './format.ts';
 
 /** k6 `checks: rate>0.99`: a run fails once 1 in 100 steps or more miss their check. */
 const MIN_CHECK_RATE = 0.99;
@@ -39,8 +32,10 @@ export function brokenLimits(run: Run, t: Copy): string[] {
   if (checks !== undefined && checks <= MIN_CHECK_RATE) {
     broken.push(t('verdict.checks', { value: formatPercent(checks) }));
   }
+  // Rate runs: `dropped_iterations: count<max(1, planned * maxErrorRate)`, like the backend.
   const dropped = metrics.dropped_iterations?.count ?? 0;
-  if (run.mode === 'rate' && dropped > 0 && broken.length === 0) {
+  const allowedDrops = Math.max(1, plannedRuns(run.stages) * run.limits.maxErrorRate);
+  if (run.mode === 'rate' && dropped >= allowedDrops) {
     broken.push(t('verdict.dropped', { count: dropped }));
   }
   return broken;

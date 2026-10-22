@@ -218,8 +218,10 @@ function RunPanelForm({
     setSubmitCount(revision);
     if (nextErrors.flowStep) setOpenStepId(nextErrors.flowStep);
     if (Object.keys(nextErrors).length > 0) {
-      // A flow problem scrolls through the editor; anything else through the first alert.
-      if (nextErrors.flow) setShownErrorRevision(revision - 1);
+      // The first problem on the form comes into view. Only a flow problem on its own scrolls
+      // through the editor (to the step); any other problem sits above it in the form.
+      const onlyFlow = Object.keys(nextErrors).every((key) => key.startsWith('flow'));
+      if (onlyFlow) setShownErrorRevision(revision - 1);
       else {
         setShownErrorRevision(revision);
         setErrorToShow(revision);

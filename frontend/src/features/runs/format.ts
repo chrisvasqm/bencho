@@ -18,6 +18,25 @@ export function runTypeVars(type: RunType, t: Copy) {
 
 export const isActive = (status: RunStatus) => status === 'queued' || status === 'running';
 
+/** The latency percentiles a run is judged on, with the key k6 stores each under. */
+export const LATENCY_KEYS = [
+  ['p50', 'med'],
+  ['p90', 'p(90)'],
+  ['p95', 'p(95)'],
+  ['p99', 'p(99)'],
+] as const;
+
+/** Flow runs a rate shape plans in total: the area under its straight-line ramps, from 0. */
+export function plannedRuns(stages: Stage[]): number {
+  let previous = 0;
+  let total = 0;
+  for (const stage of stages) {
+    total += ((previous + stage.target) / 2) * durationToSeconds(stage.duration);
+    previous = stage.target;
+  }
+  return total;
+}
+
 /** Whole VUs, or a rate with at most 2 decimals (0.25 = one flow run every 4 s). Same as the API. */
 export function isValidTarget(target: number, mode: LoadMode): boolean {
   if (!Number.isFinite(target) || target < 0) return false;

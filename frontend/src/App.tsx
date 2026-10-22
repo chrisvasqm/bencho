@@ -92,9 +92,15 @@ export function App() {
   const loadingNext = runs.isPending || (Boolean(effectiveId) && selected.isPending);
   const shownRun = selectedRun ?? (loadingNext ? lastShown : undefined);
 
-  // Two ticked runs are compared in place of the selected run's results.
+  // Two ticked runs are compared in place of the selected run's results. They may sit on
+  // different pages: every fetched page is looked through.
   const compared = [...checkedIds]
-    .map((id) => list.find((run) => run.id === id))
+    .map((id) =>
+      queryClient
+        .getQueriesData<RunsPage>({ queryKey: ['runs', 'page'] })
+        .flatMap(([, data]) => data?.runs ?? [])
+        .find((run) => run.id === id),
+    )
     .filter((run): run is Run => run !== undefined);
   const comparing = checkedIds.size === 2 && compared.length === 2;
 
@@ -121,15 +127,16 @@ export function App() {
   });
 
   // New run opens the form with the newest run's settings, or the defaults when there is none.
+  // Page 1 is newest first, so it already holds that run; another page needs one fetch.
   const openNewRun = async () => {
-    const newest = await queryClient
-      .fetchQuery({
-        queryKey: ['runs', 'newest'],
-        queryFn: () => runsApi.list(1, 1),
-        staleTime: 0,
-      })
-      .then((result) => result.runs[0])
-      .catch(() => undefined);
+    if (form.open) return;
+    const newest =
+      page === 1 && runs.data
+        ? list[0]
+        : await runsApi
+            .list(1, 1)
+            .then((result) => result.runs[0])
+            .catch(() => undefined);
     setForm((current) => ({ open: true, initial: newest, key: current.key + 1 }));
   };
   const openChange = (run: Run) =>
@@ -302,6 +309,7 @@ export function App() {
                 starting={create.isPending}
                 onRunAgain={(run) => create.mutate(runToInput(run))}
                 onChange={openChange}
+                canChange={Boolean(defaults.data)}
               />
             </m.div>
           ) : runs.isPending || (effectiveId && selected.isPending) ? (
